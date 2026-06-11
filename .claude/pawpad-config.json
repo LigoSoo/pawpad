@@ -1,0 +1,12 @@
+﻿{
+  "_note": "PawPad (Agentic Engineering Toolkit) runtime toggles. Read by Claude/Codex hooks (session-start, ctxdb-inject).",
+  "codemap": {
+    "inject": "auto",
+    "_inject_values": "auto = inject only when symbol count >= largeRepoSymbolThreshold (대형 repo opt-in); on = always; off = never",
+    "largeRepoSymbolThreshold": 60
+  },
+  "ctxdb": {
+    "injectMode": "pointer",
+    "_injectMode_values": "pointer(기본) = Codex hook이 본문 대신 read 지시만 주입 (Codex TUI가 additionalContext를 화면 렌더링하므로 노이즈 최소화, agent가 직접 read); full = 본문 주입. Claude hook은 화면 비표시라 항상 full (이 키 무시)."
+  }
+}

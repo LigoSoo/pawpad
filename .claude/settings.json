@@ -1,0 +1,48 @@
+﻿{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File D:/Antigravity_Project/pawpad-toolkit/.claude/hooks/run-hook.ps1 session-start.ps1"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File D:/Antigravity_Project/pawpad-toolkit/.claude/hooks/run-hook.ps1 ctxdb-inject.ps1"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File D:/Antigravity_Project/pawpad-toolkit/.claude/hooks/run-hook.ps1 pre-compact.ps1"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File D:/Antigravity_Project/pawpad-toolkit/.claude/hooks/run-hook.ps1 stop-check.ps1"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "powershell -NoProfile -ExecutionPolicy Bypass -File D:/Antigravity_Project/pawpad-toolkit/.claude/hooks/run-hook.ps1 statusline.ps1"
+  }
+}

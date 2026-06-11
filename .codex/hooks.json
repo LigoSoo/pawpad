@@ -1,0 +1,56 @@
+﻿{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'd=\"$PWD\"; while :; do f=\"$d/.codex/hooks/session-start.sh\"; if [ -f \"$f\" ]; then exec sh \"$f\"; fi; p=$(dirname \"$d\"); [ \"$p\" = \"$d\" ] && break; d=\"$p\"; done; printf \"{}\\n\"'",
+            "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQA9ACcAUwBpAGwAZQBuAHQAbAB5AEMAbwBuAHQAaQBuAHUAZQAnAAoAJABkAD0AKABHAGUAdAAtAEwAbwBjAGEAdABpAG8AbgApAC4AUABhAHQAaAAKAHcAaABpAGwAZQAgACgAJAB0AHIAdQBlACkAIAB7AAoAIAAgACQAcAAgAD0AIABKAG8AaQBuAC0AUABhAHQAaAAgACQAZAAgACcALgBjAG8AZABlAHgALwBoAG8AbwBrAHMALwBzAGUAcwBzAGkAbwBuAC0AcwB0AGEAcgB0AC4AcABzADEAJwAKACAAIABpAGYAIAAoAFQAZQBzAHQALQBQAGEAdABoACAAJABwACkAIAB7ACAAJgAgACQAcAA7ACAAZQB4AGkAdAAgACQATABBAFMAVABFAFgASQBUAEMATwBEAEUAIAB9AAoAIAAgACQAcABhAHIAZQBuAHQAIAA9ACAAUwBwAGwAaQB0AC0AUABhAHQAaAAgAC0AUABhAHIAZQBuAHQAIAAkAGQACgAgACAAaQBmACAAKAAtAG4AbwB0ACAAJABwAGEAcgBlAG4AdAAgAC0AbwByACAAJABwAGEAcgBlAG4AdAAgAC0AZQBxACAAJABkACkAIAB7ACAAJwB7AH0AJwA7ACAAZQB4AGkAdAAgADAAIAB9AAoAIAAgACQAZAAgAD0AIAAkAHAAYQByAGUAbgB0AAoAfQAKAA==",
+            "timeout": 10,
+            "statusMessage": "Resetting PawPad Codex session state"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'd=\"$PWD\"; while :; do f=\"$d/.codex/hooks/ctxdb-inject.sh\"; if [ -f \"$f\" ]; then exec sh \"$f\"; fi; p=$(dirname \"$d\"); [ \"$p\" = \"$d\" ] && break; d=\"$p\"; done; printf \"{}\\n\"'",
+            "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQA9ACcAUwBpAGwAZQBuAHQAbAB5AEMAbwBuAHQAaQBuAHUAZQAnAAoAJABkAD0AKABHAGUAdAAtAEwAbwBjAGEAdABpAG8AbgApAC4AUABhAHQAaAAKAHcAaABpAGwAZQAgACgAJAB0AHIAdQBlACkAIAB7AAoAIAAgACQAcAAgAD0AIABKAG8AaQBuAC0AUABhAHQAaAAgACQAZAAgACcALgBjAG8AZABlAHgALwBoAG8AbwBrAHMALwBjAHQAeABkAGIALQBpAG4AagBlAGMAdAAuAHAAcwAxACcACgAgACAAaQBmACAAKABUAGUAcwB0AC0AUABhAHQAaAAgACQAcAApACAAewAgACYAIAAkAHAAOwAgAGUAeABpAHQAIAAkAEwAQQBTAFQARQBYAEkAVABDAE8ARABFACAAfQAKACAAIAAkAHAAYQByAGUAbgB0ACAAPQAgAFMAcABsAGkAdAAtAFAAYQB0AGgAIAAtAFAAYQByAGUAbgB0ACAAJABkAAoAIAAgAGkAZgAgACgALQBuAG8AdAAgACQAcABhAHIAZQBuAHQAIAAtAG8AcgAgACQAcABhAHIAZQBuAHQAIAAtAGUAcQAgACQAZAApACAAewAgACcAewB9ACcAOwAgAGUAeABpAHQAIAAwACAAfQAKACAAIAAkAGQAIAA9ACAAJABwAGEAcgBlAG4AdAAKAH0ACgA=",
+            "timeout": 10,
+            "statusMessage": "Loading PawPad ctxdb context"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'd=\"$PWD\"; while :; do f=\"$d/.codex/hooks/pre-compact.sh\"; if [ -f \"$f\" ]; then exec sh \"$f\"; fi; p=$(dirname \"$d\"); [ \"$p\" = \"$d\" ] && break; d=\"$p\"; done; printf \"{}\\n\"'",
+            "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQA9ACcAUwBpAGwAZQBuAHQAbAB5AEMAbwBuAHQAaQBuAHUAZQAnAAoAJABkAD0AKABHAGUAdAAtAEwAbwBjAGEAdABpAG8AbgApAC4AUABhAHQAaAAKAHcAaABpAGwAZQAgACgAJAB0AHIAdQBlACkAIAB7AAoAIAAgACQAcAAgAD0AIABKAG8AaQBuAC0AUABhAHQAaAAgACQAZAAgACcALgBjAG8AZABlAHgALwBoAG8AbwBrAHMALwBwAHIAZQAtAGMAbwBtAHAAYQBjAHQALgBwAHMAMQAnAAoAIAAgAGkAZgAgACgAVABlAHMAdAAtAFAAYQB0AGgAIAAkAHAAKQAgAHsAIAAmACAAJABwADsAIABlAHgAaQB0ACAAJABMAEEAUwBUAEUAWABJAFQAQwBPAEQARQAgAH0ACgAgACAAJABwAGEAcgBlAG4AdAAgAD0AIABTAHAAbABpAHQALQBQAGEAdABoACAALQBQAGEAcgBlAG4AdAAgACQAZAAKACAAIABpAGYAIAAoAC0AbgBvAHQAIAAkAHAAYQByAGUAbgB0ACAALQBvAHIAIAAkAHAAYQByAGUAbgB0ACAALQBlAHEAIAAkAGQAKQAgAHsAIAAnAHsAfQAnADsAIABlAHgAaQB0ACAAMAAgAH0ACgAgACAAJABkACAAPQAgACQAcABhAHIAZQBuAHQACgB9AAoA",
+            "timeout": 10,
+            "statusMessage": "PawPad PreCompact context-saver reminder"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'd=\"$PWD\"; while :; do f=\"$d/.codex/hooks/stop-check.sh\"; if [ -f \"$f\" ]; then exec sh \"$f\"; fi; p=$(dirname \"$d\"); [ \"$p\" = \"$d\" ] && break; d=\"$p\"; done; printf \"{}\\n\"'",
+            "commandWindows": "powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQA9ACcAUwBpAGwAZQBuAHQAbAB5AEMAbwBuAHQAaQBuAHUAZQAnAAoAJABkAD0AKABHAGUAdAAtAEwAbwBjAGEAdABpAG8AbgApAC4AUABhAHQAaAAKAHcAaABpAGwAZQAgACgAJAB0AHIAdQBlACkAIAB7AAoAIAAgACQAcAAgAD0AIABKAG8AaQBuAC0AUABhAHQAaAAgACQAZAAgACcALgBjAG8AZABlAHgALwBoAG8AbwBrAHMALwBzAHQAbwBwAC0AYwBoAGUAYwBrAC4AcABzADEAJwAKACAAIABpAGYAIAAoAFQAZQBzAHQALQBQAGEAdABoACAAJABwACkAIAB7ACAAJgAgACQAcAA7ACAAZQB4AGkAdAAgACQATABBAFMAVABFAFgASQBUAEMATwBEAEUAIAB9AAoAIAAgACQAcABhAHIAZQBuAHQAIAA9ACAAUwBwAGwAaQB0AC0AUABhAHQAaAAgAC0AUABhAHIAZQBuAHQAIAAkAGQACgAgACAAaQBmACAAKAAtAG4AbwB0ACAAJABwAGEAcgBlAG4AdAAgAC0AbwByACAAJABwAGEAcgBlAG4AdAAgAC0AZQBxACAAJABkACkAIAB7ACAAJwB7AH0AJwA7ACAAZQB4AGkAdAAgADAAIAB9AAoAIAAgACQAZAAgAD0AIAAkAHAAYQByAGUAbgB0AAoAfQAKAA==",
+            "timeout": 10,
+            "statusMessage": "Checking PawPad checkpoint rules"
+          }
+        ]
+      }
+    ]
+  }
+}

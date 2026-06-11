@@ -1,0 +1,103 @@
+﻿# CLAUDE.md
+# Tool: Claude Code | Stack: <YOUR_STACK>
+# Edit Commands / Directories / Conventions to match your project.
+
+## Commands
+- Install:     <YOUR_INSTALL_CMD>
+- Dev:         <YOUR_DEV_CMD>
+- Test:        <YOUR_TEST_CMD>
+- Test single: <YOUR_TEST_SINGLE_CMD>
+- Analyze:     <YOUR_ANALYZE_CMD>
+- Lint:        <YOUR_LINT_CMD>
+- Build:       <YOUR_BUILD_CMD>
+
+## Definition of Done
+Task complete when ALL pass:
+1. Analyze (Commands의 Analyze) - zero errors
+2. Test (Commands의 Test) - all green
+3. No files outside stated scope modified
+4. lane 파일 갱신 또는 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동
+5. .claude/codemap/_index.md updated for new/changed symbols
+6. 핸드오프 발생 시 .claude/pawpad/handoffs/ snapshot 작성
+7. lane `## Verification Evidence` 섹션에 검증 근거 기록 (분석전용/소작업은 `not applicable: analysis-only`). 규칙: .claude/HYBRID.md Verification Evidence.
+8. 코드 변경 시 /security-check 🔴 zero (분석전용/문서전용 면제). 규칙: .claude/skills/security-check/SKILL.md
+
+## Escalation Rules
+- Stuck > 3 attempts same error: STOP, report findings
+- Scope unclear: ASK before touching new files
+- Destructive op (DROP/DELETE/rm -rf): STOP, confirm
+- Credential required: STOP - use env var reference
+
+## Boundaries
+NEVER modify:
+- <BUILD_OUTPUT_DIR>      (예: dist/, build/, target/)
+- <LOCKFILE> (without instruction)
+- <GENERATED_DIR>
+
+NEVER run without confirm:
+- Production deploy / release
+- Database migration or deletion scripts
+- Destructive data scripts
+
+## Directories
+<YOUR_PROJECT_STRUCTURE>
+(예시:)
+src/
+├── ...
+└── ...
+
+## Code Conventions
+- <YOUR_CODE_CONVENTIONS>
+- (예: 파일 명명 규칙, 타입 정책, 로깅 정책, 상수 정책)
+
+## Coding Principles (Karpathy)
+1. Implement only what is asked. No extra abstractions.
+2. Do not modify files outside stated scope.
+3. Read existing code before writing new code.
+4. When scope is unclear, ask before implementing.
+
+## Doc Update Rules
+| Change           | Update target                            |
+|------------------|------------------------------------------|
+| Feature spec     | .claude/pawpad/specs/{feature-id}.md        |
+| Feature/UX       | src/PRD-tree.md                          |
+| New feature      | src/PRD-tree.md + src/PRD.md             |
+| New screen/route | Feature ID in PRD-tree.md                |
+| 결정 기록 위치    | .claude/HYBRID.md Decision Placement Matrix 참조 |
+| 검증 결과        | lane `## Verification Evidence` (길면 .claude/pawpad/verifications/{feature-id}_{ts}.md) |
+Code + doc update = one atomic unit. Keep * markers accurate.
+
+## Session Protocol
+ON START (agent가 순차 실행):
+  0. read .ctxdb/INDEX.md -> 첫 메시지 키워드 매칭 -> L1<=1 / L2<=2개만 로드 (전체 로드 금지)
+     (SessionStart hook이 INDEX 라우터 주입 + session state reset, codemap은 pawpad-config.json 토글.
+      UserPromptSubmit hook(ctxdb-inject.ps1)이 prompt keyword로 L1/L2 자동 최소로드(session dedupe).
+      PreCompact hook이 compaction 직전 context-saver 유도. 첫 응답 최상단에 검증 1줄:
+      📂 ctxdb: {project} | {last-date} | {loaded L2} | {status})
+  1. read .claude/HYBRID.md (협업 프로토콜)
+  2. read .claude/pawpad/_wip.md (active lane router)
+  3. assigned lane 있으면 read .claude/pawpad/wip/{lane}.md
+  4. _wip.md Active Lanes에 state=HANDOFF_TO_* 발견 시 -> handoff 필드 경로 read
+  5. state=SPEC_READY 또는 spec 있으면 read .claude/pawpad/specs/{feature}.md
+  6. read .claude/pawpad/_meta.md
+  7. read .claude/codemap/_index.md
+ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
+ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함)
+ON STOP:         agent가 lane 파일 (state + reason) 갱신
+ON 8턴/60% CONTEXT: Stop hook이 8턴마다 checkpoint block -> context-saver(.ctxdb/L2 저장) + codemap 갱신. PreCompact hook이 native compaction 직전 동일 저장 유도(최근 8턴 내 발생 시 Stop checkpoint 중복 생략). 60% 시 /checkpoint -> 필요시 /handoff
+-> Detail: .claude/skills/memory/SKILL.md | .claude/skills/codemap/SKILL.md | .claude/skills/ctxdb-navigator/SKILL.md | .claude/skills/context-saver/SKILL.md | .claude/skills/handoff/SKILL.md | .claude/skills/checkpoint/SKILL.md
+
+## Hybrid Lane Rule
+- 신규 작업: .claude/pawpad/wip/{feature-id}.md 생성 + _wip.md Active Lanes 등록
+- 본인 lane만 수정. 타 에이전트 lane 읽기 가능, 수정 금지.
+- 파일 충돌 위험 시 _wip.md Locks 섹션에 경로 매핑.
+- codemap/_index.md: 추가는 누구나, 수정/삭제는 lane owner만.
+- 완료 lane: wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 (삭제 금지, audit 보존, timestamp로 재작업 보존)
+- 핸드오프 수신 시: state HANDOFF_TO_* -> WIP, owner -> 받는 agent로 변경
+
+## Response Style
+한글로 답변. 기술 용어 코드 원문 유지.
+Terse. Drop: a/an/the, filler, pleasantries, hedging.
+Pattern: [대상] [동작] [이유]. [다음 단계].
+ACTIVE EVERY RESPONSE. Off: "normal mode"
+-> Full rules: .claude/skills/caveman/SKILL.md

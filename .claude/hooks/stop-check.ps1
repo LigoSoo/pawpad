@@ -1,0 +1,69 @@
+﻿# Stop hook - 루프가드 후 8턴 정기저장 또는 L2 분할규칙 위반 시 decision:block.
+# session-aware turn-count. PreCompact가 최근 8턴 내 저장 유도했으면 checkpoint 중복 생략.
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
+$raw = (New-Object System.IO.StreamReader([Console]::OpenStandardInput(), (New-Object System.Text.UTF8Encoding $false))).ReadToEnd()
+$event = $null
+try { $event = $raw | ConvertFrom-Json } catch {}
+if ($event.stop_hook_active -eq $true) { exit 0 }   # block 재진입 -> 루프 방지
+
+$sessionId = if ($event -and $event.session_id) { [string]$event.session_id } else { "manual" }
+
+$stateDir = ".ctxdb/.state"
+if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -Force | Out-Null }
+$tcPath = Join-Path $stateDir "turn-count"
+
+$turn = 0
+if (Test-Path $tcPath) {
+    $lines = Get-Content -Path $tcPath -Encoding UTF8
+    if ($lines.Count -ge 2 -and $lines[0] -like "session:*") {
+        if ($lines[0].Substring(8) -eq $sessionId -and $lines[1] -match "^turn:(\d+)$") { $turn = [int]$Matches[1] }
+    } elseif (($lines -join "").Trim() -match "^\d+$") { $turn = [int](($lines -join "").Trim()) }
+}
+$turn++
+Set-Content -Path $tcPath -Value @("session:$sessionId", "turn:$turn") -Encoding ascii
+
+# PreCompact 중복 가드: 최근 8턴 내 compaction 저장 유도 있었으면 이번 checkpoint 생략
+$lastCompactTurn = -1
+$lcPath = Join-Path $stateDir "last-compact"
+if (Test-Path $lcPath) {
+    $lc = Get-Content -Path $lcPath -Encoding UTF8
+    if ($lc.Count -ge 2 -and $lc[1] -match "^turn:(\d+)$") { $lastCompactTurn = [int]$Matches[1] }
+}
+
+# L2 분할 규칙 점검 (150줄 또는 ~2000토큰 초과 = 키워드 로드 시 토큰절약 무력화)
+$oversized = @()
+$l2dir = ".ctxdb/L2"
+if (Test-Path $l2dir) {
+    Get-ChildItem -Path $l2dir -Filter *.md -File -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+        $content = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue
+        $chars = if ($content) { $content.Length } else { 0 }
+        $lcount = if ($chars -eq 0) { 0 } else { ([regex]::Matches($content, "`n").Count + 1) }
+        $tok = [int]($chars / 3.5)
+        if ($lcount -gt 150 -or $tok -gt 2000) { $oversized += ("{0}({1}L/~{2}tok)" -f $_.Name, $lcount, $tok) }
+    }
+}
+
+$needsCheckpoint = ($turn % 8 -eq 0) -and -not ($lastCompactTurn -gt ($turn - 8))
+$needsSplit = ($oversized.Count -gt 0)
+if ($needsSplit) {
+    $sig = $sessionId + "|" + ($oversized -join "|")
+    $warnPath = Join-Path $stateDir "claude-oversize-warned"
+    $lastSig = ""
+    if (Test-Path $warnPath) { $lastSig = (Get-Content -Path $warnPath -Raw -Encoding UTF8).Trim() }
+    if ($lastSig -eq $sig) { $needsSplit = $false } else { Set-Content -Path $warnPath -Value $sig -Encoding UTF8 }
+}
+
+$parts = @()
+if ($needsCheckpoint) {
+    $parts += "[checkpoint $turn turns] Update .claude/codemap/_index.md for new/changed symbols + refresh lane/_wip.md (on done: move to wip/done + _meta.md + git commit) + run context-saver to write .ctxdb/L2 and update INDEX.md AGENT SYNC."
+}
+if ($needsSplit) {
+    $parts += ("[L2 split needed] " + ($oversized -join ", ") + " : exceeds 150 lines / 2000 tokens -> keyword load still pulls the whole file, defeating token savings. Split old entries into .ctxdb/L3/{name}-YYYY-MM.md or split by domain, then update INDEX/L1 pointers.")
+}
+if ($parts.Count -eq 0) { exit 0 }
+
+$reason = ($parts -join " ") + " Report one line, then stop."
+@{ decision = "block"; reason = $reason } | ConvertTo-Json -Compress | Write-Output
+exit 0
