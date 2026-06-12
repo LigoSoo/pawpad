@@ -1,3 +1,3 @@
-﻿# Project hook definitions live in .codex/hooks.json.
+# Project hook definitions live in .codex/hooks.json.
 # Codex loads hooks.json from trusted config layers.
 # Run /hooks in Codex after changes to review and trust project-local hooks.

@@ -494,7 +494,7 @@ function Get-UpgradeAction {
 
 function Write-FileContent {
     # -NoBom: UTF-8 BOM 없이 작성 (skill SKILL.md는 frontmatter '---'가 첫 바이트여야 등록됨.
-    #         .json도 필수 — Codex/Claude JSON 파서가 leading BOM에서 "expected value line 1 col 1" 실패)
+    #         .json/.toml도 필수 — Codex/Claude JSON·TOML 파서가 leading BOM에서 "expected value line 1 col 1" 실패)
     # -Unix: UTF-8 BOM 없이 + LF 줄바꿈 (.sh 훅용. CRLF면 bash가 shebang을 깨먹음)
     param([string]$Path, [string]$Content, [switch]$NoBom, [switch]$Unix)
     $dir = Split-Path $Path -Parent
@@ -1771,7 +1771,7 @@ printf '%s' "$out"
 
 # ── Codex native adapter: config + hooks ─────────────────────────────────────
 Step-Begin "Codex native adapter"
-Write-FileContent ".codex\config.toml" @'
+Write-FileContent -NoBom ".codex\config.toml" @'
 # Project hook definitions live in .codex/hooks.json.
 # Codex loads hooks.json from trusted config layers.
 # Run /hooks in Codex after changes to review and trust project-local hooks.
