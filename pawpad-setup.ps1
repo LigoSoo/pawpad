@@ -493,7 +493,8 @@ function Get-UpgradeAction {
 }
 
 function Write-FileContent {
-    # -NoBom: UTF-8 BOM 없이 작성 (skill SKILL.md는 frontmatter '---'가 첫 바이트여야 등록됨)
+    # -NoBom: UTF-8 BOM 없이 작성 (skill SKILL.md는 frontmatter '---'가 첫 바이트여야 등록됨.
+    #         .json도 필수 — Codex/Claude JSON 파서가 leading BOM에서 "expected value line 1 col 1" 실패)
     # -Unix: UTF-8 BOM 없이 + LF 줄바꿈 (.sh 훅용. CRLF면 bash가 shebang을 깨먹음)
     param([string]$Path, [string]$Content, [switch]$NoBom, [switch]$Unix)
     $dir = Split-Path $Path -Parent
@@ -600,7 +601,10 @@ function Merge-JsonToolkitKeys {
     # PS5.1 ConvertTo-Json은 non-ASCII를 \uXXXX로 escape -> 한글 가독성 복원
     $json = [regex]::Replace($json, '(?<!\\)\\u([0-9a-fA-F]{4})', { param($m) [string][char]([Convert]::ToInt32($m.Groups[1].Value, 16)) })
     try {
-        Set-Content -Path $Path -Value $json -Encoding UTF8 -ErrorAction Stop
+        # JSON은 BOM 없이 작성 (Codex/Claude JSON 파서가 leading BOM에서 parse 실패).
+        $enc = New-Object System.Text.UTF8Encoding($false)
+        $abs = if ([System.IO.Path]::IsPathRooted($Path)) { $Path } else { Join-Path (Get-Location) $Path }
+        [System.IO.File]::WriteAllText($abs, ($json + "`r`n"), $enc)
     } catch {
         # 쓰기 실패를 MERGED로 보고하지 않음 (읽기전용/잠금/권한). live 모드에서도 항상 표시.
         Write-InstallLog "  MERGE-FAIL $Path (쓰기 실패: $($_.Exception.Message))" Red -Always
@@ -1064,10 +1068,10 @@ $sl += "    ""command"": ""$statusCmd"""
 $sl += '  }'
 $sl += '}'
 $tmplSettingsJson = ($sl -join $nl)
-Write-FileContent ".claude\settings.json" $tmplSettingsJson
+Write-FileContent ".claude\settings.json" $tmplSettingsJson -NoBom
 
 # ── pawpad-config.json (toolkit 런타임 토글: codemap inject) ──────────────────────
-Write-FileContent ".claude\pawpad-config.json" @'
+Write-FileContent -NoBom ".claude\pawpad-config.json" @'
 {
   "_note": "PawPad (Agentic Engineering Toolkit) runtime toggles. Read by Claude/Codex hooks (session-start, ctxdb-inject).",
   "codemap": {
@@ -1773,7 +1777,7 @@ Write-FileContent ".codex\config.toml" @'
 # Run /hooks in Codex after changes to review and trust project-local hooks.
 '@
 
-Write-FileContent ".codex\hooks.json" @'
+Write-FileContent -NoBom ".codex\hooks.json" @'
 {
   "hooks": {
     "SessionStart": [
@@ -4541,7 +4545,7 @@ $($p.StackInfo)
   }
 }
 "@
-Write-FileContent ".codex\config.json" $tmplCodexConfigJson
+Write-FileContent ".codex\config.json" $tmplCodexConfigJson -NoBom
 
 # ── -Upgrade: 혼합 파일 병합 (툴킷 영역만 갱신, 사용자 영역 보존) ────────────────
 if ($Upgrade -and $mergePending.Count -gt 0) {
