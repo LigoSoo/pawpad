@@ -81,6 +81,6 @@ Q3 [{차원}]: {질문}
 
 ## 구현 계획 작성 원칙
 - .claude/codemap/_index.md 확인 후 실제 파일 경로 사용
-- karpathy 원칙 적용: 요청된 것만, 최소 범위
+- lean-code 원칙 적용: 요청된 것만, 최소 범위
 - 각 단계에 검증 방법 명시 (프로젝트 Commands의 Analyze / Test 등)
 - 전제 섹션에 불확실한 가정 명시

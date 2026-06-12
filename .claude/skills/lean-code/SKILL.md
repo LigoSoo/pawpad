@@ -1,10 +1,10 @@
 ---
-name: karpathy
+name: lean-code
 description: LLM coding anti-pattern reference. Enforcement lives in CLAUDE.md/AGENTS.md Coding Principles; this file is the detailed checklist. No separate invocation needed.
 ---
-# Karpathy Principles - LLM Coding Anti-patterns (참조 문서)
+# Lean Code Principles - LLM Coding Anti-patterns (참조 문서)
 
-> **강등 안내**: 코딩 원칙은 **CLAUDE.md/AGENTS.md `Coding Principles (Karpathy)`가 강제**한다.
+> **강등 안내**: 코딩 원칙은 **CLAUDE.md/AGENTS.md `Coding Principles (Lean Code)`가 강제**한다.
 > 이 파일은 별도 호출 대상이 아니라 **상세 체크리스트 참조**용이다.
 
 ## 4 Core Rules

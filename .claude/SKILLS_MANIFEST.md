@@ -5,7 +5,7 @@
 > **환경별 활성 방식**
 > - Claude Code: `/skill` slash 호출 + description 자동 트리거 둘 다 지원.
 > - Codex CLI: **slash 호출 미보장**. `.agents/skills/*/SKILL.md`의 `description` 기반 **자동 트리거 중심**. 명시 호출 필요 시 "use {skill} skill"처럼 자연어로 지시.
-> - caveman/karpathy는 skill이 아니라 **CLAUDE.md/AGENTS.md가 매 응답 강제**한다(아래 참조 강등 참고).
+> - caveman/lean-code는 skill이 아니라 **CLAUDE.md/AGENTS.md가 매 응답 강제**한다(아래 참조 강등 참고).
 > - statusline은 **Claude Code 전용**(`.claude/settings.json` statusLine). Codex CLI는 statusline 메커니즘이 없어 미적용.
 
 ---
@@ -20,7 +20,7 @@
 | **codemap** | `.claude/skills/codemap/` | 심볼 위치 레지스트리, owner 분리 권한 |
 | **codebase-map** | `.claude/skills/codebase-map/` | 7축 고수준 코드베이스 맵(아키텍처/구조/관례/관심사), digest-only 주입 |
 | **caveman** | `.claude/skills/caveman/` | 압축 통신 모드 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Response Style` |
-| **karpathy** | `.claude/skills/karpathy/` | LLM 코딩 안티패턴 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Coding Principles` |
+| **lean-code** | `.claude/skills/lean-code/` | LLM 코딩 안티패턴 (참조, 구 karpathy). 실제 강제는 CLAUDE.md/AGENTS.md `Coding Principles` |
 | **clarity** | `.claude/skills/clarity/` | 요청 모호도 분석 (5차원 스코어링) |
 | **design** | `.claude/skills/design/` | UI/UX 설계 게이트 (토큰+레이아웃+원칙, 반응형) |
 | **ctxdb-navigator** | `.claude/skills/ctxdb-navigator/` | 키워드 depth 컨텍스트 최소 로드 (토큰 절약) |
@@ -47,7 +47,7 @@
 /codemap         # 심볼 탐색
 /caveman         # 압축 모드
 /clarity         # 모호도 분석
-/karpathy        # 원칙 확인
+/lean-code       # 원칙 확인
 /design          # UI/UX 설계 게이트 (화면 구현 직전)
 /security-check  # 보안 검증 게이트 (커밋/핸드오프/완료 직전)
 ```
@@ -76,7 +76,7 @@
 
 ### 예시 2: 코드 작업
 ```
-1. /karpathy            ← 원칙 검증 (요청된 것만)
+1. /lean-code           ← 원칙 검증 (요청된 것만)
 2. /codemap             ← 영향 파일 위치 확인
 3. /caveman             ← 압축 피드백
 ```
