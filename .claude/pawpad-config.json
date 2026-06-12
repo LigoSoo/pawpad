@@ -1,4 +1,4 @@
-﻿{
+{
   "_note": "PawPad (Agentic Engineering Toolkit) runtime toggles. Read by Claude/Codex hooks (session-start, ctxdb-inject).",
   "codemap": {
     "inject": "auto",

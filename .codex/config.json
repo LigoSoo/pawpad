@@ -1,4 +1,4 @@
-﻿{
+{
   "_comment": "보조 설정. Codex 자동 로드 보장 없음. 핵심 규칙은 AGENTS.md / .claude/HYBRID.md 참조.",
   "_projectRootNote": "이 파일은 .codex/ 디렉토리에 위치. 모든 경로는 프로젝트 루트 기준 상대 경로.",
   "projectName": "pawpad-toolkit",
