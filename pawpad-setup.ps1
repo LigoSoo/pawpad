@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.25 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.25. v2.24 기반 + (1) skill rename: karpathy -> lean-code (인물명 제거. 문서/매니페스트/config 동기, -Upgrade 병합 시 구 섹션명 'Coding Principles (Karpathy)' 자동 마이그레이션) + (2) 이연 동기화: 임베디드 $tmplClaudeMd/$tmplAgentsMd에 session-token-slim(ON START 조건부 read + _meta RECENT 8줄 로테이션), 임베디드 statusline.ps1/.sh에 ctx-accuracy(context_window 1순위 + model.id 한도 폴백). 보고서: docs/CHANGELOG_v2.25.md).
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.26 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.26. v2.25 기반 + feature-architecture 구조 방법론 추가 — CLAUDE/AGENTS ## Architecture Principles (Feature-First) 항시 코어4(신규/변경 코드만 강제) + DoD#9, 신규 feature-architecture 스킬(상세 결정트리/anti-pattern/스택별 public boundary/프레임워크 관례 우선). 배포 표면 동기: 임베디드 $tmplClaudeMd/$tmplAgentsMd 섹션+DoD#9, $tmplSkillsManifest(16), $tmplCodexConfigJson skills, -Upgrade 병합 섹션 리스트, .agents 미러, README/GUIDE/USAGE. 보고서: docs/CHANGELOG_v2.26.md).
+#         이전: v2.25 skill rename karpathy -> lean-code(인물명 제거, -Upgrade 구 섹션명 자동 마이그레이션) + 임베디드 템플릿 동기(session-token-slim, statusline ctx-accuracy). 보고서: docs/CHANGELOG_v2.25.md).
 #         이전: v2.24 설치 UI live 모드(진행 바 1줄 제자리 갱신(`r) + 파일 로그 숨김(-ShowLog 복원) + 배너 발바닥 아트 보정. 설치 내용물 변경 없음. 보고서: docs/CHANGELOG_v2.24.md).
 #         이전: v2.23 설치 UI 도입(paw 배너 + 28단계 진행 바 + 실측 체크리스트, Codex 리뷰 PASS. 보고서: docs/CHANGELOG_v2.23.md).
 #         - Stack 프리셋: flutter | node | python | generic (생략 시 대화형 선택)
@@ -14,7 +15,7 @@
 # - CLAUDE.md, AGENTS.md (Context files, 하이브리드 프로토콜 반영)
 # - .claude/settings.json (Claude Code hooks: SessionStart 자동주입 + Stop decision:block)
 # - .claude/hooks/* (session-start.{ps1,sh}, stop-check.{ps1,sh}, statusline.{ps1,sh} - 크로스플랫폼 자동화/상태줄)
-# - .claude/skills/* (memory, codemap, caveman, lean-code, clarity, handoff, checkpoint, grill-me, grill-with-docs, to-prd, design, ctxdb-navigator, context-saver, security-check)
+# - .claude/skills/* (memory, codemap, caveman, lean-code, feature-architecture, clarity, handoff, checkpoint, grill-me, grill-with-docs, to-prd, design, ctxdb-navigator, context-saver, security-check)
 # - .agents/skills/* (Codex repo skill mirror, .claude/skills 단일 소스에서 재생성)
 # - .claude/pawpad/* (_wip router, wip/lanes, wip/done, handoffs/, specs/, decisions/)
 # - .claude/codemap/_index.md
@@ -46,7 +47,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.25"
+$ver = "2.26"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -778,6 +779,7 @@ Task complete when ALL pass:
 6. 핸드오프 발생 시 .claude/pawpad/handoffs/ snapshot 작성
 7. lane ``## Verification Evidence`` 섹션에 검증 근거 기록 (분석전용/소작업은 ``not applicable: analysis-only``). 규칙: .claude/HYBRID.md Verification Evidence.
 8. 코드 변경 시 /security-check 🔴 zero (분석전용/문서전용 면제). 규칙: .claude/skills/security-check/SKILL.md
+9. 코드 변경 시 신규/변경 코드가 Architecture Principles (Feature-First) 준수 (분석/문서전용 면제). 규칙: .claude/skills/feature-architecture/SKILL.md
 
 ## Escalation Rules
 - Stuck > 3 attempts same error: STOP, report findings
@@ -803,6 +805,14 @@ $($p.Conventions)
 2. Do not modify files outside stated scope.
 3. Read existing code before writing new code.
 4. When scope is unclear, ask before implementing.
+
+## Architecture Principles (Feature-First)
+신규/변경 코드만 적용(레거시 강제 리팩토링 X). 상세·결정트리: .claude/skills/feature-architecture/SKILL.md
+1. 모듈 경계: 기능 폴더 응집(colocation) + 단일 public boundary(스택 관례). 내부 직접 import 금지.
+2. 횡단 import 금지: 기능 간 내부 참조 X (public boundary 의존은 OK). 공통은 소속 범위 따라 hoist.
+3. Rule of Three: 2곳 중복 유지, 3곳째 추출.
+4. 신규 = 가산적: feature 내부 추가 중심 + route/menu registry 등 최소 integration edit 허용. integration 파일에 로직 늘면 경계 재검토.
+새 기능 위치: 기존 도메인 하위 / 새 도메인 폴더 / 도메인 비소속 shared 중 하나. 결정트리는 skill 참조.
 
 ## Doc Update Rules
 | Change           | Update target                            |
@@ -872,6 +882,7 @@ Task complete when ALL pass:
 6. 핸드오프 발생 시 .claude/pawpad/handoffs/ snapshot 작성
 7. lane ``## Verification Evidence`` 섹션에 검증 근거 기록 (분석전용/소작업은 ``not applicable: analysis-only``). 규칙: .claude/HYBRID.md Verification Evidence.
 8. 코드 변경 시 /security-check 🔴 zero (분석전용/문서전용 면제). 규칙: .agents/skills/security-check/SKILL.md
+9. 코드 변경 시 신규/변경 코드가 Architecture Principles (Feature-First) 준수 (분석/문서전용 면제). 규칙: .agents/skills/feature-architecture/SKILL.md
 
 ## Escalation Rules
 - Stuck > 3 attempts same error: STOP, report findings
@@ -897,6 +908,14 @@ $($p.Conventions)
 2. Do not modify files outside stated scope.
 3. Read existing code before writing new code.
 4. When scope is unclear, ask before implementing.
+
+## Architecture Principles (Feature-First)
+신규/변경 코드만 적용(레거시 강제 리팩토링 X). 상세·결정트리: .agents/skills/feature-architecture/SKILL.md
+1. 모듈 경계: 기능 폴더 응집(colocation) + 단일 public boundary(스택 관례). 내부 직접 import 금지.
+2. 횡단 import 금지: 기능 간 내부 참조 X (public boundary 의존은 OK). 공통은 소속 범위 따라 hoist.
+3. Rule of Three: 2곳 중복 유지, 3곳째 추출.
+4. 신규 = 가산적: feature 내부 추가 중심 + route/menu registry 등 최소 integration edit 허용. integration 파일에 로직 늘면 경계 재검토.
+새 기능 위치: 기존 도메인 하위 / 새 도메인 폴더 / 도메인 비소속 shared 중 하나. 결정트리는 skill 참조.
 
 ## Doc Update Rules
 | Change           | Update target                            |
@@ -2956,6 +2975,86 @@ body 필수: breaking change / security fix / data migration / revert
 비가역 작업 경고 / 보안 확인 시 -> normal 전환 후 재개.
 "@
 
+# ── Skills: feature-architecture ──────────────────────────────────────────────
+Step-Begin "skill: feature-architecture"
+Write-FileContent ".claude\skills\feature-architecture\SKILL.md" -NoBom @'
+---
+name: feature-architecture
+description: Feature-first structure reference. Enforcement lives in CLAUDE.md/AGENTS.md Architecture Principles; this file is the detailed decision tree, anti-patterns, and stack examples. Use when starting a new feature, placing new code, or restructuring modules.
+---
+# Feature Architecture - Structure Discipline (참조 문서)
+
+> **강등 안내**: 구조 원칙은 **CLAUDE.md/AGENTS.md `Architecture Principles (Feature-First)`가 강제**한다(신규/변경 코드만, 레거시 비강제).
+> 이 파일은 별도 호출 대상이 아닌 **상세 참조** — 경계 판단 결정트리 / 스택별 예시 / anti-pattern.
+> **lean-code와 소유권 분리**: lean-code="할지 말지·범위"(restraint), feature-architecture="하기로 한 코드를 어디 둘지"(structure). 접점은 Rule of Three뿐, 모순 없음.
+
+## 업계 근거 (검증된 표준 — 신생 개념 0)
+| 원칙 | 업계 명칭 | 출처 |
+|------|-----------|------|
+| 기능 우선 폴더 | Feature-based / Package by Feature | Angular 스타일가이드, React 커뮤니티 |
+| Colocation | Colocation | React 공식 문서, Kent C. Dodds |
+| 횡단 격리 | Vertical Slice Architecture | Jimmy Bogard |
+| 중복 추출 시점 | Rule of Three | Martin Fowler, Refactoring |
+| 구조가 도메인 드러냄 | Screaming Architecture | Robert C. Martin |
+
+## 코어 규칙 (CLAUDE.md/AGENTS.md가 강제, 여기선 참조)
+1. **모듈 경계**: colocation + 단일 public boundary
+2. **횡단 import 금지** (단 public boundary 의존은 허용)
+3. **Rule of Three**
+4. **신규 = 가산적 + 최소 integration edit 허용**
+
+## 상세 규칙
+### 5. 파일 1책임 + 비대화 시 분할
+한 파일 = 한 책임. 커지면 분할. codemap 심볼과 1:1 유지 → 색인 정확도.
+
+### 6. codemap 도메인 명명 정렬
+파일/심볼명이 `domain:symbol`로 깔끔히 매핑되게 명명. 예: `src/menu-c/c-export/export.logic` → `menu-c:exportLogic`. DoD#5(codemap 갱신)와 짝 → "codemap 이용 개발"의 명명 브릿지.
+
+### 7. anti-pattern 체크리스트
+- **god-module**: 한 파일/폴더가 여러 도메인 책임 → 분할
+- **순환참조**: A→B→A → public boundary 또는 hoist로 단방향화
+- **premature 추상화**: 2곳 중복에 성급한 공통화 (Rule of Three 위반)
+- **layer-first 회귀**: controllers/·services/ 식 레이어 우선 분할로 복귀
+- **shared-dump 회귀**: cross-menu 2회 사용을 즉시 global shared로 올림
+
+### 8. public boundary 스택별 예시 (코어는 관계형, 구체는 여기)
+| 스택 | public boundary |
+|------|------------------|
+| TS/JS | `index.ts` / package exports |
+| Python | `__init__.py` / 명시적 module API |
+| Rust | `mod.rs` / `lib.rs` |
+| Go | package-level exported identifiers |
+| Rails/Next | 프레임워크 route/module 관례 **우선** |
+
+## 신규 기능 위치 결정트리
+```
+새 기능이...
+├─ 기존 메뉴(도메인) 소속 → 그 메뉴 폴더 아래 하위 폴더 추가 (형제 로직 불변)
+├─ 새 메뉴(도메인)        → 새 도메인 폴더 + 첫 기능 하위 폴더
+└─ 메뉴 횡단(공통)        → core/ 또는 shared/ (특정 메뉴 소속 아님)
+
+어느 경우든: route/menu registry, module manifest, DI registration,
+            public export 같은 최소 integration edit은 허용 (규칙4).
+            단 integration 파일에 feature "로직"이 늘면 경계 재검토 신호.
+```
+- **허용**(registration-only): router 테이블에 1줄 추가, nav menu 배열에 항목 추가, DI 컨테이너 등록, package export 추가.
+- **금지**(logic-bearing parent edit): 기존 형제 기능 파일에 새 기능의 비즈니스 로직을 끼워넣기.
+
+## 공통 코드 승격 = 사용 범위 따라 (Rule of Three와 모순 없이)
+```
+기능 내부에서만   → 기능 폴더 안
+같은 메뉴 2곳     → 기본 duplicate 유지
+                   (단 auth/권한/HTTP client/formatting 등 안정된 cross-cutting infra는 즉시 shared 허용)
+같은 메뉴 3곳째   → 소속 범위 재판단 → 메뉴 내 shared
+다른 메뉴도 사용  → "도메인 소유권 없는 stable utility/infra"일 때만 global shared 승격.
+                   특정 feature concept이면 public boundary 의존 또는 duplicate 유지 (shared-dump 회귀 방지)
+```
+**cross-menu 2회 사용을 즉시 global로 올리지 말 것** (Rule of Three 게이트).
+
+## 프레임워크 관례 우선 (배포 안전)
+Next.js(app/ 라우팅), Rails(MVC 규칙) 등 **프레임워크가 구조를 강제하면 그것을 우선** 따르고, 그 관례 **안에서** feature-first 원칙(colocation/단일 경계/횡단 격리)을 적용한다. 프레임워크 관례를 거슬러 강제하지 않는다.
+'@
+
 # ── Skills: lean-code ─────────────────────────────────────────────────────────
 Step-Begin "skill: lean-code"
 Write-FileContent ".claude\skills\lean-code\SKILL.md" -NoBom @"
@@ -4348,12 +4447,13 @@ PowerShell hook을 stdin 주입으로 단독 검증:
 Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 # Skills Manifest
 
-프로젝트에 설치된 모든 스킬 목록. (15개)
+프로젝트에 설치된 모든 스킬 목록. (16개)
 
 > **환경별 활성 방식**
 > - Claude Code: `/skill` slash 호출 + description 자동 트리거 둘 다 지원.
 > - Codex CLI: **slash 호출 미보장**. `.agents/skills/*/SKILL.md`의 `description` 기반 **자동 트리거 중심**. 명시 호출 필요 시 "use {skill} skill"처럼 자연어로 지시.
 > - caveman/lean-code는 skill이 아니라 **CLAUDE.md/AGENTS.md가 매 응답 강제**한다(아래 참조 강등 참고).
+> - feature-architecture도 참조 스킬 — 실제 강제는 CLAUDE.md/AGENTS.md `Architecture Principles (Feature-First)`(신규/변경 코드만).
 > - statusline은 **Claude Code 전용**(`.claude/settings.json` statusLine). Codex CLI는 statusline 메커니즘이 없어 미적용.
 
 ---
@@ -4369,6 +4469,7 @@ Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 | **codebase-map** | `.claude/skills/codebase-map/` | 7축 고수준 코드베이스 맵(아키텍처/구조/관례/관심사), digest-only 주입 |
 | **caveman** | `.claude/skills/caveman/` | 압축 통신 모드 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Response Style` |
 | **lean-code** | `.claude/skills/lean-code/` | LLM 코딩 안티패턴 (참조, 구 karpathy). 실제 강제는 CLAUDE.md/AGENTS.md `Coding Principles` |
+| **feature-architecture** | `.claude/skills/feature-architecture/` | feature-first 구조 규율 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Architecture Principles` |
 | **clarity** | `.claude/skills/clarity/` | 요청 모호도 분석 (5차원 스코어링) |
 | **design** | `.claude/skills/design/` | UI/UX 설계 게이트 (토큰+레이아웃+원칙, 반응형) |
 | **ctxdb-navigator** | `.claude/skills/ctxdb-navigator/` | 키워드 depth 컨텍스트 최소 로드 (토큰 절약) |
@@ -4519,6 +4620,7 @@ $($p.StackInfo)
     "codebase-map",
     "caveman",
     "lean-code",
+    "feature-architecture",
     "clarity",
     "handoff",
     "checkpoint",
@@ -4554,6 +4656,7 @@ if ($Upgrade -and $mergePending.Count -gt 0) {
     Write-InstallLog "Merging mixed files (toolkit sections/keys only)..." White
     $claudeToolkitSections = @(
         'Definition of Done', 'Escalation Rules', 'Coding Principles (Lean Code)',
+        'Architecture Principles (Feature-First)',
         'Doc Update Rules', 'Session Protocol', 'Hybrid Lane Rule', 'Response Style'
     )
     $agentsToolkitSections = $claudeToolkitSections + @(
@@ -4615,7 +4718,8 @@ if ($failed -eq 0) {
     Write-Host "  - 구조 경로: .claude/pawpad/ (구 KMS — v2.21 이하 설치본은 -Upgrade 시 자동 마이그레이션)" -ForegroundColor Cyan
     Write-Host "  - 설치 UI: paw 배너 + 진행 바 live 1줄 갱신 + 실측 체크리스트 (-ShowLog로 파일 상세 로그)" -ForegroundColor Cyan
     Write-Host "  - lean-code: 과설계/범위이탈 방지 원칙 스킬 (구 karpathy, v2.25 rename + 병합 마이그레이션)" -ForegroundColor Cyan
-    Write-Host "  - 상세: docs/CHANGELOG_v2.25.md" -ForegroundColor Cyan
+    Write-Host "  - feature-architecture: feature-first 구조 규율 스킬 (CLAUDE/AGENTS Architecture Principles 강제)" -ForegroundColor Cyan
+    Write-Host "  - 상세: docs/CHANGELOG_v2.26.md" -ForegroundColor Cyan
     Write-Host ""
 } else {
     Write-Host "$failed 개 항목 실패. 권한 확인 후 다시 시도하세요." -ForegroundColor Yellow

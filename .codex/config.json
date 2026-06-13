@@ -1,103 +1,140 @@
 {
-  "_comment": "보조 설정. Codex 자동 로드 보장 없음. 핵심 규칙은 AGENTS.md / .claude/HYBRID.md 참조.",
-  "_projectRootNote": "이 파일은 .codex/ 디렉토리에 위치. 모든 경로는 프로젝트 루트 기준 상대 경로.",
-  "projectName": "pawpad-toolkit",
-  "stackInfo": {
-    "framework": "<YOUR_FRAMEWORK>",
-    "language": "<YOUR_LANGUAGE>",
-    "stateManagement": "-",
-    "database": "-"
-  },
-  "contextFiles": {
-    "agentGuide": "AGENTS.md",
-    "claudeGuide": "CLAUDE.md",
-    "hybridWorkflow": ".claude/HYBRID.md",
-    "wipRouter": ".claude/pawpad/_wip.md",
-    "wipLanes": ".claude/pawpad/wip/",
-    "wipDone": ".claude/pawpad/wip/done/",
-    "handoffs": ".claude/pawpad/handoffs/",
-    "specs": ".claude/pawpad/specs/",
-    "completionLog": ".claude/pawpad/_meta.md",
-    "symbolRegistry": ".claude/codemap/_index.md",
-    "architectureDecisions": ".claude/pawpad/decisions/arch.md",
-    "rejectedApproaches": ".claude/pawpad/decisions/rejected.md",
-    "glossary": "CONTEXT.md",
-    "skillsManifest": ".claude/SKILLS_MANIFEST.md",
-    "codexRuntimeConfig": ".codex/config.toml",
-    "codexHooks": ".codex/hooks.json",
-    "codexHookScripts": ".codex/hooks/",
-    "codexRepoSkills": ".agents/skills/",
-    "ctxdbIndex": ".ctxdb/INDEX.md",
-    "pawpadConfig": ".claude/pawpad-config.json",
-    "sessionStartHook": ".claude/hooks/session-start.ps1",
-    "ctxdbInjectHook": ".claude/hooks/ctxdb-inject.ps1",
-    "preCompactHook": ".claude/hooks/pre-compact.ps1",
-    "stopHook": ".claude/hooks/stop-check.ps1"
-  },
-  "stateEnum": [
-    "WIP",
-    "SPEC_READY",
-    "HANDOFF_TO_CODEX",
-    "HANDOFF_TO_CLAUDE",
-    "HANDOFF_TO_NEXT_AGENT",
-    "BLOCKED"
-  ],
-  "tokenManagement": {
-    "normalUpTo": 50,
-    "checkpointAt": 50,
-    "handoffAt": 60,
-    "transitionRecommendedAt": 70,
-    "criticalAt": 85,
-    "handoffMarkers": [
-      "HANDOFF_TO_CODEX",
-      "HANDOFF_TO_CLAUDE",
-      "HANDOFF_TO_NEXT_AGENT"
-    ],
-    "markerLocation": ".claude/pawpad/_wip.md#ActiveLanes.state"
-  },
-  "verification": {
-    "beforeHandoff": ["<YOUR_ANALYZE_CMD>", "<YOUR_TEST_CMD>"],
-    "afterWork": ["<YOUR_ANALYZE_CMD>", "<YOUR_TEST_CMD>"],
-    "failureAction": "stop"
-  },
-  "laneRules": {
-    "wipFilePattern": ".claude/pawpad/wip/{feature-id}.md",
-    "ownerExclusive": true,
-    "fileLockMap": ".claude/pawpad/_wip.md#Locks",
-    "codemapAppendAnyone": true,
-    "codemapModifyOwnerOnly": true,
-    "completedLaneDestination": ".claude/pawpad/wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md",
-    "neverDelete": true,
-    "ownerTransferOnHandoff": true
-  },
-  "skills": [
-    "memory",
-    "codemap",
-    "codebase-map",
-    "caveman",
-    "lean-code",
-    "clarity",
-    "handoff",
-    "checkpoint",
-    "grill-me",
-    "grill-with-docs",
-    "to-prd",
-    "design",
-    "ctxdb-navigator",
-    "context-saver",
-    "security-check"
-  ],
-  "backup": {
-    "trigger": "setup-script -Force",
-    "location": ".claude/pawpad/backup/{YYYY-MM-DD_HHmm}/",
-    "preservedItems": {
-      "pawpad": ["_wip.md", "_meta.md", "decisions/", "wip/", "handoffs/", "specs/", "codemap/_index.md"],
-      "contextFiles": ["CLAUDE.md", "AGENTS.md", ".claude/HYBRID.md", ".claude/settings.json", ".claude/pawpad-config.json", ".codex/config.json", ".gitignore", "CONTEXT.md", ".claude/SKILLS_MANIFEST.md"],
-      "codexAdapter": [".codex/config.toml", ".codex/hooks.json", ".codex/hooks/", ".agents/skills/"],
-      "claudeHooks": [".claude/hooks/", ".claude/pawpad-config.json"],
-      "ctxdb": [".ctxdb"],
-      "hooks": [".claude/hooks"]
-    },
-    "gitignored": true
-  }
+    "_comment":  "보조 설정. Codex 자동 로드 보장 없음. 핵심 규칙은 AGENTS.md / .claude/HYBRID.md 참조.",
+    "_projectRootNote":  "이 파일은 .codex/ 디렉토리에 위치. 모든 경로는 프로젝트 루트 기준 상대 경로.",
+    "projectName":  "pawpad-toolkit",
+    "stackInfo":  {
+                      "framework":  "<YOUR_FRAMEWORK>",
+                      "language":  "<YOUR_LANGUAGE>",
+                      "stateManagement":  "-",
+                      "database":  "-"
+                  },
+    "contextFiles":  {
+                         "agentGuide":  "AGENTS.md",
+                         "claudeGuide":  "CLAUDE.md",
+                         "hybridWorkflow":  ".claude/HYBRID.md",
+                         "wipRouter":  ".claude/pawpad/_wip.md",
+                         "wipLanes":  ".claude/pawpad/wip/",
+                         "wipDone":  ".claude/pawpad/wip/done/",
+                         "handoffs":  ".claude/pawpad/handoffs/",
+                         "specs":  ".claude/pawpad/specs/",
+                         "completionLog":  ".claude/pawpad/_meta.md",
+                         "symbolRegistry":  ".claude/codemap/_index.md",
+                         "architectureDecisions":  ".claude/pawpad/decisions/arch.md",
+                         "rejectedApproaches":  ".claude/pawpad/decisions/rejected.md",
+                         "glossary":  "CONTEXT.md",
+                         "skillsManifest":  ".claude/SKILLS_MANIFEST.md",
+                         "codexRuntimeConfig":  ".codex/config.toml",
+                         "codexHooks":  ".codex/hooks.json",
+                         "codexHookScripts":  ".codex/hooks/",
+                         "codexRepoSkills":  ".agents/skills/",
+                         "ctxdbIndex":  ".ctxdb/INDEX.md",
+                         "pawpadConfig":  ".claude/pawpad-config.json",
+                         "sessionStartHook":  ".claude/hooks/session-start.ps1",
+                         "ctxdbInjectHook":  ".claude/hooks/ctxdb-inject.ps1",
+                         "preCompactHook":  ".claude/hooks/pre-compact.ps1",
+                         "stopHook":  ".claude/hooks/stop-check.ps1"
+                     },
+    "stateEnum":  [
+                      "WIP",
+                      "SPEC_READY",
+                      "HANDOFF_TO_CODEX",
+                      "HANDOFF_TO_CLAUDE",
+                      "HANDOFF_TO_NEXT_AGENT",
+                      "BLOCKED"
+                  ],
+    "tokenManagement":  {
+                            "normalUpTo":  50,
+                            "checkpointAt":  50,
+                            "handoffAt":  60,
+                            "transitionRecommendedAt":  70,
+                            "criticalAt":  85,
+                            "handoffMarkers":  [
+                                                   "HANDOFF_TO_CODEX",
+                                                   "HANDOFF_TO_CLAUDE",
+                                                   "HANDOFF_TO_NEXT_AGENT"
+                                               ],
+                            "markerLocation":  ".claude/pawpad/_wip.md#ActiveLanes.state"
+                        },
+    "verification":  {
+                         "beforeHandoff":  [
+                                               "<YOUR_ANALYZE_CMD>",
+                                               "<YOUR_TEST_CMD>"
+                                           ],
+                         "afterWork":  [
+                                           "<YOUR_ANALYZE_CMD>",
+                                           "<YOUR_TEST_CMD>"
+                                       ],
+                         "failureAction":  "stop"
+                     },
+    "laneRules":  {
+                      "wipFilePattern":  ".claude/pawpad/wip/{feature-id}.md",
+                      "ownerExclusive":  true,
+                      "fileLockMap":  ".claude/pawpad/_wip.md#Locks",
+                      "codemapAppendAnyone":  true,
+                      "codemapModifyOwnerOnly":  true,
+                      "completedLaneDestination":  ".claude/pawpad/wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md",
+                      "neverDelete":  true,
+                      "ownerTransferOnHandoff":  true
+                  },
+    "skills":  [
+                   "memory",
+                   "codemap",
+                   "codebase-map",
+                   "caveman",
+                   "lean-code",
+                   "feature-architecture",
+                   "clarity",
+                   "handoff",
+                   "checkpoint",
+                   "grill-me",
+                   "grill-with-docs",
+                   "to-prd",
+                   "design",
+                   "ctxdb-navigator",
+                   "context-saver",
+                   "security-check"
+               ],
+    "backup":  {
+                   "trigger":  "setup-script -Force",
+                   "location":  ".claude/pawpad/backup/{YYYY-MM-DD_HHmm}/",
+                   "preservedItems":  {
+                                          "pawpad":  [
+                                                         "_wip.md",
+                                                         "_meta.md",
+                                                         "decisions/",
+                                                         "wip/",
+                                                         "handoffs/",
+                                                         "specs/",
+                                                         "codemap/_index.md"
+                                                     ],
+                                          "contextFiles":  [
+                                                               "CLAUDE.md",
+                                                               "AGENTS.md",
+                                                               ".claude/HYBRID.md",
+                                                               ".claude/settings.json",
+                                                               ".claude/pawpad-config.json",
+                                                               ".codex/config.json",
+                                                               ".gitignore",
+                                                               "CONTEXT.md",
+                                                               ".claude/SKILLS_MANIFEST.md"
+                                                           ],
+                                          "codexAdapter":  [
+                                                               ".codex/config.toml",
+                                                               ".codex/hooks.json",
+                                                               ".codex/hooks/",
+                                                               ".agents/skills/"
+                                                           ],
+                                          "claudeHooks":  [
+                                                              ".claude/hooks/",
+                                                              ".claude/pawpad-config.json"
+                                                          ],
+                                          "ctxdb":  [
+                                                        ".ctxdb"
+                                                    ],
+                                          "hooks":  [
+                                                        ".claude/hooks"
+                                                    ]
+                                      },
+                   "gitignored":  true
+               }
 }

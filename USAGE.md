@@ -201,6 +201,7 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 | `clarity` | 막연한 요청을 명확한 사양으로 |
 | `design` | UI/UX 설계 (토큰·배치·반응형) |
 | `lean-code` | 오버엔지니어링·범위이탈 방지 |
+| `feature-architecture` | feature-first 구조 규율 (참조). 강제는 CLAUDE/AGENTS `Architecture Principles` |
 | `caveman` | 답변 압축 (기본 ON) |
 | `grill-me` | 계획 꼬치꼬치 따져 약점 발견 |
 | `grill-with-docs` | 위 + 용어집/ADR 갱신 |
@@ -210,3 +211,10 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 | `security-check` | 보안 검증 게이트 — secrets/취약점/위험 설정 스캔, 발견 시 완료 BLOCK |
 
 각 스킬 상세는 `.claude/skills/{이름}/SKILL.md`.
+
+---
+
+## 변경 이력
+> PawPad v2.26 FROZEN.
+> - **v2.26**: `feature-architecture` 추가 — feature-first 구조 규율(추후 기능 추가·수정이 쉽고, 사람이 코드 구조를 파악하기 쉽게). `lean-code`(오버엔지니어링 방지)와 짝.
+> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.26.md](docs/CHANGELOG_v2.26.md).

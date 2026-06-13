@@ -1,11 +1,12 @@
 ﻿# Skills Manifest
 
-프로젝트에 설치된 모든 스킬 목록. (15개)
+프로젝트에 설치된 모든 스킬 목록. (16개)
 
 > **환경별 활성 방식**
 > - Claude Code: `/skill` slash 호출 + description 자동 트리거 둘 다 지원.
 > - Codex CLI: **slash 호출 미보장**. `.agents/skills/*/SKILL.md`의 `description` 기반 **자동 트리거 중심**. 명시 호출 필요 시 "use {skill} skill"처럼 자연어로 지시.
 > - caveman/lean-code는 skill이 아니라 **CLAUDE.md/AGENTS.md가 매 응답 강제**한다(아래 참조 강등 참고).
+> - feature-architecture도 참조 스킬 — 실제 강제는 CLAUDE.md/AGENTS.md `Architecture Principles (Feature-First)`(신규/변경 코드만).
 > - statusline은 **Claude Code 전용**(`.claude/settings.json` statusLine). Codex CLI는 statusline 메커니즘이 없어 미적용.
 
 ---
@@ -21,6 +22,7 @@
 | **codebase-map** | `.claude/skills/codebase-map/` | 7축 고수준 코드베이스 맵(아키텍처/구조/관례/관심사), digest-only 주입 |
 | **caveman** | `.claude/skills/caveman/` | 압축 통신 모드 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Response Style` |
 | **lean-code** | `.claude/skills/lean-code/` | LLM 코딩 안티패턴 (참조, 구 karpathy). 실제 강제는 CLAUDE.md/AGENTS.md `Coding Principles` |
+| **feature-architecture** | `.claude/skills/feature-architecture/` | feature-first 구조 규율 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Architecture Principles` |
 | **clarity** | `.claude/skills/clarity/` | 요청 모호도 분석 (5차원 스코어링) |
 | **design** | `.claude/skills/design/` | UI/UX 설계 게이트 (토큰+레이아웃+원칙, 반응형) |
 | **ctxdb-navigator** | `.claude/skills/ctxdb-navigator/` | 키워드 depth 컨텍스트 최소 로드 (토큰 절약) |
