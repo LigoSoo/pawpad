@@ -8,15 +8,6 @@ description: Feature-first structure reference. Enforcement lives in CLAUDE.md/A
 > 이 파일은 별도 호출 대상이 아닌 **상세 참조** — 경계 판단 결정트리 / 스택별 예시 / anti-pattern.
 > **lean-code와 소유권 분리**: lean-code="할지 말지·범위"(restraint), feature-architecture="하기로 한 코드를 어디 둘지"(structure). 접점은 Rule of Three뿐, 모순 없음.
 
-## 업계 근거 (검증된 표준 — 신생 개념 0)
-| 원칙 | 업계 명칭 | 출처 |
-|------|-----------|------|
-| 기능 우선 폴더 | Feature-based / Package by Feature | Angular 스타일가이드, React 커뮤니티 |
-| Colocation | Colocation | React 공식 문서, Kent C. Dodds |
-| 횡단 격리 | Vertical Slice Architecture | Jimmy Bogard |
-| 중복 추출 시점 | Rule of Three | Martin Fowler, Refactoring |
-| 구조가 도메인 드러냄 | Screaming Architecture | Robert C. Martin |
-
 ## 코어 규칙 (CLAUDE.md/AGENTS.md가 강제, 여기선 참조)
 1. **모듈 경계**: colocation + 단일 public boundary
 2. **횡단 import 금지** (단 public boundary 의존은 허용)

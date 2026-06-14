@@ -84,35 +84,17 @@ ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMS
 ON STOP:         agent가 lane 파일 (state + reason) 갱신
 ON 8턴/60% CONTEXT:
   - Claude Code: Stop hook이 8턴마다 checkpoint block -> context-saver(.ctxdb/L2 저장) + codemap 갱신.
-  - Codex: .codex/hooks.json Stop hook이 trust된 경우 8턴마다 checkpoint continuation -> context-saver + codemap 갱신.
+  - Codex: `.codex/hooks.json` Stop hook이 trust된 경우 8턴마다 checkpoint continuation -> context-saver + codemap 갱신.
            hook 미신뢰/비활성 시 수동 수행.
   - 공통: 60% 시 /checkpoint -> 필요시 /handoff {to-agent} {feature}
 
 ## Codex 주의 (native hook adapter)
-- .agents/skills/*/SKILL.md는 Codex repo skill mirror. Claude용 .claude/skills/*와 같은 절차 유지.
-- Codex lifecycle hook은 .codex/hooks.json에 정의. .codex/config.toml은 project config layer 안내 주석만 유지.
-- Codex에서 /hooks 실행 후 project-local hooks를 review/trust해야 자동 실행됨.
-- SessionStart hook:
-  - .ctxdb/.state/codex-turn-count, .ctxdb/.state/codex-loaded reset
-- UserPromptSubmit hook:
-  - .ctxdb/INDEX.md keyword matching
-  - L1<=1 / L2<=2 로드 (같은 session 이미 로드한 ref는 재주입 안 함)
-  - 주입 모드 (.claude/pawpad-config.json ctxdb.injectMode): pointer(기본) = ead: .ctxdb/... 지시만 주입 -> **agent는 지시된 파일을 즉시 read 후 작업 시작 (필수)**; full = 본문 직접 주입
-  - codemap HOT/keyword match 추가 주입 (.claude/pawpad-config.json codemap.inject 토글: auto/on/off, auto는 대형 repo opt-in; pointer 모드에서는 read 지시로 대체)
-  - explicit fallback(L2/progress-current.md)은 재개 의도어(이어서/재개/resume/ctxdb 등)에만 발화 — 프로젝트명 포함 일반 프롬프트는 무주입
-- PreCompact hook:
-  - native compaction 직전 context-saver 유도 + codex-last-compact에 turn 기록
-  - Stop 8턴 checkpoint와 중복 발화 방지(최근 8턴 내 compaction 저장 시 생략)
-- Stop hook:
-  - session별 .ctxdb/.state/codex-turn-count 카운트
-  - 8턴 또는 L2 크기 초과 시 context-saver continuation 요구
-- Unix .codex/hooks/*.sh wrapper는 현재 pwsh 필요. pwsh 부재 시 ctxdb-inject는 hookSpecificOutput skip context, SessionStart/PreCompact/Stop은 {} 반환.
-- Claude Code도 동일 구조: .claude/hooks/ SessionStart(state reset)+UserPromptSubmit(ctxdb-inject)+PreCompact+Stop. 토글은 공통 .claude/pawpad-config.json.
-- .ctxdb/.state/turn-count는 Claude Stop hook 전용. Codex는 codex-turn-count 사용.
-- hook 미신뢰/비활성 시 기존 수동 절차 유지:
-  - ctxdb 로드: ON START step0에서 .ctxdb/INDEX.md 직접 read
-  - ctxdb 저장: 8턴/세션종료/context 60% 추정 시 context-saver 절차 직접 수행
-  - codemap: ON START 직접 read + 작업 후 직접 갱신
+- `.agents/skills/*/SKILL.md` = Codex skill mirror (Claude `.claude/skills/*`와 동일 절차). hook은 `.codex/hooks.json` 정의, `/hooks`로 review/trust해야 자동 실행. `.codex/config.toml`은 안내 주석만.
+- SessionStart: `.ctxdb/.state/codex-turn-count`·`codex-loaded` reset.
+- UserPromptSubmit: INDEX keyword 매칭 → L1<=1/L2<=2 로드(session dedupe). injectMode(pawpad-config.json ctxdb): pointer(기본)=read 지시만 주입→**agent 즉시 read 필수**, full=본문. codemap HOT/match 추가(codemap.inject auto/on/off). explicit fallback(progress-current)은 재개 의도어만.
+- PreCompact: compaction 직전 context-saver + `codex-last-compact` 기록(Stop 8턴과 중복 방지). Stop: `codex-turn-count` 카운트, 8턴/L2 초과 시 context-saver 요구.
+- `.codex/hooks/*.sh`는 `pwsh` 필요; 부재 시 ctxdb-inject skip·나머지 `{}` 반환. `turn-count`=Claude 전용, Codex=`codex-turn-count`.
+- hook 미신뢰/비활성 시 수동: ctxdb 로드(step0 INDEX read) + 저장(8턴/종료/60% context-saver) + codemap(read+갱신).
 
 ## Hybrid Lane Rule
 - 신규 작업: .claude/pawpad/wip/{feature-id}.md 생성 + _wip.md Active Lanes 등록
@@ -123,22 +105,19 @@ ON 8턴/60% CONTEXT:
 - 핸드오프 수신 시: state HANDOFF_TO_* -> WIP, owner -> 받는 agent로 변경
 
 ## Handoff Protocol
-- 60% context 도달 추정 시 정리.
-- snapshot 파일: .claude/pawpad/handoffs/YYYY-MM-DD_HHMM_from_to_feature.md (agent가 템플릿 따라 작성)
-- 템플릿: .claude/pawpad/handoffs/TEMPLATE.md
-- 마커 4종 (state 필드에 기록):
-  - HANDOFF_TO_CODEX (Claude -> Codex)
-  - HANDOFF_TO_CLAUDE (Codex -> Claude)
-  - HANDOFF_TO_NEXT_AGENT (미정)
-  - SPEC_READY (기획 산출물 준비 완료, 구현 agent 대기)
-- 다음 에이전트는 _wip.md Active Lanes의 state/handoff 필드로 snapshot 위치 파악
-- 인수 시: state -> WIP, owner -> 받는 agent로 변경 (인수 사실 명시)
+60% context 추정 시 정리. snapshot: `.claude/pawpad/handoffs/YYYY-MM-DD_HHMM_from_to_feature.md` (TEMPLATE.md 따름). 절차 상세: handoff skill / HYBRID.md.
+state 마커 4종: HANDOFF_TO_CODEX(Claude→Codex), HANDOFF_TO_CLAUDE(Codex→Claude), HANDOFF_TO_NEXT_AGENT(미정), SPEC_READY(기획 완료, 구현 대기).
+다음 agent는 _wip.md Active Lanes state/handoff로 snapshot 위치 파악. 인수 시: state→WIP, owner→받는 agent.
 
 ## Response Style
 한글로 답변. 기술 용어 코드 원문 유지.
 Terse. Drop: a/an/the, filler, pleasantries, hedging.
 Pattern: [대상] [동작] [이유]. [다음 단계].
 ACTIVE EVERY RESPONSE.
+
+### Used Skills 표시 (매 응답 최상단 1줄)
+형식: `🐾 USED Skills: {활성 스킬 | 구분}` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`.
+스킬 없으면 생략 가능. ON START는 📂 ctxdb 라인 아래.
 
 ## Checkpoint (매 응답 종료 전 확인 - hooks 대체)
 자세한 운영은 .claude/HYBRID.md 참조.
@@ -153,5 +132,13 @@ ACTIVE EVERY RESPONSE.
 3. Rule of Three: 2곳 중복 유지, 3곳째 추출.
 4. 신규 = 가산적: feature 내부 추가 중심 + route/menu registry 등 최소 integration edit 허용. integration 파일에 로직 늘면 경계 재검토.
 새 기능 위치: 기존 도메인 하위 / 새 도메인 폴더 / 도메인 비소속 shared 중 하나. 결정트리는 skill 참조.
+
+
+## Idea → PRD Routing
+아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선). skill mirror: `.agents/skills/{clarity,grill-me,to-prd}/`.
+판정: 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
+- 큰 덩어리: clarity 전 "분해 권장"(굵은 조각+순서, 조각별 반복).
+- clarity PASS 후: grill-me 신호(결정 상호의존·트레이드오프 연쇄·스택/아키텍처/스키마 비가역) 있으면 →grill-me, 없으면 →to-prd.
+- grill-me 종결 후: →to-prd.
 
 

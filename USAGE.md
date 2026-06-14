@@ -215,6 +215,7 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 ---
 
 ## 변경 이력
-> PawPad v2.26 FROZEN.
+> PawPad v2.27 FROZEN.
+> - **v2.27**: `Idea → PRD Routing` + `Used Skills` 표시 추가 — 아이디어→PRD 구체화 시 다음 스킬 추천(clarity→grill-me→to-prd, 강제 X) + 매 응답 `🐾 USED Skills` 라인. doc/스킬 군살 제거(중복·불필요 문구).
 > - **v2.26**: `feature-architecture` 추가 — feature-first 구조 규율(추후 기능 추가·수정이 쉽고, 사람이 코드 구조를 파악하기 쉽게). `lean-code`(오버엔지니어링 방지)와 짝.
-> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.26.md](docs/CHANGELOG_v2.26.md).
+> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.27.md](docs/CHANGELOG_v2.27.md).

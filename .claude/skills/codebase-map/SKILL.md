@@ -7,10 +7,7 @@ description: High-level codebase map (7 axes). Use to record or recall architect
 ## 목적
 코드베이스를 7축 고수준 문서로 관리. codemap이 "심볼 위치"(저고도)라면 codebase-map은 "아키텍처/구조/관례/관심사"(고고도).
 신규 세션·신규 에이전트가 트리 전체를 읽지 않고 프로젝트 정신모델을 즉시 획득 -> 토큰 절약.
-
-codemap과의 분리:
-- codemap: domain:symbol -> file:role 1줄 레지스트리. "어디 있나".
-- codebase-map: 축별 산문 문서. "어떻게 구성/동작/약속".
+(codemap=심볼위치, codebase-map=아키텍처. 기록 대상별 선택은 하단 표 참조.)
 
 ## 위치 (canonical)
 .claude/pawpad/codebase/{axis}.md — 축당 1파일.

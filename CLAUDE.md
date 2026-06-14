@@ -71,10 +71,7 @@ Code + doc update = one atomic unit. Keep * markers accurate.
 ## Session Protocol
 ON START (agent가 순차 실행):
   0. read .ctxdb/INDEX.md -> 첫 메시지 키워드 매칭 -> L1<=1 / L2<=2개만 로드 (전체 로드 금지)
-     (SessionStart hook이 INDEX 라우터 주입 + session state reset, codemap은 pawpad-config.json 토글.
-      UserPromptSubmit hook(ctxdb-inject.ps1)이 prompt keyword로 L1/L2 자동 최소로드(session dedupe).
-      PreCompact hook이 compaction 직전 context-saver 유도. 첫 응답 최상단에 검증 1줄:
-      📂 ctxdb: {project} | {last-date} | {loaded L2} | {status})
+     (hook 가용 시 자동 최소로드/checkpoint 주입; 상세: .ctxdb/L1/domain-codex-adapter.md. 첫 응답 최상단 검증 1줄: 📂 ctxdb: {project} | {last-date} | {loaded L2} | {status})
   1. read .claude/pawpad/_wip.md (active lane router)
   2. Active Lanes 있으면 read .claude/HYBRID.md (협업 프로토콜). 없으면 skip -> 신규 lane 생성/핸드오프/인수 시점에 read
   3. assigned lane 있으면 read .claude/pawpad/wip/{lane}.md
@@ -101,12 +98,24 @@ ON 8턴/60% CONTEXT: Stop hook이 8턴마다 checkpoint block -> context-saver(.
 Terse. Drop: a/an/the, filler, pleasantries, hedging.
 Pattern: [대상] [동작] [이유]. [다음 단계].
 ACTIVE EVERY RESPONSE. Off: "normal mode"
--> Full rules: .claude/skills/caveman/SKILL.md## Architecture Principles (Feature-First)
+-> Full rules: .claude/skills/caveman/SKILL.md
+
+### Used Skills 표시 (매 응답 최상단 1줄)
+형식: `🐾 USED Skills: {활성 스킬 | 구분}` (🐾=pawpad). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`.
+caveman 항상 포함(normal mode 제외). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.## Architecture Principles (Feature-First)
 신규/변경 코드만 적용(레거시 강제 리팩토링 X). 상세·결정트리: .claude/skills/feature-architecture/SKILL.md
 1. 모듈 경계: 기능 폴더 응집(colocation) + 단일 public boundary(스택 관례). 내부 직접 import 금지.
 2. 횡단 import 금지: 기능 간 내부 참조 X (public boundary 의존은 OK). 공통은 소속 범위 따라 hoist.
 3. Rule of Three: 2곳 중복 유지, 3곳째 추출.
 4. 신규 = 가산적: feature 내부 추가 중심 + route/menu registry 등 최소 integration edit 허용. integration 파일에 로직 늘면 경계 재검토.
 새 기능 위치: 기존 도메인 하위 / 새 도메인 폴더 / 도메인 비소속 shared 중 하나. 결정트리는 skill 참조.
+
+
+## Idea → PRD Routing
+아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선).
+판정: 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
+- 큰 덩어리: clarity 전 "분해 권장"(굵은 조각+순서, 조각별 반복).
+- clarity PASS 후: grill-me 신호(결정 상호의존·트레이드오프 연쇄·스택/아키텍처/스키마 비가역) 있으면 →grill-me, 없으면 →to-prd.
+- grill-me 종결 후: →to-prd.
 
 
