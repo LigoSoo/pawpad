@@ -1,5 +1,5 @@
 ﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.27 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.27. v2.26 기반 + CLAUDE/AGENTS 항시 섹션 추가: Idea → PRD Routing(아이디어 구체화 시 clarity→grill-me(조건부)→to-prd 추천, 강제 X) + Response Style 하위 Used Skills 표시(매 응답 최상단 🐾 USED Skills 라인). 동시에 doc 군살 제거(hook 내부설명/중복 프로토콜 포인터화) + feature-architecture/codebase-map/design 스킬 슬림(출처장식/중복/복붙 제거, actionable 보존). 배포 표면 동기: 임베디드 $tmplClaudeMd/$tmplAgentsMd 2섹션+슬림, -Upgrade 병합 섹션 리스트('Idea → PRD Routing'), 스킬 임베드 3개, .agents 미러, README/GUIDE/USAGE. 보고서: docs/CHANGELOG_v2.27.md).
+# STATUS: FROZEN (v2.27. v2.26 기반 + CLAUDE/AGENTS 항시 섹션 추가: Idea → PRD Routing(아이디어 구체화 시 clarity→grill-me(조건부)→to-prd 추천, 강제 X) + Response Style 하위 Active Skills 표시(매 응답 최상단 🐾 Active Skills 라인; 재동결 2026-06-15 라벨 USED Skills→Active Skills 정정). 동시에 doc 군살 제거(hook 내부설명/중복 프로토콜 포인터화) + feature-architecture/codebase-map/design 스킬 슬림(출처장식/중복/복붙 제거, actionable 보존). 배포 표면 동기: 임베디드 $tmplClaudeMd/$tmplAgentsMd 2섹션+슬림, -Upgrade 병합 섹션 리스트('Idea → PRD Routing'), 스킬 임베드 3개, .agents 미러, README/GUIDE/USAGE. 보고서: docs/CHANGELOG_v2.27.md).
 #         이전: v2.26 feature-architecture 구조 방법론 추가 — CLAUDE/AGENTS ## Architecture Principles (Feature-First) 항시 코어4 + DoD#9, 신규 feature-architecture 스킬. 보고서: docs/CHANGELOG_v2.26.md).
 #         이전: v2.25 skill rename karpathy -> lean-code(인물명 제거, -Upgrade 구 섹션명 자동 마이그레이션) + 임베디드 템플릿 동기(session-token-slim, statusline ctx-accuracy). 보고서: docs/CHANGELOG_v2.25.md).
 #         이전: v2.24 설치 UI live 모드(진행 바 1줄 제자리 갱신(`r) + 파일 로그 숨김(-ShowLog 복원) + 배너 발바닥 아트 보정. 설치 내용물 변경 없음. 보고서: docs/CHANGELOG_v2.24.md).
@@ -559,12 +559,17 @@ function Merge-MdToolkitSections {
         $pattern = "(?ms)^## $([regex]::Escape($sec))[ \t]*\r?$.*?(?=^## |\z)"
         $tm = [regex]::Match($Template, $pattern)
         if (-not $tm.Success) { continue }
+        # 마지막 템플릿 섹션(예: Response Style)은 here-string 종료 직전이라 trailing newline이
+        # 없을 수 있음. 개행 없는 값이 기존 파일 중간에 splice되면 다음 '## 헤더'가 같은 줄에
+        # 붙으므로 항상 trailing newline 보장.
+        $secText = $tm.Value
+        if (-not $secText.EndsWith("`n")) { $secText += "`r`n" }
         $em = [regex]::Match($existing, $pattern)
         if ($em.Success) {
-            $existing = $existing.Substring(0, $em.Index) + $tm.Value + $existing.Substring($em.Index + $em.Length)
+            $existing = $existing.Substring(0, $em.Index) + $secText + $existing.Substring($em.Index + $em.Length)
         } else {
             if (-not $existing.EndsWith("`n")) { $existing += "`r`n" }
-            $existing += "`r`n" + $tm.Value
+            $existing += "`r`n" + $secText
         }
     }
     try {
@@ -865,8 +870,8 @@ Pattern: [대상] [동작] [이유]. [다음 단계].
 ACTIVE EVERY RESPONSE. Off: "normal mode"
 -> Full rules: .claude/skills/caveman/SKILL.md
 
-### Used Skills 표시 (매 응답 최상단 1줄)
-형식: ``🐾 USED Skills: {활성 스킬 | 구분}`` (🐾=pawpad). 단계 첨자: ``clarity r2/5``, ``grill-me``, ``to-prd``, ``brainstorming``.
+### Active Skills 표시 (매 응답 최상단 1줄)
+형식: ``🐾 Active Skills: {활성 스킬 | 구분}`` (🐾=pawpad). 단계 첨자: ``clarity r2/5``, ``grill-me``, ``to-prd``, ``brainstorming``.
 caveman 항상 포함(normal mode 제외). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.
 "@
 Write-FileContent "CLAUDE.md" $tmplClaudeMd
@@ -991,8 +996,8 @@ Terse. Drop: a/an/the, filler, pleasantries, hedging.
 Pattern: [대상] [동작] [이유]. [다음 단계].
 ACTIVE EVERY RESPONSE.
 
-### Used Skills 표시 (매 응답 최상단 1줄)
-형식: ``🐾 USED Skills: {활성 스킬 | 구분}`` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 첨자: ``clarity r2/5``, ``grill-me``, ``to-prd``, ``brainstorming``.
+### Active Skills 표시 (매 응답 최상단 1줄)
+형식: ``🐾 Active Skills: {활성 스킬 | 구분}`` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 첨자: ``clarity r2/5``, ``grill-me``, ``to-prd``, ``brainstorming``.
 스킬 없으면 생략 가능. ON START는 📂 ctxdb 라인 아래.
 
 ## Checkpoint (매 응답 종료 전 확인 - hooks 대체)
@@ -4684,7 +4689,7 @@ Write-Host ""
 if ($failed -eq 0) {
     Write-Host "프로젝트 초기화 완료 (PawPad v$ver)" -ForegroundColor Green
     Write-Host ""
-    Write-Host "v$ver 누적 (15 스킬 + hook + .ctxdb + codemap + codebase-map + security-check):" -ForegroundColor Cyan
+    Write-Host "v$ver 누적 (16 스킬 + hook + .ctxdb + codemap + codebase-map + security-check):" -ForegroundColor Cyan
     Write-Host "  - Stack 프리셋: $Stack (flutter|node|python|generic 중 -Stack로 선택)" -ForegroundColor Cyan
     Write-Host "  - 크로스플랫폼 hook: Windows=.ps1 / Unix=.sh (설치 OS 자동 선택)" -ForegroundColor Cyan
     Write-Host "  - statusLine: Claude Code 매 턴 컨텍스트 윈도우 사용량(%) 표시" -ForegroundColor Cyan

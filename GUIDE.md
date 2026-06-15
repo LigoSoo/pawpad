@@ -12,7 +12,7 @@
 > v2.24: **설치 UI live 모드** — 진행 바 1줄 제자리 갱신 + 파일 로그 숨김(`-ShowLog`로 복원, 실패/경고는 항상 표시) + 배너 아트 보정
 > v2.25: **lean-code rename** — 코딩 원칙 스킬 karpathy → lean-code(인물명 제거, `-Upgrade` 병합 시 구 섹션명 자동 마이그레이션) + 임베디드 템플릿 동기화(session-token-slim ON START 조건부 read·RECENT 8줄 로테이션, statusline ctx-accuracy)
 > v2.26: **feature-architecture 구조 방법론** — feature-first 구조 규율 추가. CLAUDE/AGENTS `## Architecture Principles (Feature-First)` 항시 코어4(신규/변경 코드만) + DoD#9, 신규 `feature-architecture` 스킬(결정트리/anti-pattern/스택별 public boundary/프레임워크 관례 우선). `lean-code`(억제)와 소유권 분리. `-Upgrade` 병합 대상 섹션 포함
-> v2.27: **Idea → PRD Routing + Used Skills 표시** — CLAUDE/AGENTS 항시 섹션. 아이디어→PRD 구체화 시 다음 스킬 추천(규모 판단→분해 / clarity 정보게이트 / grill-me 설계판단 조건부 / to-prd 문서화, 강제 X). 매 응답 `🐾 USED Skills` 라인으로 현재 스킬 표시. 동시에 doc/스킬 군살 제거(hook 내부설명·중복 프로토콜 포인터화, 출처장식/복붙 삭제 — actionable 무손실). `-Upgrade` 병합 대상 섹션 포함
+> v2.27: **Idea → PRD Routing + Active Skills 표시** — CLAUDE/AGENTS 항시 섹션. 아이디어→PRD 구체화 시 다음 스킬 추천(규모 판단→분해 / clarity 정보게이트 / grill-me 설계판단 조건부 / to-prd 문서화, 강제 X). 매 응답 `🐾 Active Skills` 라인으로 현재 스킬 표시. 동시에 doc/스킬 군살 제거(hook 내부설명·중복 프로토콜 포인터화, 출처장식/복붙 삭제 — actionable 무손실). `-Upgrade` 병합 대상 섹션 포함
 
 ---
 

@@ -115,8 +115,8 @@ Terse. Drop: a/an/the, filler, pleasantries, hedging.
 Pattern: [대상] [동작] [이유]. [다음 단계].
 ACTIVE EVERY RESPONSE.
 
-### Used Skills 표시 (매 응답 최상단 1줄)
-형식: `🐾 USED Skills: {활성 스킬 | 구분}` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`.
+### Active Skills 표시 (매 응답 최상단 1줄)
+형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`.
 스킬 없으면 생략 가능. ON START는 📂 ctxdb 라인 아래.
 
 ## Checkpoint (매 응답 종료 전 확인 - hooks 대체)
@@ -125,7 +125,8 @@ ACTIVE EVERY RESPONSE.
 - [ ] 신규 파일 생성 시 _index.md 심볼 추가됐나?
 - [ ] 태스크 완료 시 lane을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append + git commit(git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록) 됐나?
 - [ ] context 60% 추정 초과 시 /handoff 또는 /checkpoint 실행했나?
-- [ ] 핸드오프 인수 시 owner를 자기 이름으로 변경했나?## Architecture Principles (Feature-First)
+- [ ] 핸드오프 인수 시 owner를 자기 이름으로 변경했나?
+## Architecture Principles (Feature-First)
 신규/변경 코드만 적용(레거시 강제 리팩토링 X). 상세·결정트리: .agents/skills/feature-architecture/SKILL.md
 1. 모듈 경계: 기능 폴더 응집(colocation) + 단일 public boundary(스택 관례). 내부 직접 import 금지.
 2. 횡단 import 금지: 기능 간 내부 참조 X (public boundary 의존은 OK). 공통은 소속 범위 따라 hoist.

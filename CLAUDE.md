@@ -100,22 +100,22 @@ Pattern: [대상] [동작] [이유]. [다음 단계].
 ACTIVE EVERY RESPONSE. Off: "normal mode"
 -> Full rules: .claude/skills/caveman/SKILL.md
 
-### Used Skills 표시 (매 응답 최상단 1줄)
-형식: `🐾 USED Skills: {활성 스킬 | 구분}` (🐾=pawpad). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`.
-caveman 항상 포함(normal mode 제외). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.## Architecture Principles (Feature-First)
-신규/변경 코드만 적용(레거시 강제 리팩토링 X). 상세·결정트리: .claude/skills/feature-architecture/SKILL.md
-1. 모듈 경계: 기능 폴더 응집(colocation) + 단일 public boundary(스택 관례). 내부 직접 import 금지.
-2. 횡단 import 금지: 기능 간 내부 참조 X (public boundary 의존은 OK). 공통은 소속 범위 따라 hoist.
-3. Rule of Three: 2곳 중복 유지, 3곳째 추출.
-4. 신규 = 가산적: feature 내부 추가 중심 + route/menu registry 등 최소 integration edit 허용. integration 파일에 로직 늘면 경계 재검토.
-새 기능 위치: 기존 도메인 하위 / 새 도메인 폴더 / 도메인 비소속 shared 중 하나. 결정트리는 skill 참조.
-
-
+### Active Skills 표시 (매 응답 최상단 1줄)
+형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`.
+caveman 항상 포함(normal mode 제외). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.
 ## Idea → PRD Routing
 아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선).
 판정: 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
 - 큰 덩어리: clarity 전 "분해 권장"(굵은 조각+순서, 조각별 반복).
 - clarity PASS 후: grill-me 신호(결정 상호의존·트레이드오프 연쇄·스택/아키텍처/스키마 비가역) 있으면 →grill-me, 없으면 →to-prd.
 - grill-me 종결 후: →to-prd.
+
+## Architecture Principles (Feature-First)
+신규/변경 코드만 적용(레거시 강제 리팩토링 X). 상세·결정트리: .claude/skills/feature-architecture/SKILL.md
+1. 모듈 경계: 기능 폴더 응집(colocation) + 단일 public boundary(스택 관례). 내부 직접 import 금지.
+2. 횡단 import 금지: 기능 간 내부 참조 X (public boundary 의존은 OK). 공통은 소속 범위 따라 hoist.
+3. Rule of Three: 2곳 중복 유지, 3곳째 추출.
+4. 신규 = 가산적: feature 내부 추가 중심 + route/menu registry 등 최소 integration edit 허용. integration 파일에 로직 늘면 경계 재검토.
+새 기능 위치: 기존 도메인 하위 / 새 도메인 폴더 / 도메인 비소속 shared 중 하나. 결정트리는 skill 참조.
 
 
