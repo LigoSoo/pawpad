@@ -101,7 +101,7 @@ ACTIVE EVERY RESPONSE. Off: "normal mode"
 -> Full rules: .claude/skills/caveman/SKILL.md
 
 ### Active Skills 표시 (매 응답 최상단 1줄)
-형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`.
+형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`, `design`, `mockup lo/hi`.
 caveman 항상 포함(normal mode 제외). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.
 ## Idea → PRD Routing
 아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선).
@@ -109,6 +109,15 @@ caveman 항상 포함(normal mode 제외). 스킬 없으면 caveman만. ON START
 - 큰 덩어리: clarity 전 "분해 권장"(굵은 조각+순서, 조각별 반복).
 - clarity PASS 후: grill-me 신호(결정 상호의존·트레이드오프 연쇄·스택/아키텍처/스키마 비가역) 있으면 →grill-me, 없으면 →to-prd.
 - grill-me 종결 후: →to-prd.
+- UI/화면 기획 시: design(토큰/레이아웃 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
+### 자동제안 (단계 경계)
+agent가 흐름 중 다음 시점에 다음 스킬 또는 목업을 **1회 추천**(강제 X):
+- PRD/PRD-tree 생성·갱신 직후 → mockup 추천.
+- clarity/grill-me/grill-with-docs/to-prd 종료 시 → 다음 단계 스킬 추천.
+- 매 응답 판단 X(과추천 방지). 거절 시 같은 산출물 버전엔 재제안 X → 다음 단계 경계까지 침묵.
+- 추천 대상 한정: clarity·grill-me·grill-with-docs·to-prd·design·mockup·brainstorming. 나머지(memory·codemap·security-check·checkpoint·handoff·context-saver 등)는 Session Protocol/DoD/hook이 트리거 → 자동제안 제외(이중 트리거 방지).
+### 선택지 질문 = 체크박스
+기획/설계 스킬(clarity·grill-me·grill-with-docs·to-prd·design·mockup) 진행 중 **선택지가 N개인 질문은 AskUserQuestion(체크박스)** 로 받는다. 자유서술·수치 입력은 텍스트 유지.
 
 ## Architecture Principles (Feature-First)
 신규/변경 코드만 적용(레거시 강제 리팩토링 X). 상세·결정트리: .claude/skills/feature-architecture/SKILL.md

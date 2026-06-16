@@ -13,6 +13,7 @@
 |------------------|------|----------|
 | "뭘 만들지 머릿속이 안 정리됐어" | `/clarity` | 애매한 부분을 콕 집어 질문 → 명확한 사양으로 정리 |
 | "화면 좀 예쁘고 일관되게 해줘" | `/design` | 색·간격·배치 규칙(디자인 토큰) 잡고 반응형까지 |
+| "기획한 거 화면으로 미리 보고 싶어" | `/mockup` | PRD를 HTML 시안으로 — 와이어프레임/디자인, 어느 메뉴에 있는지 확인 |
 | "AI가 시키지도 않은 걸 막 고쳐!" | `/lean-code` | "딱 시킨 것만" 고삐 잡기 (오버엔지니어링 방지) |
 | "이 기능 코드가 어디 있더라?" | (자동) codemap | 위치+역할 즉시 — 안 찾아도 알려줌 |
 | "이 프로젝트 구조/관례가 어떻게 돼?" | `/codebase-map` | 아키텍처·구조·관례·관심사 7축 고수준 맵 (트리 안 뒤져도 정신모델) |
@@ -163,7 +164,7 @@
 ### 한 줄 요약 (스킬 흐름)
 ```
 세션시작(memory/ctxdb) → /clarity → /grill-me(/grill-with-docs)
-  → /to-prd → /design → 구현(codemap+lean-code, caveman) → /security-check(커밋/완료 전)
+  → /to-prd → /design → /mockup(화면 시각화) → 구현(codemap+lean-code, caveman) → /security-check(커밋/완료 전)
   → /checkpoint(context-saver) → 필요시 /handoff → 완료
 ```
 > **전부 외울 필요 없어요.** 흐름만 감 잡고, 막히는 지점에서 해당 스킬을 부르면 됩니다.
@@ -200,6 +201,7 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 | `codebase-map` | 7축 고수준 맵 — 아키텍처/구조/관례/관심사 (digest-only 주입) |
 | `clarity` | 막연한 요청을 명확한 사양으로 |
 | `design` | UI/UX 설계 (토큰·배치·반응형) |
+| `mockup` | PRD-tree→HTML 목업 시각화 (와이어프레임/디자인). 어느 메뉴에 있는지 코딩 전 확인 |
 | `lean-code` | 오버엔지니어링·범위이탈 방지 |
 | `feature-architecture` | feature-first 구조 규율 (참조). 강제는 CLAUDE/AGENTS `Architecture Principles` |
 | `caveman` | 답변 압축 (기본 ON) |
@@ -215,7 +217,8 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 ---
 
 ## 변경 이력
-> PawPad v2.27 FROZEN.
+> PawPad v2.28 FROZEN.
+> - **v2.28**: `/mockup` 스킬 추가 — PRD-tree를 단일 HTML 목업(와이어프레임 lo-fi / 디자인 hi-fi)으로 시각화, Feature ID로 메뉴 위치 추적 + drift 경고. 기획/설계 스킬 선택지 질문은 체크박스로, 단계 경계에서 다음 스킬·목업 자동제안.
 > - **v2.27**: `Idea → PRD Routing` + `Active Skills` 표시 추가 — 아이디어→PRD 구체화 시 다음 스킬 추천(clarity→grill-me→to-prd, 강제 X) + 매 응답 `🐾 Active Skills` 라인. doc/스킬 군살 제거(중복·불필요 문구).
 > - **v2.26**: `feature-architecture` 추가 — feature-first 구조 규율(추후 기능 추가·수정이 쉽고, 사람이 코드 구조를 파악하기 쉽게). `lean-code`(오버엔지니어링 방지)와 짝.
-> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.27.md](docs/CHANGELOG_v2.27.md).
+> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.28.md](docs/CHANGELOG_v2.28.md).
