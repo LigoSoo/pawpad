@@ -40,6 +40,8 @@
                       "HANDOFF_TO_CODEX",
                       "HANDOFF_TO_CLAUDE",
                       "HANDOFF_TO_NEXT_AGENT",
+                      "REVIEW_REQUESTED",
+                      "REVIEW_DONE",
                       "BLOCKED"
                   ],
     "tokenManagement":  {
@@ -91,6 +93,7 @@
                    "to-prd",
                    "design",
                    "mockup",
+                   "review",
                    "ctxdb-navigator",
                    "context-saver",
                    "security-check"

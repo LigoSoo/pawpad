@@ -23,6 +23,7 @@
 | "대화가 길어져서 느리고 까먹어" | `/checkpoint` → 새 세션 | 상태 저장 → 새 창에서 이어서 작업 |
 | "다른 AI(Codex)한테 넘기고 싶어" | `/handoff` | 작업을 상태째로 인계 |
 | "커밋/완료 전에 보안 문제 없나 봐줘" | `/security-check` | 하드코딩 비밀번호·API key·취약점·위험 설정 스캔 → 발견 시 완료 막고 조치 제안 |
+| "다 만든 거 다른 시각으로 검토받고 싶어" | `/review` | 변경을 문서로 정리해 다른 세션/에이전트가 직접 검증 리뷰 → 받아서 수정 (codex보다 저토큰) |
 | "답변이 너무 길어, 짧게" | `/caveman` | 군더더기 빼고 압축 (켜져 있음, 끄려면 "normal mode") |
 | "토큰 아끼고 싶어" | (자동) .ctxdb | 관련된 부분만 골라 읽음 |
 
@@ -164,7 +165,7 @@
 ### 한 줄 요약 (스킬 흐름)
 ```
 세션시작(memory/ctxdb) → /clarity → /grill-me(/grill-with-docs)
-  → /to-prd → /design → /mockup(화면 시각화) → 구현(codemap+lean-code, caveman) → /security-check(커밋/완료 전)
+  → /to-prd → /design → /mockup(화면 시각화) → 구현(codemap+lean-code, caveman) → /security-check(커밋/완료 전) → /review(고위험 교차검증)
   → /checkpoint(context-saver) → 필요시 /handoff → 완료
 ```
 > **전부 외울 필요 없어요.** 흐름만 감 잡고, 막히는 지점에서 해당 스킬을 부르면 됩니다.
@@ -211,14 +212,16 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 | `checkpoint` | 컨텍스트 차오를 때 중간 저장 |
 | `handoff` | 다른 AI/세션으로 작업 인계 |
 | `security-check` | 보안 검증 게이트 — secrets/취약점/위험 설정 스캔, 발견 시 완료 BLOCK |
+| `review` | 문서형 크로스에이전트/세션 리뷰 라운드트립 (codex exec 보완·저토큰) |
 
 각 스킬 상세는 `.claude/skills/{이름}/SKILL.md`.
 
 ---
 
 ## 변경 이력
-> PawPad v2.28 FROZEN.
+> PawPad v2.29 FROZEN.
+> - **v2.29**: `/review` 스킬 추가 — 문서형 크로스에이전트/세션 리뷰 라운드트립(request→리뷰→result→수정). codex exec 자율 리뷰의 저토큰 보완, work owner 불변+reviewer 필드, 종결 요청측 재량.
 > - **v2.28**: `/mockup` 스킬 추가 — PRD-tree를 단일 HTML 목업(와이어프레임 lo-fi / 디자인 hi-fi)으로 시각화, Feature ID로 메뉴 위치 추적 + drift 경고. 기획/설계 스킬 선택지 질문은 체크박스로, 단계 경계에서 다음 스킬·목업 자동제안.
 > - **v2.27**: `Idea → PRD Routing` + `Active Skills` 표시 추가 — 아이디어→PRD 구체화 시 다음 스킬 추천(clarity→grill-me→to-prd, 강제 X) + 매 응답 `🐾 Active Skills` 라인. doc/스킬 군살 제거(중복·불필요 문구).
 > - **v2.26**: `feature-architecture` 추가 — feature-first 구조 규율(추후 기능 추가·수정이 쉽고, 사람이 코드 구조를 파악하기 쉽게). `lean-code`(오버엔지니어링 방지)와 짝.
-> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.28.md](docs/CHANGELOG_v2.28.md).
+> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.29.md](docs/CHANGELOG_v2.29.md).

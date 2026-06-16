@@ -1,6 +1,6 @@
 ﻿# Skills Manifest
 
-프로젝트에 설치된 모든 스킬 목록. (17개)
+프로젝트에 설치된 모든 스킬 목록. (18개)
 
 > **환경별 활성 방식**
 > - Claude Code: `/skill` slash 호출 + description 자동 트리거 둘 다 지원.
@@ -39,6 +39,7 @@
 | **grill-with-docs** | `.claude/skills/grill-with-docs/` | 문서 기반 그릴링 (`.claude/pawpad/decisions/arch.md` ADR 갱신) |
 | **to-prd** | `.claude/skills/to-prd/` | 대화 → PRD (`.claude/pawpad/specs/` 저장 + SPEC_READY) |
 | **mockup** | `.claude/skills/mockup/` | PRD-tree→단일 HTML 목업 시각화 (lo/hi-fi, Feature ID 태깅 + drift 경고) |
+| **review** | `.claude/skills/review/` | 문서형 크로스에이전트/세션 리뷰 라운드트립 (codex exec 보완·저토큰, request 직접검증 체크리스트) |
 
 ---
 

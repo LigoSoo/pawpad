@@ -103,10 +103,11 @@ ON 8턴/60% CONTEXT:
 - codemap/_index.md: 추가는 누구나, 수정/삭제는 lane owner만.
 - 완료 lane: wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 (삭제 금지, audit 보존, timestamp로 재작업 보존)
 - 핸드오프 수신 시: state HANDOFF_TO_* -> WIP, owner -> 받는 agent로 변경
+- 리뷰(review skill): state REVIEW_REQUESTED(요청, work owner 불변·`reviewer` 지정) ↔ REVIEW_DONE(완료). 리뷰어는 work lane 미점유 — review state·result 경로만 갱신, work 내용 수정 X. 종결은 요청측 재량.
 
 ## Handoff Protocol
 60% context 추정 시 정리. snapshot: `.claude/pawpad/handoffs/YYYY-MM-DD_HHMM_from_to_feature.md` (TEMPLATE.md 따름). 절차 상세: handoff skill / HYBRID.md.
-state 마커 4종: HANDOFF_TO_CODEX(Claude→Codex), HANDOFF_TO_CLAUDE(Codex→Claude), HANDOFF_TO_NEXT_AGENT(미정), SPEC_READY(기획 완료, 구현 대기).
+state 마커: HANDOFF_TO_CODEX(Claude→Codex), HANDOFF_TO_CLAUDE(Codex→Claude), HANDOFF_TO_NEXT_AGENT(미정), SPEC_READY(기획 완료, 구현 대기), REVIEW_REQUESTED/REVIEW_DONE(리뷰 라운드트립, work owner 불변 — review skill).
 다음 agent는 _wip.md Active Lanes state/handoff로 snapshot 위치 파악. 인수 시: state→WIP, owner→받는 agent.
 
 ## Response Style
@@ -116,7 +117,7 @@ Pattern: [대상] [동작] [이유]. [다음 단계].
 ACTIVE EVERY RESPONSE.
 
 ### Active Skills 표시 (매 응답 최상단 1줄)
-형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`, `design`, `mockup lo/hi`.
+형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`, `design`, `mockup lo/hi`, `review`.
 스킬 없으면 생략 가능. ON START는 📂 ctxdb 라인 아래.
 
 ## Checkpoint (매 응답 종료 전 확인 - hooks 대체)
@@ -142,7 +143,7 @@ ACTIVE EVERY RESPONSE.
 - grill-me 종결 후: →to-prd.
 - UI/화면 기획 시: design(토큰/레이아웃 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
 ### 자동제안 (단계 경계)
-다음 시점에 다음 스킬 또는 목업 1회 추천(강제 X): PRD/PRD-tree 갱신 직후→mockup, clarity/grill-me/grill-with-docs/to-prd 종료 시→다음 스킬. 매 응답 판단 X. 거절 시 다음 단계 경계까지 침묵. 대상 한정: clarity·grill-me·grill-with-docs·to-prd·design·mockup·brainstorming(나머지는 Checkpoint/hook 트리거 → 제외).
+다음 시점에 다음 스킬 또는 목업 1회 추천(강제 X): PRD/PRD-tree 갱신 직후→mockup, clarity/grill-me/grill-with-docs/to-prd 종료 시→다음 스킬. 매 응답 판단 X. 거절 시 다음 단계 경계까지 침묵. 대상 한정: clarity·grill-me·grill-with-docs·to-prd·design·mockup·brainstorming(나머지는 Checkpoint/hook 트리거 → 제외). 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료 직전 고위험·배포본 영향이면 /review 권장(강제 X); 광범위·맹점우려·설치 스크립트는 codex exec 에스컬레이션.
 ### 선택지 질문 = 체크박스
 기획/설계 스킬 진행 중 선택지 N개 질문은 AskUserQuestion(체크박스)로, 자유서술·수치는 텍스트로.
 
