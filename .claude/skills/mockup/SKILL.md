@@ -48,7 +48,7 @@ Instruction skill. PowerShell command 아님. agent가 절차를 따라 HTML을 
 
 ## 동기화 = 단방향 (PRD-tree = source of truth)
 - PRD-tree가 단일 진실원. 목업은 트리의 시각 투영.
-- 기획 변경은 **PRD-tree(+PRD)를 먼저 수정**하고 목업 재생성. 코드+문서 원자적 갱신 규율 준수.
+- 기획 변경은 **PRD-tree(인덱스) + 해당 src/prd/{area}.md를 먼저 수정**하고 목업 재생성. 코드+문서 원자적 갱신 규율 준수.
 - 목업에서 직접 고친 내용을 트리로 역반영하지 않음(SoT 이원화 금지).
 
 ## drift 검사 (생성 시마다 필수)

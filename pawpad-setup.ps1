@@ -1,6 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.30 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.30. v2.29 기반 + Verification Evidence 아카이브 분리 — lane "## Verification Evidence"는 최근 2건만 유지, 초과분은 .claude/pawpad/verifications/{feature-id}-archive.md 상단 append(newest first) + 포인터 1줄. 소형 작업 ON START lane 비대 토큰 절감(audit-only 검증근거 핫패스 분리, 무손실 on-demand). DoD#7·Doc Update Rules 갱신 + HYBRID.md "Verification Evidence" 섹션 신설(기존 dangling 포인터 해소). 배포 표면 동기: 임베디드 $tmplClaudeMd/$tmplAgentsMd, HYBRID.md 임베드, README/GUIDE/USAGE, codemap. 보고서: docs/CHANGELOG_v2.30.md).
-#         이전: v2.29 신규 review 스킬(문서형 크로스에이전트/세션 리뷰 라운드트립). 보고서: docs/CHANGELOG_v2.29.md).
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.31 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.31. v2.30 기반 + 문서/lane 토큰 sharding 2종 묶음(작업 단위 커서 2 lane 분리, 의도 동일 → 단일 버전) — ① PRD Area-Sharding: 프로젝트 PRD를 도메인 영역별 src/prd/{area}.md로 분할, PRD-tree.md=인덱스(영역 상태 마커 ✓/🔨/⬜), lane feature-id 접두 라우팅으로 현재 영역만 read + mockup PRD.md deprecate 정정. ② Completed Task Log: lane ✅완료 작업항목을 verifications/{feature-id}-tasklog.md로 이월(미완/진행 전수 + 최근 세션 완료분 + 카운트 포인터), HYBRID "Completed Task Log" 섹션 + checkpoint·Session Protocol ON TASK DONE 배선, 트리거 checkpoint+task-done. 둘 다 v2.30(Verification Evidence) 자매: 완료/audit 분리·활성만 hot·instruction 기반(hook 무관). 배포 표면 동기: $tmplClaudeMd/$tmplAgentsMd Doc Rules·읽기규율·ON TASK DONE, HYBRID 임베드, mockup·checkpoint 임베드+.agents 미러, README/GUIDE/USAGE, codemap. 보고서: docs/CHANGELOG_v2.31.md).
+#         이전: v2.30 Verification Evidence 아카이브 분리(lane 검증근거 최근 2건 cap + verifications/{feature-id}-archive.md). 보고서: docs/CHANGELOG_v2.30.md).
 #         이전: v2.25 skill rename karpathy -> lean-code(인물명 제거, -Upgrade 구 섹션명 자동 마이그레이션) + 임베디드 템플릿 동기(session-token-slim, statusline ctx-accuracy). 보고서: docs/CHANGELOG_v2.25.md).
 #         이전: v2.24 설치 UI live 모드(진행 바 1줄 제자리 갱신(`r) + 파일 로그 숨김(-ShowLog 복원) + 배너 발바닥 아트 보정. 설치 내용물 변경 없음. 보고서: docs/CHANGELOG_v2.24.md).
 #         이전: v2.23 설치 UI 도입(paw 배너 + 28단계 진행 바 + 실측 체크리스트, Codex 리뷰 PASS. 보고서: docs/CHANGELOG_v2.23.md).
@@ -48,7 +48,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.30"
+$ver = "2.31"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -824,11 +824,12 @@ $($p.Conventions)
 | Change           | Update target                            |
 |------------------|------------------------------------------|
 | Feature spec     | .claude/pawpad/specs/{feature-id}.md        |
-| Feature/UX       | src/PRD-tree.md                          |
-| New feature      | src/PRD-tree.md + src/PRD.md             |
-| New screen/route | Feature ID in PRD-tree.md                |
+| Feature/UX       | src/prd/{area}.md (영역 shard)            |
+| New feature      | src/PRD-tree.md(인덱스 행) + src/prd/{area}.md(상세) |
+| New screen/route | Feature ID in PRD-tree.md (인덱스)        |
 | 결정 기록 위치    | .claude/HYBRID.md Decision Placement Matrix 참조 |
 | 검증 결과        | lane ``## Verification Evidence`` 최근 2건, 초과분 → .claude/pawpad/verifications/{feature-id}-archive.md (상단 append) |
+PRD 상세 read: PRD-tree(인덱스) → lane feature-id 접두로 영역 해석 → 해당 src/prd/{area}.md만 (✓완료 영역 skip, 부족 시 on-demand). PRD-tree 영역 행에 상태 마커 ✓완료/🔨진행/⬜예정.
 Code + doc update = one atomic unit. Keep * markers accurate.
 
 ## Session Protocol
@@ -843,7 +844,7 @@ ON START (agent가 순차 실행):
   6. read .claude/pawpad/_meta.md
   7. .claude/codemap/_index.md는 코드 수정 작업 시작 시점에 read (질문/분석 전용 세션은 skip)
 ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
-ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함)
+ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함)
 ON STOP:         agent가 lane 파일 (state + reason) 갱신
 ON 8턴/60% CONTEXT: Stop hook이 8턴마다 checkpoint block -> context-saver(.ctxdb/L2 저장) + codemap 갱신. PreCompact hook이 native compaction 직전 동일 저장 유도(최근 8턴 내 발생 시 Stop checkpoint 중복 생략). 60% 시 /checkpoint -> 필요시 /handoff
 -> Detail: .claude/skills/memory/SKILL.md | .claude/skills/codemap/SKILL.md | .claude/skills/ctxdb-navigator/SKILL.md | .claude/skills/context-saver/SKILL.md | .claude/skills/handoff/SKILL.md | .claude/skills/checkpoint/SKILL.md
@@ -946,11 +947,12 @@ $($p.Conventions)
 | Change           | Update target                            |
 |------------------|------------------------------------------|
 | Feature spec     | .claude/pawpad/specs/{feature-id}.md        |
-| Feature/UX       | src/PRD-tree.md                          |
-| New feature      | src/PRD-tree.md + src/PRD.md             |
-| New screen/route | Feature ID in PRD-tree.md                |
+| Feature/UX       | src/prd/{area}.md (영역 shard)            |
+| New feature      | src/PRD-tree.md(인덱스 행) + src/prd/{area}.md(상세) |
+| New screen/route | Feature ID in PRD-tree.md (인덱스)        |
 | 결정 기록 위치    | .claude/HYBRID.md Decision Placement Matrix 참조 |
 | 검증 결과        | lane ``## Verification Evidence`` 최근 2건, 초과분 → .claude/pawpad/verifications/{feature-id}-archive.md (상단 append) |
+PRD 상세 read: PRD-tree(인덱스) → lane feature-id 접두로 영역 해석 → 해당 src/prd/{area}.md만 (✓완료 영역 skip, 부족 시 on-demand). PRD-tree 영역 행에 상태 마커 ✓완료/🔨진행/⬜예정.
 Code + doc update = one atomic unit. Keep * markers accurate.
 
 ## Session Protocol
@@ -965,7 +967,7 @@ ON START (agent가 순차 실행):
   6. read .claude/pawpad/_meta.md
   7. .claude/codemap/_index.md는 코드 수정 작업 시작 시점에 read (질문/분석 전용 세션은 skip)
 ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
-ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함)
+ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함)
 ON STOP:         agent가 lane 파일 (state + reason) 갱신
 ON 8턴/60% CONTEXT:
   - Claude Code: Stop hook이 8턴마다 checkpoint block -> context-saver(.ctxdb/L2 저장) + codemap 갱신.
@@ -3328,7 +3330,7 @@ LLM 자체 측정 불가. agent가 다음 신호로 추정:
 
 ## 실행 절차 (agent가 순차 수행)
 1. 현재 작업 lane 파일 갱신:
-   - 완료/미완 정리
+   - 완료/미완 정리 — 완료(✅) 작업항목은 최근 세션분만 lane 유지, 이전 것은 .claude/pawpad/verifications/{feature-id}-tasklog.md로 이월(HYBRID Completed Task Log). 검증근거도 동일(HYBRID Verification Evidence).
    - 다음 단계 명시
    - 수정 중 파일 목록
 2. codemap/_index.md 갱신:
@@ -3653,7 +3655,7 @@ Instruction skill. PowerShell command 아님. agent가 절차를 따라 HTML을 
 
 ## 동기화 = 단방향 (PRD-tree = source of truth)
 - PRD-tree가 단일 진실원. 목업은 트리의 시각 투영.
-- 기획 변경은 **PRD-tree(+PRD)를 먼저 수정**하고 목업 재생성. 코드+문서 원자적 갱신 규율 준수.
+- 기획 변경은 **PRD-tree(인덱스) + 해당 src/prd/{area}.md를 먼저 수정**하고 목업 재생성. 코드+문서 원자적 갱신 규율 준수.
 - 목업에서 직접 고친 내용을 트리로 역반영하지 않음(SoT 이원화 금지).
 
 ## drift 검사 (생성 시마다 필수)
@@ -4498,6 +4500,21 @@ lane "## Verification Evidence" 섹션은 검증 근거(테스트/분석/리뷰 
 
 ---
 
+## Completed Task Log
+
+lane의 작업추적 섹션(진행/그룹/Backlog/Next Steps 등)에 쌓이는 완료(✅) 작업항목은 상세 구현노트째 누적되어 세션 재개 시 매번 재read 비용을 키운다. Verification Evidence와 동일하게 경량 유지한다.
+
+규칙:
+1. 미완/진행 항목(⏳/⚠/🆕/무마커)은 항상 lane에 전수 유지.
+2. 완료(✅) 항목은 "다음 세션 재개 포인트" 날짜(직전 checkpoint) 이후 것만 lane 유지, 그 이전 ✅는 .claude/pawpad/verifications/{feature-id}-tasklog.md 상단에 append (newest first) 후 lane에서 제거.
+3. lane 완료 영역 말미에 포인터 1줄 유지:
+   "> 완료 작업 M건 -> .claude/pawpad/verifications/{feature-id}-tasklog.md"
+4. 이월 시점: ON checkpoint(/checkpoint·60% rollover) 및 ON TASK DONE 직전. handoff는 checkpoint 절차에 포함.
+
+근거: 후속 세션은 미완/진행 + 최근 완료 맥락만 필요하고, 과거 완료 항목은 audit(미사용)이다. lane은 archive 2종을 둔다 — {feature-id}-archive.md(검증근거) + {feature-id}-tasklog.md(완료작업). 둘 다 추가만, 수정·삭제 금지(audit).
+
+---
+
 ## Owner Transfer (인수 시 필수)
 
 핸드오프 받는 agent는 작업 시작 전 owner 변경 필수:
@@ -4926,7 +4943,7 @@ if ($failed -eq 0) {
     Write-Host "  - 설치 UI: paw 배너 + 진행 바 live 1줄 갱신 + 실측 체크리스트 (-ShowLog로 파일 상세 로그)" -ForegroundColor Cyan
     Write-Host "  - lean-code: 과설계/범위이탈 방지 원칙 스킬 (구 karpathy, v2.25 rename + 병합 마이그레이션)" -ForegroundColor Cyan
     Write-Host "  - feature-architecture: feature-first 구조 규율 스킬 (CLAUDE/AGENTS Architecture Principles 강제)" -ForegroundColor Cyan
-    Write-Host "  - 상세: docs/CHANGELOG_v2.30.md" -ForegroundColor Cyan
+    Write-Host "  - 상세: docs/CHANGELOG_v2.31.md" -ForegroundColor Cyan
     Write-Host ""
 } else {
     Write-Host "$failed 개 항목 실패. 권한 확인 후 다시 시도하세요." -ForegroundColor Yellow

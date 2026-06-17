@@ -35,7 +35,7 @@ LLM 자체 측정 불가. agent가 다음 신호로 추정:
 
 ## 실행 절차 (agent가 순차 수행)
 1. 현재 작업 lane 파일 갱신:
-   - 완료/미완 정리
+   - 완료/미완 정리 — 완료(✅) 작업항목은 최근 세션분만 lane 유지, 이전 것은 .claude/pawpad/verifications/{feature-id}-tasklog.md로 이월(HYBRID Completed Task Log). 검증근거도 동일(HYBRID Verification Evidence).
    - 다음 단계 명시
    - 수정 중 파일 목록
 2. codemap/_index.md 갱신:

@@ -61,11 +61,12 @@ src/
 | Change           | Update target                            |
 |------------------|------------------------------------------|
 | Feature spec     | .claude/pawpad/specs/{feature-id}.md        |
-| Feature/UX       | src/PRD-tree.md                          |
-| New feature      | src/PRD-tree.md + src/PRD.md             |
-| New screen/route | Feature ID in PRD-tree.md                |
+| Feature/UX       | src/prd/{area}.md (영역 shard)            |
+| New feature      | src/PRD-tree.md(인덱스 행) + src/prd/{area}.md(상세) |
+| New screen/route | Feature ID in PRD-tree.md (인덱스)        |
 | 결정 기록 위치    | .claude/HYBRID.md Decision Placement Matrix 참조 |
 | 검증 결과        | lane `## Verification Evidence` 최근 2건, 초과분 → .claude/pawpad/verifications/{feature-id}-archive.md (상단 append) |
+PRD 상세 read: PRD-tree(인덱스) → lane feature-id 접두로 영역 해석 → 해당 src/prd/{area}.md만 (✓완료 영역 skip, 부족 시 on-demand). PRD-tree 영역 행에 상태 마커 ✓완료/🔨진행/⬜예정.
 Code + doc update = one atomic unit. Keep * markers accurate.
 
 ## Session Protocol
@@ -80,7 +81,7 @@ ON START (agent가 순차 실행):
   6. read .claude/pawpad/_meta.md
   7. .claude/codemap/_index.md는 코드 수정 작업 시작 시점에 read (질문/분석 전용 세션은 skip)
 ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
-ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함)
+ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함)
 ON STOP:         agent가 lane 파일 (state + reason) 갱신
 ON 8턴/60% CONTEXT:
   - Claude Code: Stop hook이 8턴마다 checkpoint block -> context-saver(.ctxdb/L2 저장) + codemap 갱신.

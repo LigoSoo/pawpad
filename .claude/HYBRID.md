@@ -185,6 +185,21 @@ lane "## Verification Evidence" 섹션은 검증 근거(테스트/분석/리뷰 
 
 ---
 
+## Completed Task Log
+
+lane의 작업추적 섹션(진행/그룹/Backlog/Next Steps 등)에 쌓이는 완료(✅) 작업항목은 상세 구현노트째 누적되어 세션 재개 시 매번 재read 비용을 키운다. Verification Evidence와 동일하게 경량 유지한다.
+
+규칙:
+1. 미완/진행 항목(⏳/⚠/🆕/무마커)은 항상 lane에 전수 유지.
+2. 완료(✅) 항목은 "다음 세션 재개 포인트" 날짜(직전 checkpoint) 이후 것만 lane 유지, 그 이전 ✅는 .claude/pawpad/verifications/{feature-id}-tasklog.md 상단에 append (newest first) 후 lane에서 제거.
+3. lane 완료 영역 말미에 포인터 1줄 유지:
+   "> 완료 작업 M건 -> .claude/pawpad/verifications/{feature-id}-tasklog.md"
+4. 이월 시점: ON checkpoint(/checkpoint·60% rollover) 및 ON TASK DONE 직전. handoff는 checkpoint 절차에 포함.
+
+근거: 후속 세션은 미완/진행 + 최근 완료 맥락만 필요하고, 과거 완료 항목은 audit(미사용)이다. lane은 archive 2종을 둔다 — {feature-id}-archive.md(검증근거) + {feature-id}-tasklog.md(완료작업). 둘 다 추가만, 수정·삭제 금지(audit).
+
+---
+
 ## Owner Transfer (인수 시 필수)
 
 핸드오프 받는 agent는 작업 시작 전 owner 변경 필수:
