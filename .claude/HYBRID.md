@@ -170,6 +170,21 @@ snapshot 파일 경로는 같은 lane의 handoff 필드에 기록 (HANDOFF_TO_* 
 
 ---
 
+## Verification Evidence
+
+lane "## Verification Evidence" 섹션은 검증 근거(테스트/분석/리뷰 결과)를 기록한다. 무제한 누적 시 lane 파일이 비대해져 매 세션 ON START 로드 비용이 커지므로 경량 유지한다.
+
+규칙:
+1. lane 본문에는 최근 2건만 유지.
+2. 검증 근거 추가로 2건을 초과하면, 가장 오래된 항목부터 .claude/pawpad/verifications/{feature-id}-archive.md 상단에 append (newest first) 후 lane에서 제거.
+3. lane Verification Evidence 섹션 하단에 포인터 1줄 유지:
+   "> 이전 검증 N건 -> .claude/pawpad/verifications/{feature-id}-archive.md"
+4. 분석전용/소작업은 본문에 "not applicable: analysis-only"만 기록 (아카이브 불필요).
+
+근거: 후속 세션은 lane의 state·next-steps·최근 검증만 참조하고, 과거 검증 근거는 audit 목적(미사용)이다. 핫패스에서 분리해도 정보 손실 없이 on-demand 복원 가능 (_meta.md RECENT 8줄 + sessions/ 이월과 동일 패턴). archive 파일은 추가만, 기존 내용 수정·삭제 금지(audit).
+
+---
+
 ## Owner Transfer (인수 시 필수)
 
 핸드오프 받는 agent는 작업 시작 전 owner 변경 필수:

@@ -1,6 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.29 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.29. v2.28 기반 + 신규 review 스킬(문서형 크로스에이전트/세션 리뷰 라운드트립; /review state 자동분기, request[직접검증 체크리스트 필수]→REVIEW_REQUESTED→리뷰[직접 검증]→result→REVIEW_DONE, work owner 불변+reviewer 필드, 종결 요청측 재량, codex exec 보완[저토큰]) + stateEnum 2종 추가(REVIEW_REQUESTED/REVIEW_DONE → config.json·_wip·AGENTS) + CLAUDE/AGENTS Hybrid Lane Rule reviewer 예외·자동제안 review(구현완료 경계, 강제 X)·Active Skills 첨자 review. 배포 표면 동기: 임베디드 $tmplClaudeMd/$tmplAgentsMd, review 스킬 임베드(@'...'@ literal), SKILLS_MANIFEST 17→18, .codex/config.json skills+stateEnum, .agents 미러, codemap, README/GUIDE/USAGE. 보고서: docs/CHANGELOG_v2.29.md).
-#         이전: v2.28 신규 mockup 스킬(PRD-tree→단일 HTML 목업) + Idea → PRD Routing 자동제안/체크박스. 보고서: docs/CHANGELOG_v2.28.md).
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.30 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.30. v2.29 기반 + Verification Evidence 아카이브 분리 — lane "## Verification Evidence"는 최근 2건만 유지, 초과분은 .claude/pawpad/verifications/{feature-id}-archive.md 상단 append(newest first) + 포인터 1줄. 소형 작업 ON START lane 비대 토큰 절감(audit-only 검증근거 핫패스 분리, 무손실 on-demand). DoD#7·Doc Update Rules 갱신 + HYBRID.md "Verification Evidence" 섹션 신설(기존 dangling 포인터 해소). 배포 표면 동기: 임베디드 $tmplClaudeMd/$tmplAgentsMd, HYBRID.md 임베드, README/GUIDE/USAGE, codemap. 보고서: docs/CHANGELOG_v2.30.md).
+#         이전: v2.29 신규 review 스킬(문서형 크로스에이전트/세션 리뷰 라운드트립). 보고서: docs/CHANGELOG_v2.29.md).
 #         이전: v2.25 skill rename karpathy -> lean-code(인물명 제거, -Upgrade 구 섹션명 자동 마이그레이션) + 임베디드 템플릿 동기(session-token-slim, statusline ctx-accuracy). 보고서: docs/CHANGELOG_v2.25.md).
 #         이전: v2.24 설치 UI live 모드(진행 바 1줄 제자리 갱신(`r) + 파일 로그 숨김(-ShowLog 복원) + 배너 발바닥 아트 보정. 설치 내용물 변경 없음. 보고서: docs/CHANGELOG_v2.24.md).
 #         이전: v2.23 설치 UI 도입(paw 배너 + 28단계 진행 바 + 실측 체크리스트, Codex 리뷰 PASS. 보고서: docs/CHANGELOG_v2.23.md).
@@ -48,7 +48,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.29"
+$ver = "2.30"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -783,7 +783,7 @@ Task complete when ALL pass:
 4. lane 파일 갱신 또는 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동
 5. .claude/codemap/_index.md updated for new/changed symbols
 6. 핸드오프 발생 시 .claude/pawpad/handoffs/ snapshot 작성
-7. lane ``## Verification Evidence`` 섹션에 검증 근거 기록 (분석전용/소작업은 ``not applicable: analysis-only``). 규칙: .claude/HYBRID.md Verification Evidence.
+7. lane ``## Verification Evidence``에 검증 근거 기록 — 최근 2건만 lane 유지, 초과분은 .claude/pawpad/verifications/{feature-id}-archive.md 상단 append + 포인터 1줄 (분석전용/소작업은 ``not applicable: analysis-only``). 규칙: .claude/HYBRID.md Verification Evidence.
 8. 코드 변경 시 /security-check 🔴 zero (분석전용/문서전용 면제). 규칙: .claude/skills/security-check/SKILL.md
 9. 코드 변경 시 신규/변경 코드가 Architecture Principles (Feature-First) 준수 (분석/문서전용 면제). 규칙: .claude/skills/feature-architecture/SKILL.md
 
@@ -828,7 +828,7 @@ $($p.Conventions)
 | New feature      | src/PRD-tree.md + src/PRD.md             |
 | New screen/route | Feature ID in PRD-tree.md                |
 | 결정 기록 위치    | .claude/HYBRID.md Decision Placement Matrix 참조 |
-| 검증 결과        | lane ``## Verification Evidence`` (길면 .claude/pawpad/verifications/{feature-id}_{ts}.md) |
+| 검증 결과        | lane ``## Verification Evidence`` 최근 2건, 초과분 → .claude/pawpad/verifications/{feature-id}-archive.md (상단 append) |
 Code + doc update = one atomic unit. Keep * markers accurate.
 
 ## Session Protocol
@@ -905,7 +905,7 @@ Task complete when ALL pass:
 4. lane 파일 갱신 또는 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동
 5. .claude/codemap/_index.md updated for new/changed symbols
 6. 핸드오프 발생 시 .claude/pawpad/handoffs/ snapshot 작성
-7. lane ``## Verification Evidence`` 섹션에 검증 근거 기록 (분석전용/소작업은 ``not applicable: analysis-only``). 규칙: .claude/HYBRID.md Verification Evidence.
+7. lane ``## Verification Evidence``에 검증 근거 기록 — 최근 2건만 lane 유지, 초과분은 .claude/pawpad/verifications/{feature-id}-archive.md 상단 append + 포인터 1줄 (분석전용/소작업은 ``not applicable: analysis-only``). 규칙: .claude/HYBRID.md Verification Evidence.
 8. 코드 변경 시 /security-check 🔴 zero (분석전용/문서전용 면제). 규칙: .agents/skills/security-check/SKILL.md
 9. 코드 변경 시 신규/변경 코드가 Architecture Principles (Feature-First) 준수 (분석/문서전용 면제). 규칙: .agents/skills/feature-architecture/SKILL.md
 
@@ -950,7 +950,7 @@ $($p.Conventions)
 | New feature      | src/PRD-tree.md + src/PRD.md             |
 | New screen/route | Feature ID in PRD-tree.md                |
 | 결정 기록 위치    | .claude/HYBRID.md Decision Placement Matrix 참조 |
-| 검증 결과        | lane ``## Verification Evidence`` (길면 .claude/pawpad/verifications/{feature-id}_{ts}.md) |
+| 검증 결과        | lane ``## Verification Evidence`` 최근 2건, 초과분 → .claude/pawpad/verifications/{feature-id}-archive.md (상단 append) |
 Code + doc update = one atomic unit. Keep * markers accurate.
 
 ## Session Protocol
@@ -4483,6 +4483,21 @@ snapshot 파일 경로는 같은 lane의 handoff 필드에 기록 (HANDOFF_TO_* 
 
 ---
 
+## Verification Evidence
+
+lane "## Verification Evidence" 섹션은 검증 근거(테스트/분석/리뷰 결과)를 기록한다. 무제한 누적 시 lane 파일이 비대해져 매 세션 ON START 로드 비용이 커지므로 경량 유지한다.
+
+규칙:
+1. lane 본문에는 최근 2건만 유지.
+2. 검증 근거 추가로 2건을 초과하면, 가장 오래된 항목부터 .claude/pawpad/verifications/{feature-id}-archive.md 상단에 append (newest first) 후 lane에서 제거.
+3. lane Verification Evidence 섹션 하단에 포인터 1줄 유지:
+   "> 이전 검증 N건 -> .claude/pawpad/verifications/{feature-id}-archive.md"
+4. 분석전용/소작업은 본문에 "not applicable: analysis-only"만 기록 (아카이브 불필요).
+
+근거: 후속 세션은 lane의 state·next-steps·최근 검증만 참조하고, 과거 검증 근거는 audit 목적(미사용)이다. 핫패스에서 분리해도 정보 손실 없이 on-demand 복원 가능 (_meta.md RECENT 8줄 + sessions/ 이월과 동일 패턴). archive 파일은 추가만, 기존 내용 수정·삭제 금지(audit).
+
+---
+
 ## Owner Transfer (인수 시 필수)
 
 핸드오프 받는 agent는 작업 시작 전 owner 변경 필수:
@@ -4911,7 +4926,7 @@ if ($failed -eq 0) {
     Write-Host "  - 설치 UI: paw 배너 + 진행 바 live 1줄 갱신 + 실측 체크리스트 (-ShowLog로 파일 상세 로그)" -ForegroundColor Cyan
     Write-Host "  - lean-code: 과설계/범위이탈 방지 원칙 스킬 (구 karpathy, v2.25 rename + 병합 마이그레이션)" -ForegroundColor Cyan
     Write-Host "  - feature-architecture: feature-first 구조 규율 스킬 (CLAUDE/AGENTS Architecture Principles 강제)" -ForegroundColor Cyan
-    Write-Host "  - 상세: docs/CHANGELOG_v2.29.md" -ForegroundColor Cyan
+    Write-Host "  - 상세: docs/CHANGELOG_v2.30.md" -ForegroundColor Cyan
     Write-Host ""
 } else {
     Write-Host "$failed 개 항목 실패. 권한 확인 후 다시 시도하세요." -ForegroundColor Yellow

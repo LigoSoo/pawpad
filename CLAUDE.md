@@ -19,7 +19,7 @@ Task complete when ALL pass:
 4. lane 파일 갱신 또는 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동
 5. .claude/codemap/_index.md updated for new/changed symbols
 6. 핸드오프 발생 시 .claude/pawpad/handoffs/ snapshot 작성
-7. lane `## Verification Evidence` 섹션에 검증 근거 기록 (분석전용/소작업은 `not applicable: analysis-only`). 규칙: .claude/HYBRID.md Verification Evidence.
+7. lane `## Verification Evidence`에 검증 근거 기록 — 최근 2건만 lane 유지, 초과분은 .claude/pawpad/verifications/{feature-id}-archive.md 상단 append + 포인터 1줄 (분석전용/소작업은 `not applicable: analysis-only`). 규칙: .claude/HYBRID.md Verification Evidence.
 8. 코드 변경 시 /security-check 🔴 zero (분석전용/문서전용 면제). 규칙: .claude/skills/security-check/SKILL.md
 9. 코드 변경 시 신규/변경 코드가 Architecture Principles (Feature-First) 준수 (분석/문서전용 면제). 규칙: .claude/skills/feature-architecture/SKILL.md
 
@@ -65,7 +65,7 @@ src/
 | New feature      | src/PRD-tree.md + src/PRD.md             |
 | New screen/route | Feature ID in PRD-tree.md                |
 | 결정 기록 위치    | .claude/HYBRID.md Decision Placement Matrix 참조 |
-| 검증 결과        | lane `## Verification Evidence` (길면 .claude/pawpad/verifications/{feature-id}_{ts}.md) |
+| 검증 결과        | lane `## Verification Evidence` 최근 2건, 초과분 → .claude/pawpad/verifications/{feature-id}-archive.md (상단 append) |
 Code + doc update = one atomic unit. Keep * markers accurate.
 
 ## Session Protocol

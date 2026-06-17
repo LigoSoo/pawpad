@@ -219,9 +219,10 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 ---
 
 ## 변경 이력
-> PawPad v2.29 FROZEN.
+> PawPad v2.30 FROZEN.
+> - **v2.30**: Verification Evidence 아카이브 분리 — lane `## Verification Evidence`는 최근 2건만 유지, 초과분은 `.claude/pawpad/verifications/{feature-id}-archive.md` 상단 append + 포인터 1줄. 소형 작업 ON START lane 비대 토큰 절감(무손실, audit-only 검증근거 핫패스 분리).
 > - **v2.29**: `/review` 스킬 추가 — 문서형 크로스에이전트/세션 리뷰 라운드트립(request→리뷰→result→수정). codex exec 자율 리뷰의 저토큰 보완, work owner 불변+reviewer 필드, 종결 요청측 재량.
 > - **v2.28**: `/mockup` 스킬 추가 — PRD-tree를 단일 HTML 목업(와이어프레임 lo-fi / 디자인 hi-fi)으로 시각화, Feature ID로 메뉴 위치 추적 + drift 경고. 기획/설계 스킬 선택지 질문은 체크박스로, 단계 경계에서 다음 스킬·목업 자동제안.
 > - **v2.27**: `Idea → PRD Routing` + `Active Skills` 표시 추가 — 아이디어→PRD 구체화 시 다음 스킬 추천(clarity→grill-me→to-prd, 강제 X) + 매 응답 `🐾 Active Skills` 라인. doc/스킬 군살 제거(중복·불필요 문구).
 > - **v2.26**: `feature-architecture` 추가 — feature-first 구조 규율(추후 기능 추가·수정이 쉽고, 사람이 코드 구조를 파악하기 쉽게). `lean-code`(오버엔지니어링 방지)와 짝.
-> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.29.md](docs/CHANGELOG_v2.29.md).
+> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.30.md](docs/CHANGELOG_v2.30.md).
