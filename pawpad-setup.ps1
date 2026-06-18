@@ -1,6 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.31 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.31. v2.30 기반 + 문서/lane 토큰 sharding 2종 묶음(작업 단위 커서 2 lane 분리, 의도 동일 → 단일 버전) — ① PRD Area-Sharding: 프로젝트 PRD를 도메인 영역별 src/prd/{area}.md로 분할, PRD-tree.md=인덱스(영역 상태 마커 ✓/🔨/⬜), lane feature-id 접두 라우팅으로 현재 영역만 read + mockup PRD.md deprecate 정정. ② Completed Task Log: lane ✅완료 작업항목을 verifications/{feature-id}-tasklog.md로 이월(미완/진행 전수 + 최근 세션 완료분 + 카운트 포인터), HYBRID "Completed Task Log" 섹션 + checkpoint·Session Protocol ON TASK DONE 배선, 트리거 checkpoint+task-done. 둘 다 v2.30(Verification Evidence) 자매: 완료/audit 분리·활성만 hot·instruction 기반(hook 무관). 배포 표면 동기: $tmplClaudeMd/$tmplAgentsMd Doc Rules·읽기규율·ON TASK DONE, HYBRID 임베드, mockup·checkpoint 임베드+.agents 미러, README/GUIDE/USAGE, codemap. 보고서: docs/CHANGELOG_v2.31.md).
-#         이전: v2.30 Verification Evidence 아카이브 분리(lane 검증근거 최근 2건 cap + verifications/{feature-id}-archive.md). 보고서: docs/CHANGELOG_v2.30.md).
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.32 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.32. v2.31 기반 + clarity 접근법 게이트 — brainstorming "2-3 대안 제시" 메커니즘 이식. clarity PASS 직후 접근법 게이트 신설: 실질 대안 ≥2면 2-3 접근법(트레이드오프 + 추천 1개 필수) 제시 → AskUserQuestion 선택 → 그 경로로 구현계획. 자명 단일이면 게이트 생략(가짜 대안 금지, lean). 배포 표면 동기: clarity SKILL.md live + 임베드 + .agents 미러, SKILLS_MANIFEST, README/GUIDE/USAGE, codemap. 보고서: docs/CHANGELOG_v2.32.md).
+#         이전: v2.31 문서/lane 토큰 sharding 2종(PRD Area-Sharding + Completed Task Log). 보고서: docs/CHANGELOG_v2.31.md).
 #         이전: v2.25 skill rename karpathy -> lean-code(인물명 제거, -Upgrade 구 섹션명 자동 마이그레이션) + 임베디드 템플릿 동기(session-token-slim, statusline ctx-accuracy). 보고서: docs/CHANGELOG_v2.25.md).
 #         이전: v2.24 설치 UI live 모드(진행 바 1줄 제자리 갱신(`r) + 파일 로그 숨김(-ShowLog 복원) + 배너 발바닥 아트 보정. 설치 내용물 변경 없음. 보고서: docs/CHANGELOG_v2.24.md).
 #         이전: v2.23 설치 UI 도입(paw 배너 + 28단계 진행 바 + 실측 체크리스트, Codex 리뷰 PASS. 보고서: docs/CHANGELOG_v2.23.md).
@@ -48,7 +48,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.31"
+$ver = "2.32"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -3166,8 +3166,23 @@ Q3 [{차원}]: {질문}
 - 동점이면 What -> How -> Where -> Done -> Link 순
 - 질문은 단답 또는 짧은 문장으로 답할 수 있게 작성
 
+### 접근법 대안 블록 (PASS 후, 실질 대안 ≥2일 때만)
+접근법 ({M}개 · 추천 1개):
+
+▶ A. {접근법명}  (추천)
+   트레이드오프: {장점} / {단점}
+   추천 근거: {1줄}
+  B. {접근법명}
+   트레이드오프: {장점} / {단점}
+  C. {접근법명}
+   트레이드오프: {장점} / {단점}
+
+- 출력 직후 AskUserQuestion(체크박스)로 선택 수신. 추천 옵션 첫 배치, 라벨 끝 "(추천)", description = 트레이드오프.
+- 실질 대안 <2 (자명 단일)이면 이 블록 생략 -> 통과 블록 직행.
+
 ### 통과 블록 (PASS 시)
 모호도: {총점}/100 ✅ PASS (임계값 {N})
+선택 접근법: {A/B/C} {접근법명}   (접근법 게이트 발동 시에만; 단일이면 이 줄 생략)
 
 구현 계획:
 1. [{파일}] {변경 내용} -> 검증: {방법}
@@ -3182,7 +3197,10 @@ Q3 [{차원}]: {질문}
 2. 5개 차원 독립 채점
 3. 총점 계산 및 출력
 4. 총점 > 임계값 -> 재질문 블록 출력 -> 답변 수신 -> 2로 이동
-5. 총점 <= 임계값 -> 통과 블록 출력 -> 종료
+5. 총점 <= 임계값 -> 접근법 판정:
+   - 실질 대안 ≥2 -> 접근법 대안 블록 출력 -> AskUserQuestion 선택 수신 -> 6
+   - 자명 단일 -> 6 직행
+6. 선택(또는 단일) 접근법으로 통과 블록(구현 계획) 출력 -> 종료
 
 ## 라운드 상한
 최대 5라운드. 5라운드 후에도 초과 시:
@@ -3195,6 +3213,16 @@ Q3 [{차원}]: {질문}
 - lean-code 원칙 적용: 요청된 것만, 최소 범위
 - 각 단계에 검증 방법 명시 (프로젝트 Commands의 Analyze / Test 등)
 - 전제 섹션에 불확실한 가정 명시
+
+## 대안 제시 원칙 (추천 필수)
+접근법 게이트(실행 흐름 5)에서 대안을 제시할 때 적용.
+- 대안 2-3개만. 4개 이상 금지 (분석마비 방지).
+- 추천 정확히 1개 필수. 0개·복수 추천 금지.
+- 추천 항목: 첫 배치 + "(추천)" 라벨 + 추천 근거 1줄 의무.
+- 각 대안 트레이드오프 1줄 이상 (장점/단점 양면).
+- 가짜 대안 금지: 실질 차이 없거나 자명 단일이면 게이트 생략, 단일 계획 직행 (lean-code 정신).
+- 대안 판정 기준: 비가역적이거나 트레이드오프가 갈리는 분기만 (스택/스키마/아키텍처/핵심 UX). 사소한 명명·포맷은 게이트 대상 아님.
+- 선택지 질문은 AskUserQuestion(체크박스) 사용 (CLAUDE.md 선택지 규칙 준수).
 "@
 
 # ── Skills: handoff (owner transfer 추가) ─────────────────────────────────────
@@ -4688,7 +4716,7 @@ Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 | **caveman** | `.claude/skills/caveman/` | 압축 통신 모드 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Response Style` |
 | **lean-code** | `.claude/skills/lean-code/` | LLM 코딩 안티패턴 (참조, 구 karpathy). 실제 강제는 CLAUDE.md/AGENTS.md `Coding Principles` |
 | **feature-architecture** | `.claude/skills/feature-architecture/` | feature-first 구조 규율 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Architecture Principles` |
-| **clarity** | `.claude/skills/clarity/` | 요청 모호도 분석 (5차원 스코어링) |
+| **clarity** | `.claude/skills/clarity/` | 요청 모호도 분석 (5차원 스코어링) + PASS 후 접근법 게이트 (2-3 대안 + 추천 1개) |
 | **design** | `.claude/skills/design/` | UI/UX 설계 게이트 (토큰+레이아웃+원칙, 반응형) |
 | **ctxdb-navigator** | `.claude/skills/ctxdb-navigator/` | 키워드 depth 컨텍스트 최소 로드 (토큰 절약) |
 | **security-check** | `.claude/skills/security-check/` | 보안 검증 게이트 (secrets/취약점/설정/PawPad 산출물, 🔴 시 BLOCK) |
@@ -4943,7 +4971,7 @@ if ($failed -eq 0) {
     Write-Host "  - 설치 UI: paw 배너 + 진행 바 live 1줄 갱신 + 실측 체크리스트 (-ShowLog로 파일 상세 로그)" -ForegroundColor Cyan
     Write-Host "  - lean-code: 과설계/범위이탈 방지 원칙 스킬 (구 karpathy, v2.25 rename + 병합 마이그레이션)" -ForegroundColor Cyan
     Write-Host "  - feature-architecture: feature-first 구조 규율 스킬 (CLAUDE/AGENTS Architecture Principles 강제)" -ForegroundColor Cyan
-    Write-Host "  - 상세: docs/CHANGELOG_v2.31.md" -ForegroundColor Cyan
+    Write-Host "  - 상세: docs/CHANGELOG_v2.32.md" -ForegroundColor Cyan
     Write-Host ""
 } else {
     Write-Host "$failed 개 항목 실패. 권한 확인 후 다시 시도하세요." -ForegroundColor Yellow
