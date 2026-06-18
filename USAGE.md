@@ -213,13 +213,15 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 | `handoff` | 다른 AI/세션으로 작업 인계 |
 | `security-check` | 보안 검증 게이트 — secrets/취약점/위험 설정 스캔, 발견 시 완료 BLOCK |
 | `review` | 문서형 크로스에이전트/세션 리뷰 라운드트립 (codex exec 보완·저토큰) |
+| `code-delegate` | 코딩 단계를 고른 모델의 서브에이전트에 위임 (설계=상위, 코딩=하위 모델 → 부모 컨텍스트·토큰 절감) |
 
 각 스킬 상세는 `.claude/skills/{이름}/SKILL.md`.
 
 ---
 
 ## 변경 이력
-> PawPad v2.32 FROZEN.
+> PawPad v2.33 FROZEN.
+> - **v2.33**: `code-delegate` 스킬 추가 — 코딩 단계 진입 시 사용자가 LLM 모델을 고르면 그 모델의 코딩 서브에이전트가 spec/lane을 읽고 코딩 → 요약만 부모에 반환. 설계는 상위 모델(Opus), 코딩은 하위 모델(Sonnet 등)로 돌려 부모 컨텍스트·토큰 절감. 구현 진입 경계에서 자동제안(강제 X). Claude Code 주력, Codex는 수동 세션 폴백.
 > - **v2.32**: clarity **접근법 게이트** — brainstorming "2-3 대안 제시" 메커니즘 이식. 모호도 PASS 후 구현 경로가 갈리면(실질 대안 ≥2) 2-3 접근법(트레이드오프 + **추천 1개 필수**) 제시 → 선택 → 구현계획. 자명 단일이면 생략(가짜 대안 금지).
 > - **v2.31**: 문서/lane 토큰 sharding (작업 단위 커서 2 lane 분리, 의도 동일 → 단일 버전). ① **PRD Area-Sharding**: 프로젝트 PRD를 도메인 영역별 `src/prd/{area}.md`로 분할 + `PRD-tree.md` 인덱스 + feature-id 라우팅(현재 영역만 read). ② **Completed Task Log**: lane ✅완료 작업항목을 `verifications/{feature-id}-tasklog.md`로 이월(미완/진행 전수 + 최근 세션 완료분 + 포인터, 트리거 checkpoint+task-done). 둘 다 v2.30(검증근거)과 동일 완료/audit 분리·무손실.
 > - **v2.30**: Verification Evidence 아카이브 분리 — lane `## Verification Evidence`는 최근 2건만 유지, 초과분은 `.claude/pawpad/verifications/{feature-id}-archive.md` 상단 append + 포인터 1줄. 소형 작업 ON START lane 비대 토큰 절감(무손실, audit-only 검증근거 핫패스 분리).
@@ -227,4 +229,4 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 > - **v2.28**: `/mockup` 스킬 추가 — PRD-tree를 단일 HTML 목업(와이어프레임 lo-fi / 디자인 hi-fi)으로 시각화, Feature ID로 메뉴 위치 추적 + drift 경고. 기획/설계 스킬 선택지 질문은 체크박스로, 단계 경계에서 다음 스킬·목업 자동제안.
 > - **v2.27**: `Idea → PRD Routing` + `Active Skills` 표시 추가 — 아이디어→PRD 구체화 시 다음 스킬 추천(clarity→grill-me→to-prd, 강제 X) + 매 응답 `🐾 Active Skills` 라인. doc/스킬 군살 제거(중복·불필요 문구).
 > - **v2.26**: `feature-architecture` 추가 — feature-first 구조 규율(추후 기능 추가·수정이 쉽고, 사람이 코드 구조를 파악하기 쉽게). `lean-code`(오버엔지니어링 방지)와 짝.
-> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.32.md](docs/CHANGELOG_v2.32.md).
+> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.33.md](docs/CHANGELOG_v2.33.md).
