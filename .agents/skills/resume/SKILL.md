@@ -8,28 +8,28 @@ description: Hybrid session resume protocol. Use at session start (ON START) to 
 ## 파일 역할
 | 파일/경로 | 역할 | 읽는 시점 |
 |----------|------|---------|
-| .claude/HYBRID.md                 | 협업 프로토콜               | ON START - 0번째     |
+| .claude/HYBRID.md                 | 협업 프로토콜               | ON START - active lane 시(없으면 skip) |
 | .claude/pawpad/_wip.md               | active lane router          | ON START - 1번째     |
 | .claude/pawpad/wip/{feature}.md      | 기능별 lane 상세            | active lane 있을 때  |
 | .claude/pawpad/wip/done/             | 완료된 lane 보관 (audit)    | 히스토리 조회 시     |
 | .claude/pawpad/handoffs/             | 핸드오프 snapshot           | state=HANDOFF_TO_* 시 |
 | .claude/pawpad/specs/{feature}.md    | feature spec (기획 산출물) | state=SPEC_READY 또는 구현 직전 |
-| .claude/pawpad/_meta.md              | 완료 이력 + Sprint 상태     | ON START             |
+| .claude/pawpad/_meta.md              | Sprint/BLOCKED/NEXT(상단)+RECENT 완료이력(하단) | ON START 상단만 / RECENT on-demand |
 | .claude/pawpad/sessions/             | 세션 상세 (온디맨드)         | 필요 시만            |
 | .claude/pawpad/decisions/rejected.md | 실패 기록                   | 유사 작업 전         |
 | .claude/pawpad/decisions/arch.md     | ADR                         | 아키텍처 결정 전     |
 | .claude/pawpad/backup/               | -Force 시 자동 백업          | 복구 필요 시         |
 
-## ON START 절차 (agent가 순차 실행)
-1. read .claude/HYBRID.md (협업 프로토콜 확인)
-2. read .claude/pawpad/_wip.md (active lane router)
-   -> Active Lanes 비어있음: 새 작업 시작
+## ON START 절차 (agent가 순차 실행 — CLAUDE.md/AGENTS.md Session Protocol과 동일 순서)
+1. read .claude/pawpad/_wip.md (active lane router)
+   -> Active Lanes 비어있음: 새 작업 시작 (이후 HYBRID 등 skip)
    -> Active Lanes 존재: assigned lane 읽기
+2. Active Lanes 있으면 read .claude/HYBRID.md (협업 프로토콜). 없으면 skip -> 신규 lane 생성/핸드오프/인수 시점에 read
 3. lane 파일 있으면: read .claude/pawpad/wip/{feature}.md
 4. lane state=HANDOFF_TO_* : _wip.md의 handoff 필드 경로로 snapshot read
 5. lane state=SPEC_READY 또는 spec 있으면: read .claude/pawpad/specs/{feature}.md
-6. read .claude/pawpad/_meta.md (Sprint / Phase / Blocked)
-7. read .claude/codemap/_index.md (수정 대상 위치)
+6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT). RECENT(완료 이력)는 파일 하단·재개 불요 -> 생략, history 필요 시 on-demand
+7. read .claude/codemap/_index.md (코드 수정 작업 시점만; 질문/분석 세션 skip)
 
 ## _wip.md (Router) 포맷
 # WIP ROUTER
@@ -102,11 +102,8 @@ WIP | SPEC_READY | HANDOFF_TO_* | BLOCKED
 - 재작업 완료: wip/done/feature-auth_2026-06-15_092044.md (이전 파일 그대로 보존)
 - 초 단위(SS)까지 명명: 같은 분 2회 완료 시 충돌 방지
 
-## _meta.md 포맷
+## _meta.md 포맷 (재개 비용 최적화: RECENT를 하단에 둬 ON START가 상단만 부분읽기)
 # SPRINT: [W번호] | PHASE: [번호] | STACK: {프로젝트 스택}
-
-## RECENT (newest first)
-YYYY-MM-DD: [완료 내용]. [영향 파일]. [agent]
 
 ## BLOCKED
 - [항목] -> [이유]
@@ -114,10 +111,14 @@ YYYY-MM-DD: [완료 내용]. [영향 파일]. [agent]
 ## NEXT
 - [다음 예정 작업]
 
+## RECENT (newest first)
+YYYY-MM-DD: [완료 내용]. [영향 파일]. [agent]
+
 ## _meta.md 업데이트 규칙
-- 태스크 완료 시: RECENT 최상단 1줄 추가 (agent 명시)
-- RECENT > 10줄: 오래된 항목 -> .claude/pawpad/sessions/YYYY-MM.md 이동
+- 태스크 완료 시: RECENT(하단 섹션) 최상단에 1줄 추가 (agent 명시)
+- RECENT > 8줄: 초과분 -> .claude/pawpad/sessions/YYYY-MM.md 상단 이동 (newest first)
 - BLOCKED / NEXT: 상태 변화 시 즉시 갱신
+- ON START는 헤더+BLOCKED+NEXT만 읽음 (RECENT 하단 = 재개 불요, history 시 on-demand)
 
 ## Handoff Rules
 - 60% context 도달 추정 시 agent가 snapshot 작성 (handoff skill 참조)
@@ -137,7 +138,7 @@ YYYY-MM-DD: [완료 내용]. [영향 파일]. [agent]
 
 ## Session Rollover
 - 세션 종료 시 lane 파일 + _wip.md + codemap 갱신 강제
-- _meta.md RECENT > 10줄 -> sessions/YYYY-MM.md로 이동
+- _meta.md RECENT > 8줄 -> sessions/YYYY-MM.md 상단 이동 (newest first)
 - 새 세션 시 ON START 절차 그대로 실행 -> 끊김 없는 재개
 
 ## Backup
