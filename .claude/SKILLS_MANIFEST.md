@@ -17,7 +17,7 @@
 
 | 스킬 | 위치 | 용도 |
 |------|------|------|
-| **memory** | `.claude/skills/memory/` | WIP 상태 관리, 세션 재개(ON START) 프로토콜 |
+| **resume** | `.claude/skills/resume/` | WIP 상태 관리, 세션 재개(ON START) 프로토콜 |
 | **codemap** | `.claude/skills/codemap/` | 심볼 위치 레지스트리, owner 분리 권한 |
 | **codebase-map** | `.claude/skills/codebase-map/` | 7축 고수준 코드베이스 맵(아키텍처/구조/관례/관심사), digest-only 주입 |
 | **caveman** | `.claude/skills/caveman/` | 압축 통신 모드 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Response Style` |
@@ -48,7 +48,7 @@
 
 ### 기본 호출
 ```
-/memory          # 세션 재개 프로토콜
+/resume          # 세션 재개 프로토콜
 /codemap         # 심볼 탐색
 /caveman         # 압축 모드
 /clarity         # 모호도 분석
@@ -89,7 +89,7 @@
 ### 예시 3: 토큰 부족 핸드오프
 ```
 1. /checkpoint          ← 60% 도달, lane/codemap 정리
-2. /memory              ← _wip.md 상태 갱신
+2. /resume              ← _wip.md 상태 갱신
 3. /handoff claude      ← 다른 에이전트로 인수 (state=HANDOFF_TO_*)
 ```
 

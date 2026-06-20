@@ -14,7 +14,7 @@
 4. 완료 시 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 (audit 보존, timestamp 명명)
 
 ## 템플릿
-.claude/skills/memory/SKILL.md "lane 파일 포맷" 참조
+.claude/skills/resume/SKILL.md "lane 파일 포맷" 참조
 
 ## 하위 디렉토리
 - wip/done/ : 완료된 lane 보관 (audit 추적용, 삭제 금지, timestamp 명명으로 재작업 보존)

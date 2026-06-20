@@ -84,7 +84,7 @@
 
 **목표: "운동 기록 앱에 주간 리포트 화면 추가"** — 한 기능을 처음부터 끝까지. 각 단계에 어떤 스킬이 끼는지 보세요.
 
-### [0] 세션 시작 — `memory` + `ctxdb-navigator` (자동)
+### [0] 세션 시작 — `resume` + `ctxdb-navigator` (자동)
 ```
 당신: (새 채팅 연다)
   → 자동으로 지난 작업 상태 + 관련 코드 위치 복원
@@ -158,13 +158,13 @@
 ### [9] 완료 → 다음 세션
 ```
   완료되면: 작업 기록 정리 + (요청 시) git commit
-  다음에 새 채팅 열면 → memory가 "주간 리포트 완료됨" 복원
+  다음에 새 채팅 열면 → resume가 "주간 리포트 완료됨" 복원
   → 끊김 없이 다음 기능으로
 ```
 
 ### 한 줄 요약 (스킬 흐름)
 ```
-세션시작(memory/ctxdb) → /clarity → /grill-me(/grill-with-docs)
+세션시작(resume/ctxdb) → /clarity → /grill-me(/grill-with-docs)
   → /to-prd → /design → /mockup(화면 시각화) → 구현(codemap+lean-code, caveman) → /security-check(커밋/완료 전) → /review(고위험 교차검증)
   → /checkpoint(context-saver) → 필요시 /handoff → 완료
 ```
@@ -195,7 +195,7 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 
 | 스킬 | 한 줄 |
 |------|------|
-| `memory` | 세션 시작 시 지난 상태 복원 (자동) |
+| `resume` | 세션 시작 시 지난 상태 복원 (자동) |
 | `ctxdb-navigator` | 키워드로 관련 컨텍스트만 로드 (자동, 토큰절약) |
 | `context-saver` | 작업내용 저장 + 키워드 인덱스 갱신 (자동/저장 시) |
 | `codemap` | 코드 지도 — 심볼 위치+역할 즉시 조회 |
@@ -220,7 +220,8 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 ---
 
 ## 변경 이력
-> PawPad v2.33 FROZEN.
+> PawPad v2.34 FROZEN.
+> - **v2.34**: `memory` 스킬 → `resume`로 이름 변경 — "기억 저장"으로 오해되던 이름을 "세션 재개"라는 실제 동작에 맞춤. 호출도 `/resume`. 기존 설치는 `-Upgrade` 시 자동 전환(스킬 수 19 불변).
 > - **v2.33**: `code-delegate` 스킬 추가 — 코딩 단계 진입 시 사용자가 LLM 모델을 고르면 그 모델의 코딩 서브에이전트가 spec/lane을 읽고 코딩 → 요약만 부모에 반환. 설계는 상위 모델(Opus), 코딩은 하위 모델(Sonnet 등)로 돌려 부모 컨텍스트·토큰 절감. 구현 진입 경계에서 자동제안(강제 X). Claude Code 주력, Codex는 수동 세션 폴백.
 > - **v2.32**: clarity **접근법 게이트** — brainstorming "2-3 대안 제시" 메커니즘 이식. 모호도 PASS 후 구현 경로가 갈리면(실질 대안 ≥2) 2-3 접근법(트레이드오프 + **추천 1개 필수**) 제시 → 선택 → 구현계획. 자명 단일이면 생략(가짜 대안 금지).
 > - **v2.31**: 문서/lane 토큰 sharding (작업 단위 커서 2 lane 분리, 의도 동일 → 단일 버전). ① **PRD Area-Sharding**: 프로젝트 PRD를 도메인 영역별 `src/prd/{area}.md`로 분할 + `PRD-tree.md` 인덱스 + feature-id 라우팅(현재 영역만 read). ② **Completed Task Log**: lane ✅완료 작업항목을 `verifications/{feature-id}-tasklog.md`로 이월(미완/진행 전수 + 최근 세션 완료분 + 포인터, 트리거 checkpoint+task-done). 둘 다 v2.30(검증근거)과 동일 완료/audit 분리·무손실.
@@ -229,4 +230,4 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 > - **v2.28**: `/mockup` 스킬 추가 — PRD-tree를 단일 HTML 목업(와이어프레임 lo-fi / 디자인 hi-fi)으로 시각화, Feature ID로 메뉴 위치 추적 + drift 경고. 기획/설계 스킬 선택지 질문은 체크박스로, 단계 경계에서 다음 스킬·목업 자동제안.
 > - **v2.27**: `Idea → PRD Routing` + `Active Skills` 표시 추가 — 아이디어→PRD 구체화 시 다음 스킬 추천(clarity→grill-me→to-prd, 강제 X) + 매 응답 `🐾 Active Skills` 라인. doc/스킬 군살 제거(중복·불필요 문구).
 > - **v2.26**: `feature-architecture` 추가 — feature-first 구조 규율(추후 기능 추가·수정이 쉽고, 사람이 코드 구조를 파악하기 쉽게). `lean-code`(오버엔지니어링 방지)와 짝.
-> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.33.md](docs/CHANGELOG_v2.33.md).
+> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.34.md](docs/CHANGELOG_v2.34.md).

@@ -23,7 +23,7 @@ Check with the user that these modules match their expectations. Check with the 
      - 기존 lane 있으면 새로 만들지 말고 갱신 (중복 생성 금지)
    - `.claude/pawpad/_wip.md` Active Lanes에 등록: state=SPEC_READY, owner=기획 agent, lane 경로
    - `.claude/pawpad/_meta.md` RECENT에 1줄 추가: "YYYY-MM-DD: SPEC_READY {feature-id}. spec 작성 완료. [agent]"
-   - 구현 agent가 ON START에서 SPEC_READY 발견 → spec + lane read → 인수 (state=WIP, owner=본인). memory skill 참조. snapshot 불필요하므로 `/handoff` 아님.
+   - 구현 agent가 ON START에서 SPEC_READY 발견 → spec + lane read → 인수 (state=WIP, owner=본인). resume skill 참조. snapshot 불필요하므로 `/handoff` 아님.
 
 주의: 외부 이슈 트래커 발행, `ready-for-agent` 라벨, `/setup-matt-pocock-skills` 셋업은 이 프로젝트에서 쓰지 않는다. PRD는 PawPad `specs/` + `SPEC_READY` state로 인계한다.
 

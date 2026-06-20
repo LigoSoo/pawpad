@@ -1,8 +1,8 @@
 ---
-name: memory
+name: resume
 description: Hybrid session resume protocol. Use at session start (ON START) to read HYBRID/_wip/lane/handoff/meta/codemap and resume cross-agent (Claude<->Codex) work without losing context.
 ---
-# Memory Skill - Session Resume Protocol (Hybrid)
+# Resume Skill - Session Resume Protocol (Hybrid)
 
 ## 파일 역할
 | 파일/경로 | 역할 | 읽는 시점 |
