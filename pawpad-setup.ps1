@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.35 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.35. v2.34 기반 + resume 최소로드 — ON START 읽기 토큰 절감. #1 HYBRID 조건부화(resume SKILL이 무조건 읽던 걸 CLAUDE/AGENTS처럼 active-lane 조건부로, 불일치 정정+~5.8k 절감). #2 _meta RECENT skip(_meta를 헤더→BLOCKED→NEXT→RECENT 순 재정렬해 ON START가 상단만 부분읽기, RECENT 완료이력은 하단·on-demand, ~5.5k 절감). 기능 동작 불변, 스킬 19 불변. 표면: resume SKILL(live+미러+임베드)·CLAUDE/AGENTS Session Protocol step6·$tmpl 템플릿·_meta 포맷·GUIDE ON START. 보고서: docs/CHANGELOG_v2.35.md).
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.36 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.36. v2.35 기반 + 통합 기획 뷰어(데이터-구동, no-backend) — 범용 spec-viewer.html(데이터 비종속, File System Access API)가 고정명 외부 JSON(src/viewer/{prd,fts,userflow,wire}.json)을 폴더 1회 선택 후 자동 로드·편집(수정/삭제/추가)·제자리 저장(다운로드·백엔드 없음)·재로드. PRD/명세 변경 시 agent는 JSON만 수정(HTML 불변→토큰 절감). 항목 존재=설계/개발 대상(승인 단계 없음), status 예정/진행중/완료(agent 갱신·읽기전용). src/viewer/*.json ON START/resume 자동로드 금지. 신규 스킬 viewer-apply(19→20, JSON→스팩 동기) + mockup viewer 모드. 보고서: docs/CHANGELOG_v2.36.md).
+#         이전: v2.35 resume 최소로드 — ON START 읽기 토큰 절감(HYBRID 조건부화+_meta RECENT skip). 보고서: docs/CHANGELOG_v2.35.md).
 #         이전: v2.34 skill rename memory → resume. 보고서: docs/CHANGELOG_v2.34.md).
 #         이전: v2.33 code-delegate 스킬 신규(18→19) — 코딩 단계 서브에이전트 위임(설계=상위 Opus, 코딩=하위 모델). 보고서: docs/CHANGELOG_v2.33.md).
 #         이전: v2.32 clarity 접근법 게이트(brainstorming "2-3 대안 제시" 이식). 보고서: docs/CHANGELOG_v2.32.md).
@@ -18,7 +19,7 @@
 # - CLAUDE.md, AGENTS.md (Context files, 하이브리드 프로토콜 반영)
 # - .claude/settings.json (Claude Code hooks: SessionStart 자동주입 + Stop decision:block)
 # - .claude/hooks/* (session-start.{ps1,sh}, stop-check.{ps1,sh}, statusline.{ps1,sh} - 크로스플랫폼 자동화/상태줄)
-# - .claude/skills/* (resume, codemap, codebase-map, caveman, lean-code, feature-architecture, clarity, handoff, checkpoint, grill-me, grill-with-docs, to-prd, design, mockup, review, code-delegate, ctxdb-navigator, context-saver, security-check)
+# - .claude/skills/* (resume, codemap, codebase-map, caveman, lean-code, feature-architecture, clarity, handoff, checkpoint, grill-me, grill-with-docs, to-prd, design, mockup, review, code-delegate, viewer-apply, ctxdb-navigator, context-saver, security-check)
 # - .agents/skills/* (Codex repo skill mirror, .claude/skills 단일 소스에서 재생성)
 # - .claude/pawpad/* (_wip router, wip/lanes, wip/done, handoffs/, specs/, decisions/)
 # - .claude/codemap/_index.md
@@ -50,7 +51,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.35"
+$ver = "2.36"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -849,9 +850,12 @@ $($p.Conventions)
 | Feature/UX       | src/prd/{area}.md (영역 shard)            |
 | New feature      | src/PRD-tree.md(인덱스 행) + src/prd/{area}.md(상세) |
 | New screen/route | Feature ID in PRD-tree.md (인덱스)        |
+| 메뉴구성도        | src/viewer/userflow.json (메뉴 계층 트리 JSON; 뷰어 드래그 편집·on-demand) |
+| 스팩 진행률       | specs/{feature-id}.md 상단 status 행 (draft/ready/implementing/done — 뷰어 진행률 SoT) |
 | 결정 기록 위치    | .claude/HYBRID.md Decision Placement Matrix 참조 |
 | 검증 결과        | lane ``## Verification Evidence`` 최근 2건, 초과분 → .claude/pawpad/verifications/{feature-id}-archive.md (상단 append) |
 PRD 상세 read: PRD-tree(인덱스) → lane feature-id 접두로 영역 해석 → 해당 src/prd/{area}.md만 (✓완료 영역 skip, 부족 시 on-demand). PRD-tree 영역 행에 상태 마커 ✓완료/🔨진행/⬜예정.
+뷰어 데이터(src/viewer/*.json: prd/fts/userflow/wire)는 ON START/resume 자동 로드 금지 — /mockup viewer·/viewer-apply 등 해당 작업 시점에만 on-demand read(초기 기획 강화로 후속 수정 최소화·context 절감). 항목 존재=설계/개발 대상, status(예정/진행중/완료)는 agent가 구현하며 갱신.
 Code + doc update = one atomic unit. Keep * markers accurate.
 
 ## Session Protocol
@@ -889,7 +893,7 @@ ON 8턴/60% CONTEXT: Stop hook이 8턴마다 checkpoint block -> context-saver(.
 - UI/화면 기획 시: design(토큰/레이아웃 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
 ### 자동제안 (단계 경계)
 agent가 흐름 중 다음 시점에 다음 스킬 또는 목업을 **1회 추천**(강제 X):
-- PRD/PRD-tree 생성·갱신 직후 → mockup 추천.
+- PRD/PRD-tree 생성·갱신 직후 → mockup 추천(통합 4탭 검토는 /mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 로 반영).
 - clarity/grill-me/grill-with-docs/to-prd 종료 시 → 다음 단계 스킬 추천.
 - 매 응답 판단 X(과추천 방지). 거절 시 같은 산출물 버전엔 재제안 X → 다음 단계 경계까지 침묵.
 - 추천 대상 한정: clarity·grill-me·grill-with-docs·to-prd·design·mockup·brainstorming. 나머지(resume·codemap·security-check·checkpoint·handoff·context-saver 등)는 Session Protocol/DoD/hook이 트리거 → 자동제안 제외(이중 트리거 방지).
@@ -973,9 +977,12 @@ $($p.Conventions)
 | Feature/UX       | src/prd/{area}.md (영역 shard)            |
 | New feature      | src/PRD-tree.md(인덱스 행) + src/prd/{area}.md(상세) |
 | New screen/route | Feature ID in PRD-tree.md (인덱스)        |
+| 메뉴구성도        | src/viewer/userflow.json (메뉴 계층 트리 JSON; 뷰어 드래그 편집·on-demand) |
+| 스팩 진행률       | specs/{feature-id}.md 상단 status 행 (draft/ready/implementing/done — 뷰어 진행률 SoT) |
 | 결정 기록 위치    | .claude/HYBRID.md Decision Placement Matrix 참조 |
 | 검증 결과        | lane ``## Verification Evidence`` 최근 2건, 초과분 → .claude/pawpad/verifications/{feature-id}-archive.md (상단 append) |
 PRD 상세 read: PRD-tree(인덱스) → lane feature-id 접두로 영역 해석 → 해당 src/prd/{area}.md만 (✓완료 영역 skip, 부족 시 on-demand). PRD-tree 영역 행에 상태 마커 ✓완료/🔨진행/⬜예정.
+뷰어 데이터(src/viewer/*.json: prd/fts/userflow/wire)는 ON START/resume 자동 로드 금지 — /mockup viewer·/viewer-apply 등 해당 작업 시점에만 on-demand read(초기 기획 강화로 후속 수정 최소화·context 절감). 항목 존재=설계/개발 대상, status(예정/진행중/완료)는 agent가 구현하며 갱신.
 Code + doc update = one atomic unit. Keep * markers accurate.
 
 ## Session Protocol
@@ -1028,7 +1035,7 @@ state 마커: HANDOFF_TO_CODEX(Claude→Codex), HANDOFF_TO_CLAUDE(Codex→Claude
 - grill-me 종결 후: →to-prd.
 - UI/화면 기획 시: design(토큰/레이아웃 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
 ### 자동제안 (단계 경계)
-다음 시점에 다음 스킬 또는 목업 1회 추천(강제 X): PRD/PRD-tree 갱신 직후→mockup, clarity/grill-me/grill-with-docs/to-prd 종료 시→다음 스킬. 매 응답 판단 X. 거절 시 다음 단계 경계까지 침묵. 대상 한정: clarity·grill-me·grill-with-docs·to-prd·design·mockup·brainstorming(나머지는 Checkpoint/hook 트리거 → 제외). 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료 직전 고위험·배포본 영향이면 /review 권장(강제 X); 광범위·맹점우려·설치 스크립트는 codex exec 에스컬레이션. 코딩 위임 제안(구현 진입 경계): SPEC_READY/written 설계 직후 코딩 진입 시 /code-delegate 1회 권장(강제 X, 선택 모델 서브에이전트 위임으로 부모 컨텍스트·토큰 절감; 설계 미작성 시 제안 X).
+다음 시점에 다음 스킬 또는 목업 1회 추천(강제 X): PRD/PRD-tree 갱신 직후→mockup(통합 4탭=/mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 반영), clarity/grill-me/grill-with-docs/to-prd 종료 시→다음 스킬. 매 응답 판단 X. 거절 시 다음 단계 경계까지 침묵. 대상 한정: clarity·grill-me·grill-with-docs·to-prd·design·mockup·brainstorming(나머지는 Checkpoint/hook 트리거 → 제외). 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료 직전 고위험·배포본 영향이면 /review 권장(강제 X); 광범위·맹점우려·설치 스크립트는 codex exec 에스컬레이션. 코딩 위임 제안(구현 진입 경계): SPEC_READY/written 설계 직후 코딩 진입 시 /code-delegate 1회 권장(강제 X, 선택 모델 서브에이전트 위임으로 부모 컨텍스트·토큰 절감; 설계 미작성 시 제안 X).
 ### 선택지 질문 = 체크박스
 기획/설계 스킬 진행 중 선택지 N개 질문은 AskUserQuestion(체크박스)로, 자유서술·수치는 텍스트로.
 
@@ -3144,9 +3151,9 @@ description: Ambiguity gate. Use before implementing to score request ambiguity 
 
 ## 트리거
 /clarity [임계값]
-- 임계값 미지정 시 기본값: 40
-- 예: /clarity       -> 임계값 40
-- 예: /clarity 30    -> 임계값 30 (엄격)
+- 임계값 미지정 시 기본값: 30
+- 예: /clarity       -> 임계값 30
+- 예: /clarity 20    -> 임계값 20 (엄격)
 - 예: /clarity 60    -> 임계값 60 (관대)
 
 ## 모호도 차원 (5개 × 20점 = 100점)
@@ -3728,6 +3735,16 @@ drift 검사: {일치 N개}
 5. drift 검사 출력.
 6. lo-fi이고 구조 안정화 판단 시 hi-fi 전환 제안(1회).
 
+## 통합 뷰어 모드 (viewer) — 데이터 구동 (no-backend)
+범용 뷰어 `.claude/skills/mockup/spec-viewer.html`(setup 배포·고정·데이터 비종속)를 Chrome/Edge로 열어 `src/viewer/` 폴더 1회 선택 → 4탭(PRD/기능명세서/메뉴구성도/와이어프레임) 자동 로드. 편집 후 같은 JSON에 제자리 저장(File System Access API, 다운로드·백엔드 없음) → 재로드.
+/mockup viewer [feature-id]: 대상 프로젝트 데이터 JSON을 PRD-tree/flow/spec에서 생성·갱신(뷰어 HTML은 안 건드림).
+- 데이터 SoT(고정명, `src/viewer/`): `prd.json` · `fts.json`(기능그룹→스팩) · `userflow.json`(메뉴 계층 트리 `{root,tree:[{id,label,feature?,tab?,children?}]}`) · `wire.json`(화면별 `{frame,components:[{type,...}]}`). 전부 JSON. agent가 읽고/쓰는 SoT.
+- 뷰어 데이터 비종속(HTML에 데이터 안 박음·렌더 엔진 고정) → PRD/명세 변경 시 agent는 **JSON만 수정**(HTML 불변 → 토큰 절감). 렌더: 기능명세서=CSS 트리(그룹──트렁크┬─leaf), 메뉴구성도(구 유저플로우)=계층 트리+드래그앤드랍(순서·위치 재배치 저장), 와이어=디바이스 프레임+컴포넌트 lo-fi(mobile/web).
+- **존재=대상**: JSON에 남은 항목 = 설계/개발 대상. 삭제=제외(별도 승인 없음). 사용자 액션 = 수정/삭제/추가만.
+- **상태(예정/진행중/완료)**: 개발 진행 가시화 전용 — agent가 구현하며 status 갱신, 사용자 편집 X.
+- **context 규율(중요)**: `src/viewer/*.json`은 ON START/resume **자동 로드 금지** — 기획/구현 작업 시점에만 해당 파일 on-demand read(초기 기획 강화로 후속 수정 최소화, context 비대화 방지).
+- 반영: 사용자 저장 후 `/viewer-apply`가 JSON 읽어 spec 동기(남은 항목→spec 생성/갱신, 삭제 항목→spec 제거/아카이브).
+
 ## 선택지 질문 규칙
 대상 화면·fidelity 등 선택지가 있는 질문은 **AskUserQuestion(체크박스)** 로 받는다. 자유서술·수치 입력은 텍스트.
 
@@ -3736,6 +3753,520 @@ drift 검사: {일치 N개}
 - lean-code 적용: 요청 화면만, 과한 연출 금지.
 - 신규 디자인 토큰 임의 정의 금지(design 절차 경유).
 - 산출물은 기획물 → 코드 아님. 구현은 별도 단계.
+'@
+
+# -- mockup viewer: 범용 데이터-구동 뷰어 (FS Access API, 데이터 JSON 외부 로드/저장) --
+Write-FileContent ".claude\skills\mockup\spec-viewer.html" -NoBom @'
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>통합 기획 뷰어 (data-driven)</title>
+<style>
+  /* 범용 데이터 구동 뷰어. 데이터는 외부 JSON(prd/fts/userflow/wire.json), HTML엔 데이터 무. */
+  * { box-sizing: border-box; }
+  body { font-family:-apple-system,"Segoe UI",system-ui,sans-serif; background:#f3f4f6; color:#1f2430; margin:0; }
+  header.top { background:#fff; border-bottom:1px solid #d7dbe2; padding:12px 20px 0; position:sticky; top:0; z-index:5; }
+  .titlerow { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  h1 { font-size:15px; margin:0; }
+  .tbtn { font-size:12px; padding:6px 12px; border:1px solid #c6d0e6; background:#fff; border-radius:7px; cursor:pointer; color:#2a4fb0; }
+  .tbtn.primary { background:#2a4fb0; color:#fff; border-color:#2a4fb0; }
+  .tbtn:disabled { opacity:.45; cursor:not-allowed; }
+  .status { font-size:11px; color:#7a8294; margin-left:auto; max-width:50%; text-align:right; }
+  .badges { display:flex; gap:8px; }
+  .badge { font-size:11px; padding:3px 9px; border-radius:12px; }
+  .badge.prog { background:#e8eefc; color:#2a4fb0; }
+  .badge.dirty { background:#fdeccd; color:#8a5a00; }
+  .tabbar { display:flex; gap:2px; margin-top:10px; }
+  .tab { font-size:13px; padding:9px 16px; cursor:pointer; border:1px solid transparent; border-bottom:none; border-radius:8px 8px 0 0; color:#5a6478; user-select:none; }
+  .tab:hover { background:#f0f2f6; }
+  .tab.on { background:#f3f4f6; color:#1f2430; font-weight:600; border-color:#d7dbe2; }
+  .tab .dot-dirty { color:#e09b00; margin-left:4px; }
+  main { max-width:1180px; margin:0 auto; padding:18px 20px 70px; }
+  section[data-tab] { display:none; }
+  section[data-tab].on { display:block; }
+  .hint { font-size:11px; color:#8a92a3; margin:0 0 12px; display:flex; align-items:center; gap:10px; }
+  .addbtn { font-size:11px; padding:4px 10px; border:1px dashed #b8bfcc; background:#fff; border-radius:6px; cursor:pointer; color:#5a6478; }
+  .gate { max-width:560px; margin:60px auto; text-align:center; background:#fff; border:1px solid #e0e3ea; border-radius:12px; padding:32px; }
+  .gate h2 { font-size:16px; margin:0 0 8px; }
+  .gate p { font-size:12px; color:#5a6478; line-height:1.6; }
+  .gate .warn { color:#a52a2a; font-size:11px; margin-top:10px; }
+
+  /* 공통 컨트롤 */
+  .ctrls { display:inline-flex; gap:3px; margin-left:8px; flex:0 0 auto; }
+  .ctrls button { font-size:11px; width:22px; height:22px; line-height:1; border:1px solid #d7dbe2; background:#fff; border-radius:5px; cursor:pointer; color:#7a8294; padding:0; }
+  .ctrls button:hover { background:#f0f2f6; }
+  .editing { border-color:#e7c66a !important; background:#fffdf5 !important; }
+  input.ed, textarea.ed { font-size:12px; font-family:inherit; padding:3px 6px; border:1px solid #e7c66a; border-radius:4px; }
+  input.ed { width:50%; } textarea.ed { width:100%; min-height:48px; margin-top:5px; }
+
+  /* PRD */
+  .prd-block { background:#fff; border:1px solid #e0e3ea; border-radius:8px; padding:12px 14px; margin-bottom:10px; }
+  .prd-block h3 { font-size:13px; margin:0 0 5px; display:flex; align-items:center; }
+  .prd-block p { font-size:12px; color:#4a5263; margin:0; line-height:1.55; }
+  .pill { font-size:10px; padding:1px 7px; border-radius:10px; margin-left:8px; }
+  .pill.s-done { background:#e6f6ec; color:#1d7a3e; } .pill.s-prog { background:#e8eefc; color:#2a4fb0; } .pill.s-todo { background:#eceef2; color:#7a8294; }
+
+  /* 기능명세서 트리 (그룹──트렁크┬─leaf 연결선) */
+  .fts-group { display:flex; align-items:center; margin:0 0 16px; }
+  .fts-gnode { flex:0 0 200px; background:#eef3ff; border:1px solid #c6d6f6; border-radius:8px; padding:9px 11px; }
+  .fts-gnode .gname { font-size:13px; font-weight:600; } .fts-gnode .gno { font-size:10px; color:#7a8294; font-family:ui-monospace,Consolas,monospace; }
+  .fts-branch { flex:0 0 34px; align-self:stretch; position:relative; }
+  .fts-branch::before { content:""; position:absolute; top:50%; left:0; right:0; height:2px; background:#aab2c2; transform:translateY(-1px); }
+  .fts-leaves { flex:1 1 auto; position:relative; display:flex; flex-direction:column; gap:7px; }
+  .fts-leaves::before { content:""; position:absolute; left:0; top:18px; bottom:18px; width:2px; background:#aab2c2; }
+  .fts-leaves.single::before { display:none; }
+  .fts-leaf { display:flex; align-items:center; gap:8px; margin-left:22px; background:#fff; border:1px solid #e0e3ea; border-radius:7px; padding:7px 10px; position:relative; }
+  .fts-leaf::before { content:""; position:absolute; left:-22px; top:50%; width:22px; height:2px; background:#aab2c2; transform:translateY(-1px); }
+  .fts-leaf .lname { font-size:12px; } .fts-leaf .lno { font-size:10px; color:#8a92a3; font-family:ui-monospace,Consolas,monospace; margin-left:auto; }
+  .tag-new { font-size:9px; background:#e8eefc; color:#2a4fb0; border-radius:8px; padding:1px 6px; }
+  .dot { width:8px; height:8px; border-radius:50%; flex:0 0 8px; } .dot.s-done { background:#2bb463; } .dot.s-prog { background:#3f6fd6; } .dot.s-todo { background:#c4cad6; }
+  .gaddbtn { font-size:10px; margin-left:8px; padding:2px 8px; border:1px dashed #b8bfcc; background:#fff; border-radius:5px; cursor:pointer; color:#5a6478; }
+
+  /* 메뉴구성도 (계층 트리 + 드래그앤드랍) — 클래식 커넥터 패턴 */
+  #menuTree { background:#fff; border:1px solid #e0e3ea; border-radius:8px; padding:14px 18px; overflow-x:auto; }
+  .mroot { font-size:13px; font-weight:700; color:#1f2430; padding:6px 12px; background:#eef3ff; border:1px solid #c6d6f6; border-radius:7px; display:inline-block; margin-bottom:2px; }
+  .mroot.drop-inside { outline:2px dashed #2a4fb0; outline-offset:1px; }
+  ul.mlist { list-style:none; margin:0; padding:0 0 0 40px; }
+  ul.mlist.root { padding-left:8px; }
+  li.mli { position:relative; }
+  li.mli::before { content:""; position:absolute; left:-22px; top:0; bottom:0; border-left:2px solid #d2d8e4; }
+  li.mli:last-child::before { bottom:auto; height:20px; }
+  li.mli::after { content:""; position:absolute; left:-22px; top:20px; width:22px; border-top:2px solid #d2d8e4; }
+  ul.mlist.root > li.mli::before, ul.mlist.root > li.mli::after { display:none; }
+  .mnode { display:inline-flex; align-items:center; gap:8px; background:#fff; border:1px solid #d7dbe2; border-left-width:4px; border-radius:7px; padding:6px 10px; margin:5px 0; position:relative; max-width:100%; }
+  /* 뎁스별 색 (좌측 강조선 + 옅은 틴트). 이동 시 renderMenu 재계산으로 자동 갱신 */
+  .mnode.d0 { border-left-color:#2a4fb0; background:#f4f7ff; }
+  .mnode.d1 { border-left-color:#1d9a8a; background:#edf8f5; }
+  .mnode.d2 { border-left-color:#7c5cff; background:#f3efff; }
+  .mnode.d3 { border-left-color:#c98a00; background:#fbf4e1; }
+  .mnode.d4 { border-left-color:#c4456b; background:#fceaf0; }
+  .mnode.d5 { border-left-color:#5a6478; background:#eef0f4; }
+  .mnode .mdrag { cursor:grab; color:#aab2c2; font-size:12px; flex:0 0 auto; }
+  .mnode .mlabel { font-size:12px; white-space:nowrap; }
+  .mnode .mtab { font-size:9px; background:#2a4fb0; color:#fff; border-radius:8px; padding:1px 6px; flex:0 0 auto; }
+  .mnode .mfeat { font-size:9px; color:#7a8294; font-family:ui-monospace,Consolas,monospace; background:#eef0f4; border-radius:6px; padding:1px 5px; flex:0 0 auto; }
+  .mnode .ctrls { margin-left:4px; }
+  .mnode.dragging { opacity:.4; }
+  .mnode.drop-before { box-shadow:0 -3px 0 #2a4fb0; }
+  .mnode.drop-after { box-shadow:0 3px 0 #2a4fb0; }
+  .mnode.drop-inside { outline:2px dashed #2a4fb0; outline-offset:1px; }
+
+  /* 와이어프레임 (디바이스 프레임 + 컴포넌트 lo-fi) */
+
+  .wgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:18px; align-items:start; }
+  .wscreen { background:#fff; border:1px solid #c9cfdb; border-radius:10px; overflow:hidden; }
+  .wscreen.web { grid-column:1 / -1; }
+  .wbar { background:#eceef2; padding:7px 11px; font-size:12px; font-weight:600; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .wbar .wtitle { flex:1 1 auto; }
+  .wbar .wfeat { font-size:10px; font-weight:400; color:#7a8294; font-family:ui-monospace,Consolas,monospace; }
+  .wbar .navtag { font-size:10px; font-weight:400; color:#7a8294; background:#f7f8fa; border:1px solid #d7dbe2; border-radius:10px; padding:1px 8px; cursor:pointer; }
+  .wframe { padding:14px; display:flex; justify-content:center; background:#f3f4f6; }
+  .device { position:relative; background:#fff; border:2px solid #2c2f36; border-radius:18px; padding:9px 8px; width:248px; display:flex; flex-direction:column; gap:6px; }
+  .device.web { width:100%; border-radius:8px; padding:11px; }
+  .comp { position:relative; }
+  .comp .cctrls { position:absolute; top:-1px; right:-1px; display:none; gap:2px; z-index:2; }
+  .comp:hover .cctrls { display:inline-flex; }
+  .comp .cctrls button { font-size:10px; width:18px; height:18px; line-height:1; border:1px solid #d7dbe2; background:#fff; border-radius:4px; cursor:pointer; color:#7a8294; padding:0; }
+  .c-appbar { display:flex; align-items:center; justify-content:space-between; background:#e3e6ec; border-radius:5px; padding:7px 8px; font-size:11px; font-weight:600; }
+  .c-appbar .c-ic { width:16px; text-align:center; color:#7a8294; }
+  .c-tabbar { display:flex; background:#e3e6ec; border-radius:5px; overflow:hidden; }
+  .c-tabbar span { flex:1; text-align:center; font-size:9px; padding:6px 2px; color:#7a8294; border-right:1px solid #d2d8e4; }
+  .c-tabbar span:last-child { border-right:none; } .c-tabbar span.on { background:#cdd4e0; color:#2a4fb0; font-weight:600; }
+  .c-seg { display:flex; border:1px solid #cdd4e0; border-radius:6px; overflow:hidden; }
+  .c-seg span { flex:1; text-align:center; font-size:10px; padding:5px 4px; color:#7a8294; border-right:1px solid #cdd4e0; }
+  .c-seg span:last-child { border-right:none; } .c-seg span.on { background:#dde3ef; color:#2a4fb0; }
+  .c-list { display:flex; flex-direction:column; border:1px solid #e0e3ea; border-radius:6px; overflow:hidden; }
+  .c-list .row { font-size:11px; padding:7px 9px; border-bottom:1px dashed #e0e3ea; color:#4a5263; display:flex; gap:6px; align-items:center; }
+  .c-list .row:last-child { border-bottom:none; }
+  .c-list .row .lead { color:#9aa2b1; } .c-list .row .trail { margin-left:auto; color:#9aa2b1; }
+  .c-card { border:1px solid #d7dbe2; border-radius:7px; padding:9px; font-size:11px; }
+  .c-card b { display:block; margin-bottom:3px; } .c-card span { color:#7a8294; }
+  .c-btn { text-align:center; font-size:11px; padding:8px; border-radius:6px; }
+  .c-btn.v-primary { background:#2a4fb0; color:#fff; } .c-btn.v-secondary { background:#e3e6ec; color:#2a4fb0; } .c-btn.v-text { color:#2a4fb0; }
+  .c-fab { align-self:flex-end; width:38px; height:38px; border-radius:50%; background:#2a4fb0; color:#fff; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .c-input { border:1px solid #cdd4e0; border-radius:6px; padding:8px 9px; font-size:11px; color:#9aa2b1; background:#fbfcfd; }
+  .c-prog { font-size:10px; color:#7a8294; } .c-prog .bar { background:#e3e6ec; border-radius:6px; height:8px; margin-top:3px; overflow:hidden; } .c-prog .bar i { display:block; height:100%; background:#7c5cff; }
+  .c-chips { display:flex; flex-wrap:wrap; gap:4px; } .c-chips span { font-size:9px; background:#eef0f4; color:#5a6478; border-radius:10px; padding:2px 8px; }
+  .c-avatar { width:42px; height:42px; border-radius:50%; background:#dde0e7; align-self:center; }
+  .c-img { border:1px solid #d7dbe2; border-radius:6px; min-height:60px; display:flex; align-items:center; justify-content:center; font-size:10px; color:#9aa2b1; background:linear-gradient(135deg,transparent 47%,#d7dbe2 47%,#d7dbe2 53%,transparent 53%),linear-gradient(45deg,transparent 47%,#d7dbe2 47%,#d7dbe2 53%,transparent 53%); }
+  .c-text { font-size:11px; color:#4a5263; } .c-text.heading { font-size:13px; font-weight:700; color:#1f2430; } .c-text.caption { font-size:9px; color:#9aa2b1; }
+  .c-banner { background:#e9e2d0; border:1px dashed #c9bd99; border-radius:5px; text-align:center; font-size:10px; color:#8a7a4a; padding:9px; }
+  .c-grid { display:grid; gap:5px; } .c-grid .cell { background:#eef0f4; border:1px solid #e0e3ea; border-radius:6px; min-height:38px; display:flex; align-items:center; justify-content:center; font-size:9px; color:#7a8294; text-align:center; padding:3px; }
+  .c-dialog-wrap { background:rgba(40,44,56,.12); border-radius:6px; padding:16px 12px; }
+  .c-dialog { background:#fff; border:1px solid #cdd4e0; border-radius:8px; padding:10px; font-size:11px; box-shadow:0 3px 10px rgba(0,0,0,.12); } .c-dialog b { display:block; margin-bottom:3px; } .c-dialog span { color:#7a8294; }
+  .c-unknown { border:1px dashed #b8bfcc; border-radius:6px; padding:8px; font-size:10px; color:#9aa2b1; text-align:center; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="titlerow">
+    <h1>통합 기획 뷰어</h1>
+    <button class="tbtn primary" id="pickBtn">프로젝트 폴더 선택</button>
+    <button class="tbtn" id="reopenBtn" style="display:none"></button>
+    <button class="tbtn" id="reloadBtn" disabled>재로드</button>
+    <button class="tbtn" id="saveBtn" disabled>현재 탭 저장</button>
+    <button class="tbtn" id="saveAllBtn" disabled>전체 저장</button>
+    <span class="badges"><span class="badge prog" id="progBadge">진행률 –</span></span>
+    <span class="status" id="status">폴더 미선택 — prd.json·fts.json·userflow.json·wire.json 가 있는 폴더를 선택</span>
+  </div>
+  <div class="tabbar" id="tabbar">
+    <div class="tab on" data-go="prd">PRD <span class="dot-dirty" data-d="prd"></span></div>
+    <div class="tab" data-go="fts">기능명세서 <span class="dot-dirty" data-d="fts"></span></div>
+    <div class="tab" data-go="flow">메뉴구성도 <span class="dot-dirty" data-d="flow"></span></div>
+    <div class="tab" data-go="wire">와이어프레임 <span class="dot-dirty" data-d="wire"></span></div>
+  </div>
+</header>
+
+<main>
+  <div class="gate" id="gate">
+    <h2>프로젝트 폴더를 선택하세요</h2>
+    <p>데이터 파일(<b>prd.json · fts.json · userflow.json · wire.json</b>)이 들어있는 폴더(예: <code>src/viewer/</code>)를 1회 선택하면, 4탭이 자동으로 로드됩니다. 편집 후 <b>저장</b>하면 같은 파일에 <b>제자리 덮어쓰기</b>됩니다(다운로드·백엔드 없음). 재로드로 반영 확인.</p>
+    <p class="warn" id="gateWarn"></p>
+  </div>
+  <div id="tabsWrap" style="display:none;">
+    <section data-tab="prd" class="on">
+      <p class="hint">PRD 문단. ✎수정 / ×삭제 · <b>파일에 남은 항목 = 설계/개발 대상</b>(삭제=제외, 별도 승인 없음). <button class="addbtn" data-add="prd">+ 문단 추가</button></p>
+      <div id="prdList"></div>
+    </section>
+    <section data-tab="fts">
+      <p class="hint">메뉴 → 기능그룹 → 스팩. ✎수정 / ×삭제 · 남은 항목 = 개발 대상. 상태(읽기전용, agent 갱신): <span class="dot s-todo"></span>예정 <span class="dot s-prog"></span>진행중 <span class="dot s-done"></span>완료 · <button class="addbtn" data-add="fts-group">+ 기능그룹 추가</button></p>
+      <div id="ftsTree"></div>
+    </section>
+    <section data-tab="flow">
+      <p class="hint">메뉴 구성도(앱→탭→화면→하위). 드래그(⠿)로 순서·위치 이동 · +하위 / ✎수정 / ×삭제 · <button class="addbtn" data-add="menu-root">+ 최상위 메뉴</button></p>
+      <div id="menuTree"></div>
+    </section>
+    <section data-tab="wire">
+      <p class="hint">화면별 lo-fi UI(컴포넌트 스택, agent 생성). 검토·조정만: ↑↓순서 · ✎수정 · ×삭제 · 우상단 프레임(mobile/web) 토글.</p>
+      <div class="wgrid" id="wireGrid"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+"use strict";
+var FILES = { prd:"prd.json", fts:"fts.json", flow:"userflow.json", wire:"wire.json" };
+var dirHandle = null;
+var data = { prd:[], fts:[], flow:{root:"",tree:[]}, wire:[] };
+var dirty = { prd:false, fts:false, flow:false, wire:false };
+var curTab = "prd";
+var esc = function(s){ return String(s==null?"":s).replace(/[&<>]/g,function(c){return ({"&":"&amp;","<":"&lt;",">":"&gt;"})[c];}); };
+function $(id){ return document.getElementById(id); }
+function setStatus(m){ $("status").textContent = m; }
+
+/* ---- 폴더 핸들 기억 (IndexedDB) — 임의 경로 자동열기는 브라우저 보안상 불가, 핸들 재사용으로 1클릭 복원 ---- */
+function idb(){ return new Promise(function(res,rej){ var r=indexedDB.open("pawpad-viewer",1); r.onupgradeneeded=function(){ r.result.createObjectStore("kv"); }; r.onsuccess=function(){ res(r.result); }; r.onerror=function(){ rej(r.error); }; }); }
+async function idbSet(k,v){ var db=await idb(); return new Promise(function(res,rej){ var tx=db.transaction("kv","readwrite"); tx.objectStore("kv").put(v,k); tx.oncomplete=function(){res();}; tx.onerror=function(){rej(tx.error);}; }); }
+async function idbGet(k){ var db=await idb(); return new Promise(function(res,rej){ var tx=db.transaction("kv","readonly"); var rq=tx.objectStore("kv").get(k); rq.onsuccess=function(){res(rq.result);}; rq.onerror=function(){rej(rq.error);}; }); }
+
+/* ---- File System Access ---- */
+$("pickBtn").addEventListener("click", async function(){
+  if(!window.showDirectoryPicker){
+    $("gateWarn").textContent = "이 브라우저는 File System Access API 미지원. Chrome/Edge 사용 권장. file://에서 막히면 localhost 정적 서빙(python -m http.server) 후 열기.";
+    return;
+  }
+  var opts={ id:"pawpadViewer", mode:"readwrite" };
+  try { var saved=await idbGet("dir"); if(saved) opts.startIn=saved; } catch(_){}   // 지난 폴더 근처에서 시작
+  try { dirHandle = await window.showDirectoryPicker(opts); } catch(e){ return; }
+  try { await idbSet("dir", dirHandle); } catch(_){}                                // 다음 세션 복원용 저장
+  await loadAll();
+});
+$("reopenBtn").addEventListener("click", async function(){
+  try {
+    var saved=await idbGet("dir"); if(!saved){ $("reopenBtn").style.display="none"; return; }
+    var perm=await saved.requestPermission({mode:"readwrite"});
+    if(perm!=="granted"){ setStatus("폴더 권한 거부됨 — '프로젝트 폴더 선택'으로 다시 선택"); return; }
+    dirHandle=saved; await loadAll();
+  } catch(e){ setStatus("다시 열기 실패: "+e.message); }
+});
+$("reloadBtn").addEventListener("click", loadAll);
+$("saveBtn").addEventListener("click", function(){ saveTab(curTab); });
+$("saveAllBtn").addEventListener("click", async function(){ for(var k in FILES){ if(dirty[k]) await saveTab(k); } });
+
+async function readJson(name, fallback){
+  try {
+    var fh = await dirHandle.getFileHandle(name);
+    var f = await fh.getFile(); var t = await f.text();
+    return t.trim() ? JSON.parse(t) : fallback;
+  } catch(e){ return fallback; }
+}
+async function loadAll(){
+  if(!dirHandle) return;
+  data.prd  = await readJson(FILES.prd, []);
+  data.fts  = await readJson(FILES.fts, []);
+  data.flow = await readJson(FILES.flow, {root:"",tree:[]});
+  data.wire = await readJson(FILES.wire, []);
+  dirty = { prd:false, fts:false, flow:false, wire:false };
+  $("gate").style.display = "none"; $("tabsWrap").style.display = "block";
+  $("reloadBtn").disabled = false; $("saveBtn").disabled = false; $("saveAllBtn").disabled = false;
+  renderAll(); updateDirty();
+  setStatus("로드됨: " + dirHandle.name + " (prd " + data.prd.length + " · fts " + data.fts.length + "그룹 · flow " + countMenu(data.flow.tree) + "메뉴 · wire " + data.wire.length + ")");
+}
+async function saveTab(k){
+  if(!dirHandle){ setStatus("폴더 먼저 선택"); return; }
+  try {
+    var fh = await dirHandle.getFileHandle(FILES[k], {create:true});
+    var w = await fh.createWritable();
+    await w.write(JSON.stringify(data[k], null, 2) + "\n");
+    await w.close();
+    dirty[k] = false; updateDirty();
+    setStatus(FILES[k] + " 저장됨(제자리 덮어쓰기)");
+  } catch(e){ setStatus("저장 실패: " + e.message + " — 쓰기 권한 허용 필요할 수 있음"); }
+}
+function mark(k){ dirty[k] = true; updateDirty(); }
+function updateDirty(){
+  var any = false;
+  Object.keys(FILES).forEach(function(k){
+    var d = document.querySelector('.dot-dirty[data-d="'+k+'"]');
+    if(d) d.textContent = dirty[k] ? "●" : "";
+    if(dirty[k]) any = true;
+  });
+  $("saveAllBtn").textContent = any ? "전체 저장 ●" : "전체 저장";
+}
+
+/* ---- 탭 ---- */
+$("tabbar").addEventListener("click", function(e){
+  var t = e.target.closest(".tab"); if(!t) return;
+  curTab = t.getAttribute("data-go");
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(x){ x.classList.toggle("on", x===t); });
+  Array.prototype.forEach.call(document.querySelectorAll("section[data-tab]"), function(s){ s.classList.toggle("on", s.getAttribute("data-tab")===curTab); });
+  if(curTab==="flow") renderMenu();
+});
+
+function renderAll(){ renderPRD(); renderFTS(); renderMenu(); renderWire(); }
+
+/* ---- PRD ---- */
+function renderPRD(){
+  var html = data.prd.map(function(b,i){
+    var sc = b.status==="done"?"s-done":b.status==="prog"?"s-prog":"s-todo";
+    var sl = b.status==="done"?"완료":b.status==="prog"?"진행중":"예정";
+    return '<div class="prd-block" data-i="'+i+'"><h3>'+esc(b.heading)+
+      '<span class="pill '+sc+'" title="개발 진행 상태(agent 갱신, 읽기전용)">'+sl+'</span>'+
+      '<span class="ctrls"><button data-act="edit" title="수정">✎</button><button data-act="del" title="삭제">×</button></span></h3>'+
+      '<p>'+esc(b.body)+'</p></div>';
+  }).join("");
+  $("prdList").innerHTML = html || '<p class="hint">문단 없음 — 추가하세요.</p>';
+  refreshProg();
+}
+$("prdList").addEventListener("click", function(e){
+  var btn=e.target.closest("button[data-act]"); if(!btn) return;
+  var blk=btn.closest(".prd-block"); var i=+blk.getAttribute("data-i"); var act=btn.getAttribute("data-act");
+  if(act==="del"){ if(confirm("이 PRD 문단 삭제?")){ data.prd.splice(i,1); mark("prd"); renderPRD(); } }
+  else if(act==="edit"){ editPRD(blk,i); }
+});
+function editPRD(blk,i){
+  var h3=blk.querySelector("h3"); var p=blk.querySelector("p");
+  h3.classList.add("editing");
+  var hi=document.createElement("input"); hi.className="ed"; hi.value=data.prd[i].heading; hi.style.width="60%";
+  var ta=document.createElement("textarea"); ta.className="ed"; ta.value=data.prd[i].body;
+  h3.innerHTML=""; h3.appendChild(hi); p.innerHTML=""; p.appendChild(ta); hi.focus();
+  function done(){ data.prd[i].heading=hi.value; data.prd[i].body=ta.value; mark("prd"); renderPRD(); }
+  hi.addEventListener("blur",function(){ setTimeout(function(){ if(document.activeElement!==ta) done(); },100); });
+  ta.addEventListener("blur",function(){ setTimeout(function(){ if(document.activeElement!==hi) done(); },100); });
+}
+
+/* ---- FTS 트리 ---- */
+function renderFTS(){
+  var html = data.fts.map(function(g,gi){
+    var leaves = (g.nodes||[]).map(function(n,ni){
+      var sc = n.status==="done"?"s-done":n.status==="prog"?"s-prog":"s-todo";
+      return '<div class="fts-leaf" data-g="'+gi+'" data-n="'+ni+'"><span class="dot '+sc+'" title="개발 진행 상태(agent 갱신, 읽기전용)"></span>'+
+        (n.new?'<span class="tag-new">신규</span>':'')+
+        '<span class="lname">'+esc(n.label)+'</span><span class="lno">'+esc(n.hierNo)+'</span>'+
+        '<span class="ctrls"><button data-act="edit" title="수정">✎</button><button data-act="del" title="삭제">×</button></span></div>';
+    }).join("");
+    var single = (g.nodes||[]).length===1 ? " single" : "";
+    return '<div class="fts-group" data-g="'+gi+'"><div class="fts-gnode"><div class="gname">'+esc(g.label)+
+      '<button class="gaddbtn" data-act="addnode" title="노드 추가">+</button></div><div class="gno">'+esc(g.group)+' · '+esc(g.gno)+'</div></div>'+
+      '<div class="fts-branch"></div><div class="fts-leaves'+single+'">'+leaves+'</div></div>';
+  }).join("");
+  $("ftsTree").innerHTML = html || '<p class="hint">기능그룹 없음 — 추가하세요.</p>';
+  refreshProg();
+}
+$("ftsTree").addEventListener("click", function(e){
+  var btn=e.target.closest("button[data-act]"); if(!btn) return;
+  var act=btn.getAttribute("data-act");
+  if(act==="addnode"){ var gi=+btn.closest(".fts-group").getAttribute("data-g"); data.fts[gi].nodes.push({id:"NEW-"+Date.now(),label:"새 스팩",hierNo:"",new:true,status:"todo"}); mark("fts"); renderFTS(); return; }
+  var leaf=btn.closest(".fts-leaf"); var gi=+leaf.getAttribute("data-g"); var ni=+leaf.getAttribute("data-n");
+  if(act==="del"){ if(confirm("이 스팩 삭제?")){ data.fts[gi].nodes.splice(ni,1); mark("fts"); renderFTS(); } }
+  else if(act==="edit"){ var ln=leaf.querySelector(".lname"); var n2=data.fts[gi].nodes[ni];
+    var inp=document.createElement("input"); inp.className="ed"; inp.value=n2.label;
+    ln.replaceWith(inp); inp.focus();
+    inp.addEventListener("blur",function(){ n2.label=inp.value; mark("fts"); renderFTS(); });
+    inp.addEventListener("keydown",function(ev){ if(ev.key==="Enter") inp.blur(); });
+  }
+});
+
+/* ---- 메뉴구성도 (계층 트리 + 드래그앤드랍) ---- */
+function countMenu(arr){ var c=0; (arr||[]).forEach(function(n){ c+=1+countMenu(n.children); }); return c; }
+var menuUid=0;
+function newMenuId(){ return "m-"+Date.now()+"-"+(menuUid++); }
+function renderMenu(){
+  if(!data.flow || typeof data.flow!=="object" || Array.isArray(data.flow)) data.flow={root:"",tree:[]};
+  if(!data.flow.tree) data.flow.tree=[];
+  var html='<div class="mroot" data-root="1">'+esc(data.flow.root||"(root)")+'</div>'+renderMenuList(data.flow.tree, []);
+  $("menuTree").innerHTML=html;
+}
+function renderMenuList(arr, prefix){
+  if(!arr || !arr.length) return prefix.length?'':'<p class="hint" style="margin:8px 0 0">메뉴 없음 — "+ 최상위 메뉴" 로 추가.</p>';
+  var out='<ul class="mlist'+(prefix.length?'':' root')+'">';
+  arr.forEach(function(n,i){
+    var pid=prefix.concat(i).join("-");
+    var dc="d"+Math.min(prefix.length,5);   // 현재 뎁스 색(렌더 시 재계산 → 이동하면 자동 갱신)
+    out+='<li class="mli"><div class="mnode '+dc+'" draggable="true" data-path="'+pid+'">'+
+      '<span class="mdrag" title="드래그로 이동">⠿</span>'+
+      '<span class="mlabel">'+esc(n.label)+'</span>'+
+      (n.tab?'<span class="mtab">'+esc(n.tab)+'</span>':'')+
+      (n.feature?'<span class="mfeat">'+esc(n.feature)+'</span>':'')+
+      '<span class="ctrls"><button data-mact="add" title="하위 추가">+</button><button data-mact="edit" title="수정">✎</button><button data-mact="del" title="삭제">×</button></span>'+
+      '</div>'+renderMenuList(n.children||[], prefix.concat(i))+'</li>';
+  });
+  return out+'</ul>';
+}
+/* 객체 식별자 기반 이동(인덱스 시프트 회피) */
+function menuNodeAt(p){ var arr=data.flow.tree, n=null; for(var i=0;i<p.length;i++){ n=arr[p[i]]; if(!n) return null; arr=n.children||[]; } return n; }
+function menuFindParent(arr, node){ for(var i=0;i<arr.length;i++){ if(arr[i]===node) return {arr:arr,idx:i}; if(arr[i].children){ var r=menuFindParent(arr[i].children,node); if(r) return r; } } return null; }
+function menuContains(parent, target){ if(parent===target) return true; return (parent.children||[]).some(function(c){ return menuContains(c,target); }); }
+function menuMove(srcNode, dstNode, zone){
+  if(!srcNode) return;
+  if(dstNode && menuContains(srcNode,dstNode)) return; // 자기 후손으로 이동 금지
+  var sp=menuFindParent(data.flow.tree, srcNode); if(!sp) return; sp.arr.splice(sp.idx,1);
+  if(zone==="root-inside"){ data.flow.tree.push(srcNode); }
+  else if(zone==="inside"){ dstNode.children=dstNode.children||[]; dstNode.children.push(srcNode); }
+  else { var dp=menuFindParent(data.flow.tree, dstNode); if(!dp){ data.flow.tree.push(srcNode); } else { dp.arr.splice(zone==="after"?dp.idx+1:dp.idx,0,srcNode); } }
+  mark("flow"); renderMenu();
+}
+/* DnD */
+var menuDragPath=null;
+function clearDropMarks(){ Array.prototype.forEach.call($("menuTree").querySelectorAll(".drop-before,.drop-after,.drop-inside"), function(x){ x.classList.remove("drop-before","drop-after","drop-inside"); }); }
+function dropZone(nd, e){ var r=nd.getBoundingClientRect(); var y=e.clientY-r.top; if(y<r.height*0.4) return "before"; if(y>r.height*0.6) return "after"; return "inside"; }
+$("menuTree").addEventListener("dragstart", function(e){ var nd=e.target.closest(".mnode"); if(!nd) return; menuDragPath=nd.getAttribute("data-path"); nd.classList.add("dragging"); e.dataTransfer.effectAllowed="move"; try{ e.dataTransfer.setData("text/plain",menuDragPath); }catch(_){} });
+$("menuTree").addEventListener("dragend", function(){ menuDragPath=null; clearDropMarks(); var d=$("menuTree").querySelector(".dragging"); if(d) d.classList.remove("dragging"); });
+$("menuTree").addEventListener("dragover", function(e){
+  if(menuDragPath===null) return;
+  var root=e.target.closest(".mroot"), nd=e.target.closest(".mnode");
+  if(!root && !nd) return;
+  e.preventDefault(); e.dataTransfer.dropEffect="move"; clearDropMarks();
+  if(root){ root.classList.add("drop-inside"); return; }
+  nd.classList.add("drop-"+dropZone(nd,e));
+});
+$("menuTree").addEventListener("drop", function(e){
+  if(menuDragPath===null) return; e.preventDefault();
+  var src=menuNodeAt(menuDragPath.split("-").map(Number));
+  var root=e.target.closest(".mroot"), nd=e.target.closest(".mnode");
+  clearDropMarks();
+  if(root){ menuMove(src,null,"root-inside"); menuDragPath=null; return; }
+  if(!nd){ menuDragPath=null; return; }
+  var dst=menuNodeAt(nd.getAttribute("data-path").split("-").map(Number));
+  if(src!==dst) menuMove(src,dst,dropZone(nd,e));
+  menuDragPath=null;
+});
+/* 노드 액션 */
+$("menuTree").addEventListener("click", function(e){
+  var btn=e.target.closest("button[data-mact]"); if(!btn) return;
+  var nd=btn.closest(".mnode"); var node=menuNodeAt(nd.getAttribute("data-path").split("-").map(Number));
+  if(!node) return; var act=btn.getAttribute("data-mact");
+  if(act==="add"){ var lb=prompt("하위 메뉴 라벨?","새 메뉴"); if(lb===null) return; var ft=prompt("Feature ID? (선택, 비우면 없음)","")||""; node.children=node.children||[]; node.children.push({id:newMenuId(),label:lb||"새 메뉴",feature:ft}); mark("flow"); renderMenu(); }
+  else if(act==="del"){ if(confirm("이 메뉴와 하위 전체 삭제?")){ var dp=menuFindParent(data.flow.tree,node); if(dp){ dp.arr.splice(dp.idx,1); mark("flow"); renderMenu(); } } }
+  else if(act==="edit"){ var ml=nd.querySelector(".mlabel"); var inp=document.createElement("input"); inp.className="ed"; inp.value=node.label; ml.replaceWith(inp); inp.focus();
+    inp.addEventListener("blur",function(){ node.label=inp.value; mark("flow"); renderMenu(); });
+    inp.addEventListener("keydown",function(ev){ if(ev.key==="Enter") inp.blur(); }); }
+});
+
+/* ---- 와이어프레임 (디바이스 프레임 + 컴포넌트 lo-fi) ---- */
+/* 컴포넌트는 agent가 wire.json에 생성. 뷰어는 렌더 + 순서/수정/삭제만(추가 없음). */
+var ARRAY_FIELD={tabbar:"items",segmented:"items",chip:"items",list:"rows",grid:"cells"};
+function rowHtml(r){ if(r && typeof r==="object"){ return '<div class="row">'+(r.leading?'<span class="lead">'+esc(r.leading)+'</span>':'')+'<span>'+esc(r.label)+'</span>'+(r.trailing?'<span class="trail">'+esc(r.trailing)+'</span>':'')+'</div>'; } return '<div class="row">'+esc(r)+'</div>'; }
+function compHtml(c){
+  var t=c.type;
+  if(t==="appbar") return '<div class="c-appbar"><span class="c-ic">'+esc(c.left||"‹")+'</span><span>'+esc(c.label||"")+'</span><span class="c-ic">'+esc(c.right||"")+'</span></div>';
+  if(t==="tabbar") return '<div class="c-tabbar">'+(c.items||[]).map(function(x,i){return '<span class="'+(i===(c.active||0)?"on":"")+'">'+esc(x)+'</span>';}).join("")+'</div>';
+  if(t==="segmented") return '<div class="c-seg">'+(c.items||[]).map(function(x,i){return '<span class="'+(i===(c.active||0)?"on":"")+'">'+esc(x)+'</span>';}).join("")+'</div>';
+  if(t==="list") return '<div class="c-list">'+(c.rows||[]).map(rowHtml).join("")+'</div>';
+  if(t==="card") return '<div class="c-card"><b>'+esc(c.label||"")+'</b>'+(c.body?'<span>'+esc(c.body)+'</span>':'')+'</div>';
+  if(t==="button") return '<div class="c-btn v-'+(c.variant||"primary")+'">'+esc(c.label||"")+'</div>';
+  if(t==="fab") return '<div class="c-fab">'+esc(c.label||"+")+'</div>';
+  if(t==="input") return '<div class="c-input">'+esc(c.label||"입력")+'</div>';
+  if(t==="progress") return '<div class="c-prog"><span>'+esc(c.label||"")+'</span><div class="bar"><i style="width:'+Math.max(0,Math.min(100,+c.value||0))+'%"></i></div></div>';
+  if(t==="chip") return '<div class="c-chips">'+(c.items||[]).map(function(x){return '<span>'+esc(x)+'</span>';}).join("")+'</div>';
+  if(t==="avatar") return '<div class="c-avatar"></div>';
+  if(t==="image") return '<div class="c-img">'+esc(c.label||"")+'</div>';
+  if(t==="text") return '<div class="c-text '+(c.role||"body")+'">'+esc(c.value||"")+'</div>';
+  if(t==="banner") return '<div class="c-banner">'+esc(c.label||"")+'</div>';
+  if(t==="grid") return '<div class="c-grid" style="grid-template-columns:repeat('+(c.cols||3)+',1fr)">'+(c.cells||[]).map(function(x){return '<div class="cell">'+esc(x)+'</div>';}).join("")+'</div>';
+  if(t==="dialog") return '<div class="c-dialog-wrap"><div class="c-dialog"><b>'+esc(c.label||"")+'</b>'+(c.body?'<span>'+esc(c.body)+'</span>':'')+'</div></div>';
+  return '<div class="c-unknown">?'+esc(t)+'</div>';
+}
+function compEditField(c){ if(ARRAY_FIELD[c.type]) return ARRAY_FIELD[c.type]; if(c.type==="text") return "value"; return "label"; }
+function renderWire(){
+  if(!Array.isArray(data.wire)) data.wire=[];
+  var html=data.wire.map(function(s,si){
+    var frame=s.frame==="web"?"web":"mobile";
+    var comps=(s.components||[]).map(function(c,ci){
+      return '<div class="comp" data-s="'+si+'" data-c="'+ci+'">'+compHtml(c)+
+        '<span class="cctrls"><button data-wact="up" title="위로">↑</button><button data-wact="down" title="아래로">↓</button><button data-wact="cedit" title="수정">✎</button><button data-wact="cdel" title="삭제">×</button></span></div>';
+    }).join("");
+    return '<div class="wscreen '+frame+'" data-s="'+si+'"><div class="wbar"><span class="wtitle">'+esc(s.title)+'</span>'+
+      (s.feature?'<span class="wfeat">'+esc(s.feature)+'</span>':'')+
+      '<span class="navtag" data-wact="frame" title="프레임 토글">'+frame+'</span>'+
+      '<span class="ctrls"><button data-wact="stitle" title="제목수정">✎</button><button data-wact="sdel" title="화면삭제">×</button></span></div>'+
+      '<div class="wframe"><div class="device '+frame+'">'+(comps||'<div class="c-unknown">컴포넌트 없음</div>')+'</div></div></div>';
+  }).join("");
+  $("wireGrid").innerHTML=html||'<p class="hint">화면 없음 — "+ 화면" 으로 추가.</p>';
+}
+$("wireGrid").addEventListener("click", function(e){
+  var btn=e.target.closest("[data-wact]"); if(!btn) return;
+  var act=btn.getAttribute("data-wact");
+  var sc=btn.closest(".wscreen"); var si=+sc.getAttribute("data-s"); var screen=data.wire[si]; if(!screen) return;
+  if(act==="frame"){ screen.frame=(screen.frame==="web")?"mobile":"web"; mark("wire"); renderWire(); return; }
+  if(act==="sdel"){ if(confirm("이 화면 삭제?")){ data.wire.splice(si,1); mark("wire"); renderWire(); } return; }
+  if(act==="stitle"){ var tl=sc.querySelector(".wtitle"); var inp=document.createElement("input"); inp.className="ed"; inp.value=screen.title; tl.replaceWith(inp); inp.focus(); inp.addEventListener("blur",function(){ screen.title=inp.value; mark("wire"); renderWire(); }); inp.addEventListener("keydown",function(ev){ if(ev.key==="Enter") inp.blur(); }); return; }
+  var comp=btn.closest(".comp"); if(!comp) return; var ci=+comp.getAttribute("data-c"); var comps=screen.components||[];
+  if(act==="up"){ if(ci>0){ var x=comps.splice(ci,1)[0]; comps.splice(ci-1,0,x); mark("wire"); renderWire(); } }
+  else if(act==="down"){ if(ci<comps.length-1){ var y=comps.splice(ci,1)[0]; comps.splice(ci+1,0,y); mark("wire"); renderWire(); } }
+  else if(act==="cdel"){ if(confirm("이 컴포넌트 삭제?")){ comps.splice(ci,1); mark("wire"); renderWire(); } }
+  else if(act==="cedit"){ editComp(screen, ci); }
+});
+function editComp(screen, ci){
+  var c=screen.components[ci]; if(!c) return; var field=compEditField(c); var isArr=!!ARRAY_FIELD[c.type];
+  var cur=isArr?((c[field]||[]).map(function(r){ return (r&&typeof r==="object")?r.label:r; }).join(", ")):(c[field]||"");
+  var v=prompt(isArr?(c.type+" 항목(쉼표 구분):"):(c.type+" 텍스트:"), cur);
+  if(v===null) return;
+  if(isArr){ c[field]=v.split(",").map(function(s){ return s.trim(); }).filter(function(s){ return s!==""; }); }
+  else { c[field]=v; }
+  mark("wire"); renderWire();
+}
+
+/* ---- 추가 버튼(탭 상단) ---- */
+document.addEventListener("click", function(e){
+  var b=e.target.closest("button[data-add]"); if(!b) return;
+  var kind=b.getAttribute("data-add");
+  if(kind==="prd"){ data.prd.push({id:"PRD-"+Date.now(),heading:"새 문단",body:"",status:"todo"}); mark("prd"); renderPRD(); }
+  else if(kind==="fts-group"){ data.fts.push({group:"NEW",label:"새 기능그룹",gno:String(data.fts.length+1),nodes:[]}); mark("fts"); renderFTS(); }
+  else if(kind==="menu-root"){ var lb=prompt("최상위 메뉴 라벨?","새 메뉴"); if(lb===null) return; var ft=prompt("Feature ID? (선택)","")||""; data.flow.tree=data.flow.tree||[]; data.flow.tree.push({id:newMenuId(),label:lb||"새 메뉴",feature:ft}); mark("flow"); renderMenu(); }
+});
+
+/* ---- 진행률 ---- */
+function refreshProg(){
+  var total=0,done=0;
+  data.fts.forEach(function(g){ (g.nodes||[]).forEach(function(n){ total++; if(n.status==="done") done++; }); });
+  var pct=total?Math.round(done/total*100):0;
+  $("progBadge").textContent="진행률 "+pct+"% ("+done+"/"+total+")";
+}
+
+/* ---- 시작 시: 지난 폴더 있으면 '다시 열기' 노출 ---- */
+(async function initReopen(){
+  if(!window.showDirectoryPicker || !window.indexedDB) return;
+  try {
+    var saved=await idbGet("dir");
+    if(saved){ var b=$("reopenBtn"); b.textContent="↻ "+saved.name+" 다시 열기"; b.style.display=""; }
+  } catch(_){}
+})();
+</script>
+</body>
+</html>
 '@
 
 # -- Skills: review (문서형 리뷰 라운드트립 게이트) --
@@ -4080,6 +4611,50 @@ description: Coding-phase subagent delegation gate. Use when moving from design 
 - 목적은 checkpoint/handoff 빈도 감소.
 '@
 
+# -- Skills: viewer-apply (뷰어 결정 반영 게이트) --
+Write-FileContent ".claude\skills\viewer-apply\SKILL.md" -NoBom @'
+---
+name: viewer-apply
+description: 통합 기획 뷰어(spec-viewer)가 제자리 저장한 데이터 JSON(src/viewer/*.json)을 읽어 설계/스팩에 동기하는 게이트. 남은 항목으로 spec 생성/갱신, 삭제 항목 spec 제거. 사용자가 "뷰어 저장함"/"viewer-apply"/"스팩 동기"를 언급할 때 사용.
+---
+
+# Viewer-Apply Skill — 뷰어 데이터 → 스팩 동기
+
+## 목적
+범용 뷰어(`.claude/skills/mockup/spec-viewer.html`)가 제자리 저장한 데이터 JSON(`src/viewer/{prd,fts,userflow,wire}.json`)을 읽어 설계/스팩에 반영한다. **JSON에 남은 항목 = 설계/개발 대상**(존재=포함), 삭제된 항목 = 제외. 별도 승인/결정 단계 없음 — 저장된 JSON이 곧 SoT.
+
+(뷰어가 File System Access API로 데이터 파일을 직접 제자리 저장하므로 별도 "결정 캡처·다운로드" 단계가 불필요 — 저장된 JSON이 곧 SoT.)
+
+## 성격
+Instruction skill. agent가 JSON read 후 spec/lane 동기. 삭제 반영(spec 제거)은 파괴적 → confirm 게이트.
+
+## 트리거
+/viewer-apply [feature-id]
+- 사용자 "뷰어 저장함" / "스팩 동기" / "viewer 반영" 시.
+
+## 입력 (고정명, on-demand)
+`src/viewer/prd.json` · `fts.json`(기능그룹→스팩) · `userflow.json`(메뉴 계층 트리 `{root,tree:[{id,label,feature?,tab?,children?}]}`) · `wire.json`(화면별 `{frame,components:[{type,...}]}`).
+**ON START/resume 자동 로드 금지** — 이 스킬 실행 시점에만 read(기획 강화·context 비대화 방지).
+
+## 동기 절차
+1. 4 JSON read. `fts.json`의 스팩 노드 = 설계/개발 단위, `prd.json` = 요구 문단, `userflow`/`wire` = 흐름·화면.
+2. **신규/유지 항목** → 대응 `specs/{feature-id}.md` 생성(없으면 TEMPLATE 기반)/갱신. PRD-tree·prd/{area}·flow 정합 갱신.
+3. **삭제된 항목**(직전 동기엔 있었으나 현 JSON에 없음) → 대응 spec **제거/아카이브**(물리 rm 금지 → done 이동 또는 status=removed), lane 있으면 done 이동. **confirm 게이트**(CLAUDE Escalation: DELETE→STOP).
+4. **status(예정/진행중/완료)**는 개발 진행 표시 — agent가 구현하며 해당 JSON 항목 status 갱신(사용자 편집 X). 뷰어 재로드로 가시.
+5. 변경 = 코드+문서 원자 단위(Doc Update Rules). lane `## Verification Evidence` 기록(DoD#7).
+
+## 원칙
+- **존재=대상, 삭제=제외** (승인 단계 없음).
+- 삭제 반영 **비파괴**(done 이동/아카이브) + confirm.
+- `src/viewer/*.json` context 자동로드 금지.
+- status는 agent가 개발 진행 따라 JSON 갱신 → 뷰어 가시(사용자 불수정).
+
+## 관계
+- spec-viewer.html(범용 뷰어, 사용자 편집·제자리 저장) ↔ viewer-apply(저장 JSON → 스팩 동기). 짝.
+- mockup viewer 모드(데이터 JSON 생성/갱신) → 사용자 뷰어 편집·저장 → viewer-apply(스팩 동기).
+- to-prd(PRD→specs 초기 생성)와 보완: viewer-apply는 뷰어 편집분을 스팩에 반영.
+'@
+
 # ── Codex repo skill mirror (.claude/skills -> .agents/skills) ────────────────
 Step-Begin "Codex skill mirror"
 $sourceSkillRoot = ".claude\skills"
@@ -4341,6 +4916,7 @@ agent가 /handoff skill (.claude/skills/handoff/SKILL.md) 따라 수동 작성.
 # ── PawPad: specs/ feature spec 디렉토리 + 템플릿 ────────────────────────────────
 Write-FileContent ".claude\pawpad\specs\TEMPLATE.md" @"
 # Feature Spec - {feature-id}
+> status: draft   <!-- draft | ready | implementing | done | removed — 진행률 SoT (unified-spec-viewer D7) -->
 
 ## Goal
 이 기능이 해결하는 문제. 1-3줄.
@@ -4777,7 +5353,7 @@ PowerShell hook을 stdin 주입으로 단독 검증:
 Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 # Skills Manifest
 
-프로젝트에 설치된 모든 스킬 목록. (19개)
+프로젝트에 설치된 모든 스킬 목록. (20개)
 
 > **환경별 활성 방식**
 > - Claude Code: `/skill` slash 호출 + description 자동 트리거 둘 다 지원.
@@ -4818,6 +5394,7 @@ Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 | **mockup** | `.claude/skills/mockup/` | PRD-tree→단일 HTML 목업 시각화 (lo/hi-fi, Feature ID 태깅 + drift 경고) |
 | **review** | `.claude/skills/review/` | 문서형 크로스에이전트/세션 리뷰 라운드트립 (codex exec 보완·저토큰, request 직접검증 체크리스트) |
 | **code-delegate** | `.claude/skills/code-delegate/` | 코딩 단계 서브에이전트 위임 (사용자 선택 모델, spec/lane 포인터 전달, 요약 반환 — 부모 컨텍스트·토큰 절감) |
+| **viewer-apply** | `.claude/skills/viewer-apply/` | 뷰어 데이터 JSON(src/viewer/*.json)을 읽어 스팩 동기 (남은 항목 spec 생성/갱신, 삭제 항목 제거/아카이브, confirm·비파괴, mockup viewer 모드와 짝) |
 
 ---
 
@@ -4849,7 +5426,7 @@ Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 
 ### 예시 1: 기획 → 구현 (PawPad 흐름3)
 ```
-1. /clarity 40          ← 기획 모호도 확인
+1. /clarity 30          ← 기획 모호도 확인
 2. /grill-me            ← 설계 스트레스 테스트
 3. /to-prd              ← PRD를 PawPad specs/ 저장 + lane SPEC_READY 등록
 4. (구현 agent) ON START ← SPEC_READY 발견 → spec+lane read → 인수 (state=WIP)
@@ -4966,6 +5543,7 @@ $($p.StackInfo)
     "mockup",
     "review",
     "code-delegate",
+    "viewer-apply",
     "ctxdb-navigator",
     "context-saver",
     "security-check"
@@ -5043,7 +5621,7 @@ Write-Host ""
 if ($failed -eq 0) {
     Write-Host "프로젝트 초기화 완료 (PawPad v$ver)" -ForegroundColor Green
     Write-Host ""
-    Write-Host "v$ver 누적 (19 스킬 + hook + .ctxdb + codemap + codebase-map + security-check):" -ForegroundColor Cyan
+    Write-Host "v$ver 누적 (20 스킬 + hook + .ctxdb + codemap + codebase-map + security-check):" -ForegroundColor Cyan
     Write-Host "  - Stack 프리셋: $Stack (flutter|node|python|generic 중 -Stack로 선택)" -ForegroundColor Cyan
     Write-Host "  - 크로스플랫폼 hook: Windows=.ps1 / Unix=.sh (설치 OS 자동 선택)" -ForegroundColor Cyan
     Write-Host "  - statusLine: Claude Code 매 턴 컨텍스트 윈도우 사용량(%) 표시" -ForegroundColor Cyan
@@ -5057,7 +5635,7 @@ if ($failed -eq 0) {
     Write-Host "  - 설치 UI: paw 배너 + 진행 바 live 1줄 갱신 + 실측 체크리스트 (-ShowLog로 파일 상세 로그)" -ForegroundColor Cyan
     Write-Host "  - lean-code: 과설계/범위이탈 방지 원칙 스킬 (구 karpathy, v2.25 rename + 병합 마이그레이션)" -ForegroundColor Cyan
     Write-Host "  - feature-architecture: feature-first 구조 규율 스킬 (CLAUDE/AGENTS Architecture Principles 강제)" -ForegroundColor Cyan
-    Write-Host "  - 상세: docs/CHANGELOG_v2.33.md" -ForegroundColor Cyan
+    Write-Host "  - 상세: docs/CHANGELOG_v2.36.md" -ForegroundColor Cyan
     Write-Host ""
 } else {
     Write-Host "$failed 개 항목 실패. 권한 확인 후 다시 시도하세요." -ForegroundColor Yellow

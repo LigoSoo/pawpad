@@ -70,6 +70,16 @@ drift 검사: {일치 N개}
 5. drift 검사 출력.
 6. lo-fi이고 구조 안정화 판단 시 hi-fi 전환 제안(1회).
 
+## 통합 뷰어 모드 (viewer) — 데이터 구동 (no-backend)
+범용 뷰어 `.claude/skills/mockup/spec-viewer.html`(setup 배포·고정·데이터 비종속)를 Chrome/Edge로 열어 `src/viewer/` 폴더 1회 선택 → 4탭(PRD/기능명세서/메뉴구성도/와이어프레임) 자동 로드. 편집 후 같은 JSON에 제자리 저장(File System Access API, 다운로드·백엔드 없음) → 재로드.
+/mockup viewer [feature-id]: 대상 프로젝트 데이터 JSON을 PRD-tree/flow/spec에서 생성·갱신(뷰어 HTML은 안 건드림).
+- 데이터 SoT(고정명, `src/viewer/`): `prd.json` · `fts.json`(기능그룹→스팩) · `userflow.json`(메뉴 계층 트리 `{root,tree:[{id,label,feature?,tab?,children?}]}`) · `wire.json`(화면별 `{frame,components:[{type,...}]}`). 전부 JSON. agent가 읽고/쓰는 SoT.
+- 뷰어 데이터 비종속(HTML에 데이터 안 박음·렌더 엔진 고정) → PRD/명세 변경 시 agent는 **JSON만 수정**(HTML 불변 → 토큰 절감). 렌더: 기능명세서=CSS 트리(그룹──트렁크┬─leaf), 메뉴구성도(구 유저플로우)=계층 트리+드래그앤드랍(순서·위치 재배치 저장), 와이어=디바이스 프레임+컴포넌트 lo-fi(mobile/web).
+- **존재=대상**: JSON에 남은 항목 = 설계/개발 대상. 삭제=제외(별도 승인 없음). 사용자 액션 = 수정/삭제/추가만.
+- **상태(예정/진행중/완료)**: 개발 진행 가시화 전용 — agent가 구현하며 status 갱신, 사용자 편집 X.
+- **context 규율(중요)**: `src/viewer/*.json`은 ON START/resume **자동 로드 금지** — 기획/구현 작업 시점에만 해당 파일 on-demand read(초기 기획 강화로 후속 수정 최소화, context 비대화 방지).
+- 반영: 사용자 저장 후 `/viewer-apply`가 JSON 읽어 spec 동기(남은 항목→spec 생성/갱신, 삭제 항목→spec 제거/아카이브).
+
 ## 선택지 질문 규칙
 대상 화면·fidelity 등 선택지가 있는 질문은 **AskUserQuestion(체크박스)** 로 받는다. 자유서술·수치 입력은 텍스트.
 

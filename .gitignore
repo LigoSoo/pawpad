@@ -12,6 +12,7 @@
 # pawpad lane/state/history (working memory)
 .claude/pawpad/_wip.md
 .claude/pawpad/_meta.md
+.claude/pawpad/sessions/
 .claude/pawpad/decisions/
 .claude/pawpad/verifications/
 .claude/pawpad/reviews/

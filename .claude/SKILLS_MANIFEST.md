@@ -1,6 +1,6 @@
 ﻿# Skills Manifest
 
-프로젝트에 설치된 모든 스킬 목록. (19개)
+프로젝트에 설치된 모든 스킬 목록. (20개)
 
 > **환경별 활성 방식**
 > - Claude Code: `/skill` slash 호출 + description 자동 트리거 둘 다 지원.
@@ -41,6 +41,7 @@
 | **mockup** | `.claude/skills/mockup/` | PRD-tree→단일 HTML 목업 시각화 (lo/hi-fi, Feature ID 태깅 + drift 경고) |
 | **review** | `.claude/skills/review/` | 문서형 크로스에이전트/세션 리뷰 라운드트립 (codex exec 보완·저토큰, request 직접검증 체크리스트) |
 | **code-delegate** | `.claude/skills/code-delegate/` | 코딩 단계 서브에이전트 위임 (사용자 선택 모델, spec/lane 포인터 전달, 요약 반환 — 부모 컨텍스트·토큰 절감) |
+| **viewer-apply** | `.claude/skills/viewer-apply/` | 뷰어 데이터 JSON(src/viewer/*.json)을 읽어 스팩 동기 (남은 항목 spec 생성/갱신, 삭제 항목 제거/아카이브, confirm·비파괴, mockup viewer 모드와 짝) |
 
 ---
 
@@ -72,7 +73,7 @@
 
 ### 예시 1: 기획 → 구현 (PawPad 흐름3)
 ```
-1. /clarity 40          ← 기획 모호도 확인
+1. /clarity 30          ← 기획 모호도 확인
 2. /grill-me            ← 설계 스트레스 테스트
 3. /to-prd              ← PRD를 PawPad specs/ 저장 + lane SPEC_READY 등록
 4. (구현 agent) ON START ← SPEC_READY 발견 → spec+lane read → 인수 (state=WIP)

@@ -64,9 +64,12 @@ src/
 | Feature/UX       | src/prd/{area}.md (영역 shard)            |
 | New feature      | src/PRD-tree.md(인덱스 행) + src/prd/{area}.md(상세) |
 | New screen/route | Feature ID in PRD-tree.md (인덱스)        |
+| 메뉴구성도        | src/viewer/userflow.json (메뉴 계층 트리 JSON; 뷰어 드래그 편집·on-demand) |
+| 스팩 진행률       | specs/{feature-id}.md 상단 status 행 (draft/ready/implementing/done — 뷰어 진행률 SoT) |
 | 결정 기록 위치    | .claude/HYBRID.md Decision Placement Matrix 참조 |
 | 검증 결과        | lane `## Verification Evidence` 최근 2건, 초과분 → .claude/pawpad/verifications/{feature-id}-archive.md (상단 append) |
 PRD 상세 read: PRD-tree(인덱스) → lane feature-id 접두로 영역 해석 → 해당 src/prd/{area}.md만 (✓완료 영역 skip, 부족 시 on-demand). PRD-tree 영역 행에 상태 마커 ✓완료/🔨진행/⬜예정.
+뷰어 데이터(src/viewer/*.json: prd/fts/userflow/wire)는 ON START/resume 자동 로드 금지 — /mockup viewer·/viewer-apply 등 해당 작업 시점에만 on-demand read(초기 기획 강화로 후속 수정 최소화·context 절감). 항목 존재=설계/개발 대상, status(예정/진행중/완료)는 agent가 구현하며 갱신.
 Code + doc update = one atomic unit. Keep * markers accurate.
 
 ## Session Protocol
@@ -114,7 +117,7 @@ caveman 항상 포함(normal mode 제외). 스킬 없으면 caveman만. ON START
 - UI/화면 기획 시: design(토큰/레이아웃 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
 ### 자동제안 (단계 경계)
 agent가 흐름 중 다음 시점에 다음 스킬 또는 목업을 **1회 추천**(강제 X):
-- PRD/PRD-tree 생성·갱신 직후 → mockup 추천.
+- PRD/PRD-tree 생성·갱신 직후 → mockup 추천(통합 4탭 검토는 /mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 로 반영).
 - clarity/grill-me/grill-with-docs/to-prd 종료 시 → 다음 단계 스킬 추천.
 - 매 응답 판단 X(과추천 방지). 거절 시 같은 산출물 버전엔 재제안 X → 다음 단계 경계까지 침묵.
 - 추천 대상 한정: clarity·grill-me·grill-with-docs·to-prd·design·mockup·brainstorming. 나머지(resume·codemap·security-check·checkpoint·handoff·context-saver 등)는 Session Protocol/DoD/hook이 트리거 → 자동제안 제외(이중 트리거 방지).

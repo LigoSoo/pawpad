@@ -10,9 +10,9 @@ description: Ambiguity gate. Use before implementing to score request ambiguity 
 
 ## 트리거
 /clarity [임계값]
-- 임계값 미지정 시 기본값: 40
-- 예: /clarity       -> 임계값 40
-- 예: /clarity 30    -> 임계값 30 (엄격)
+- 임계값 미지정 시 기본값: 30
+- 예: /clarity       -> 임계값 30
+- 예: /clarity 20    -> 임계값 20 (엄격)
 - 예: /clarity 60    -> 임계값 60 (관대)
 
 ## 모호도 차원 (5개 × 20점 = 100점)

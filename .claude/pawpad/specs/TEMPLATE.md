@@ -1,4 +1,5 @@
 ﻿# Feature Spec - {feature-id}
+> status: draft   <!-- draft | ready | implementing | done | removed — 진행률 SoT (unified-spec-viewer D7) -->
 
 ## Goal
 이 기능이 해결하는 문제. 1-3줄.
