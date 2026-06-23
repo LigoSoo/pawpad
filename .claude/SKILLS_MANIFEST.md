@@ -1,6 +1,6 @@
 ﻿# Skills Manifest
 
-프로젝트에 설치된 모든 스킬 목록. (20개)
+프로젝트에 설치된 모든 스킬 목록. (19개)
 
 > **환경별 활성 방식**
 > - Claude Code: `/skill` slash 호출 + description 자동 트리거 둘 다 지원.
@@ -35,8 +35,7 @@
 |------|------|------|
 | **handoff** | `.claude/skills/handoff/` | 세션/에이전트 인수인계 (PawPad snapshot + owner transfer) |
 | **checkpoint** | `.claude/skills/checkpoint/` | 컨텍스트 60% 롤오버 게이트 (상태 보존) |
-| **grill-me** | `.claude/skills/grill-me/` | 계획/설계 스트레스 테스트 (재귀적 질문) |
-| **grill-with-docs** | `.claude/skills/grill-with-docs/` | 문서 기반 그릴링 (`.claude/pawpad/decisions/arch.md` ADR 갱신) |
+| **grill-me** | `.claude/skills/grill-me/` | 계획/설계 스트레스 테스트 (재귀적 질문 + 용어 canonical 좁힘 + 코드 모순 표면화) |
 | **to-prd** | `.claude/skills/to-prd/` | 대화 → PRD (`.claude/pawpad/specs/` 저장 + SPEC_READY) |
 | **mockup** | `.claude/skills/mockup/` | PRD-tree→단일 HTML 목업 시각화 (lo/hi-fi, Feature ID 태깅 + drift 경고) |
 | **review** | `.claude/skills/review/` | 문서형 크로스에이전트/세션 리뷰 라운드트립 (codex exec 보완·저토큰, request 직접검증 체크리스트) |
@@ -60,8 +59,7 @@
 
 ### 협업/기획
 ```
-/grill-me        # 설계 스트레스 테스트
-/grill-with-docs # 문서 기반 그릴링 (용어집 + ADR)
+/grill-me        # 설계 스트레스 테스트 (용어 좁힘·코드 모순 표면화 포함)
 /to-prd          # 대화 → PRD + SPEC_READY 등록
 /checkpoint      # 60% 컨텍스트 정리
 /handoff         # 다음 에이전트 인수인계

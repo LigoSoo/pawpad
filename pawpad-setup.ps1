@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.36 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.36. v2.35 기반 + 통합 기획 뷰어(데이터-구동, no-backend) — 범용 spec-viewer.html(데이터 비종속, File System Access API)가 고정명 외부 JSON(src/viewer/{prd,fts,userflow,wire}.json)을 폴더 1회 선택 후 자동 로드·편집(수정/삭제/추가)·제자리 저장(다운로드·백엔드 없음)·재로드. PRD/명세 변경 시 agent는 JSON만 수정(HTML 불변→토큰 절감). 항목 존재=설계/개발 대상(승인 단계 없음), status 예정/진행중/완료(agent 갱신·읽기전용). src/viewer/*.json ON START/resume 자동로드 금지. 신규 스킬 viewer-apply(19→20, JSON→스팩 동기) + mockup viewer 모드. 보고서: docs/CHANGELOG_v2.36.md).
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.37 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.37. v2.36 기반 + grill-with-docs → grill-me 흡수(스킬 20→19) — 죽은 중복 제거. grill-with-docs 고유가치 중 순수 인터뷰 품질(모호용어 canonical 좁힘·엣지케이스 시나리오 stress-test·진술 vs 코드 모순 표면화·탐색 시 기존 문서 확인)만 grill-me에 흡수, 미사용 CONTEXT.md 용어집·Decision Placement Matrix와 중복인 ADR offering은 DROP. 보고서: docs/CHANGELOG_v2.37.md).
+#         이전: v2.36 통합 기획 뷰어(데이터-구동, no-backend) — 범용 spec-viewer.html(File System Access API)가 고정명 외부 JSON(src/viewer/{prd,fts,userflow,wire}.json)을 폴더 1회 선택 후 자동 로드·편집·제자리 저장·재로드. 신규 스킬 viewer-apply(19→20) + mockup viewer 모드. 보고서: docs/CHANGELOG_v2.36.md).
 #         이전: v2.35 resume 최소로드 — ON START 읽기 토큰 절감(HYBRID 조건부화+_meta RECENT skip). 보고서: docs/CHANGELOG_v2.35.md).
 #         이전: v2.34 skill rename memory → resume. 보고서: docs/CHANGELOG_v2.34.md).
 #         이전: v2.33 code-delegate 스킬 신규(18→19) — 코딩 단계 서브에이전트 위임(설계=상위 Opus, 코딩=하위 모델). 보고서: docs/CHANGELOG_v2.33.md).
@@ -19,7 +20,7 @@
 # - CLAUDE.md, AGENTS.md (Context files, 하이브리드 프로토콜 반영)
 # - .claude/settings.json (Claude Code hooks: SessionStart 자동주입 + Stop decision:block)
 # - .claude/hooks/* (session-start.{ps1,sh}, stop-check.{ps1,sh}, statusline.{ps1,sh} - 크로스플랫폼 자동화/상태줄)
-# - .claude/skills/* (resume, codemap, codebase-map, caveman, lean-code, feature-architecture, clarity, handoff, checkpoint, grill-me, grill-with-docs, to-prd, design, mockup, review, code-delegate, viewer-apply, ctxdb-navigator, context-saver, security-check)
+# - .claude/skills/* (resume, codemap, codebase-map, caveman, lean-code, feature-architecture, clarity, handoff, checkpoint, grill-me, to-prd, design, mockup, review, code-delegate, viewer-apply, ctxdb-navigator, context-saver, security-check)
 # - .agents/skills/* (Codex repo skill mirror, .claude/skills 단일 소스에서 재생성)
 # - .claude/pawpad/* (_wip router, wip/lanes, wip/done, handoffs/, specs/, decisions/)
 # - .claude/codemap/_index.md
@@ -51,7 +52,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.36"
+$ver = "2.37"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -774,6 +775,23 @@ if ($Upgrade) {
             Write-Host "  MIGRATED .codex\config.json skills: memory -> resume (v2.34)" -ForegroundColor Cyan
         }
     }
+    # v2.37: grill-with-docs -> grill-me 흡수. 구 스킬 디렉토리 제거(grill-me 재생성·보강됨, 백업 전 수행).
+    foreach ($skillRoot in @(".claude\skills", ".agents\skills")) {
+        if (Test-Path "$skillRoot\grill-with-docs") {
+            Remove-Item "$skillRoot\grill-with-docs" -Recurse -Force
+            Write-Host "  REMOVED  $skillRoot\grill-with-docs (v2.37 grill-with-docs -> grill-me 흡수)" -ForegroundColor Cyan
+        }
+    }
+    # v2.37: .codex/config.json skills 배열에서 "grill-with-docs" 제거(병합 union 시 구 항목 잔존 방지).
+    if (Test-Path ".codex\config.json") {
+        $cfgAbs = Join-Path (Get-Location) ".codex\config.json"
+        $cfgText = [System.IO.File]::ReadAllText($cfgAbs)
+        $cfgNew = $cfgText -replace '(?m)^\s*"grill-with-docs",\r?\n', ''
+        if ($cfgNew -ne $cfgText) {
+            [System.IO.File]::WriteAllText($cfgAbs, $cfgNew, (New-Object System.Text.UTF8Encoding($false)))
+            Write-Host "  MIGRATED .codex\config.json skills: grill-with-docs 제거 (v2.37)" -ForegroundColor Cyan
+        }
+    }
 }
 
 # -Force/-Upgrade 시 자동 백업 (PawPad + Context files)
@@ -894,13 +912,13 @@ ON 8턴/60% CONTEXT: Stop hook이 8턴마다 checkpoint block -> context-saver(.
 ### 자동제안 (단계 경계)
 agent가 흐름 중 다음 시점에 다음 스킬 또는 목업을 **1회 추천**(강제 X):
 - PRD/PRD-tree 생성·갱신 직후 → mockup 추천(통합 4탭 검토는 /mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 로 반영).
-- clarity/grill-me/grill-with-docs/to-prd 종료 시 → 다음 단계 스킬 추천.
+- clarity/grill-me/to-prd 종료 시 → 다음 단계 스킬 추천.
 - 매 응답 판단 X(과추천 방지). 거절 시 같은 산출물 버전엔 재제안 X → 다음 단계 경계까지 침묵.
-- 추천 대상 한정: clarity·grill-me·grill-with-docs·to-prd·design·mockup·brainstorming. 나머지(resume·codemap·security-check·checkpoint·handoff·context-saver 등)는 Session Protocol/DoD/hook이 트리거 → 자동제안 제외(이중 트리거 방지).
+- 추천 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming. 나머지(resume·codemap·security-check·checkpoint·handoff·context-saver 등)는 Session Protocol/DoD/hook이 트리거 → 자동제안 제외(이중 트리거 방지).
 - 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료(DoD) 직전 + 고위험·배포본 영향이면 → ``/review`` 1회 권장(강제 X, 저비용 문서형 라운드트립). 광범위·맹점우려·설치 스크립트 변경은 codex exec 자율 리뷰로 에스컬레이션.
 - 코딩 위임 제안(구현 진입 경계): SPEC_READY 또는 written 설계 직후 코딩 진입 시 → ``/code-delegate`` 1회 권장(강제 X). 사용자 선택 모델의 코딩 서브에이전트로 위임해 부모 컨텍스트·토큰 절감(written 설계 없으면 제안 안 함, 이점 반감).
 ### 선택지 질문 = 체크박스
-기획/설계 스킬(clarity·grill-me·grill-with-docs·to-prd·design·mockup·review) 진행 중 **선택지가 N개인 질문은 AskUserQuestion(체크박스)** 로 받는다. 자유서술·수치 입력은 텍스트 유지.
+기획/설계 스킬(clarity·grill-me·to-prd·design·mockup·review) 진행 중 **선택지가 N개인 질문은 AskUserQuestion(체크박스)** 로 받는다. 자유서술·수치 입력은 텍스트 유지.
 
 ## Response Style
 한글로 답변. 기술 용어 코드 원문 유지.
@@ -1035,7 +1053,7 @@ state 마커: HANDOFF_TO_CODEX(Claude→Codex), HANDOFF_TO_CLAUDE(Codex→Claude
 - grill-me 종결 후: →to-prd.
 - UI/화면 기획 시: design(토큰/레이아웃 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
 ### 자동제안 (단계 경계)
-다음 시점에 다음 스킬 또는 목업 1회 추천(강제 X): PRD/PRD-tree 갱신 직후→mockup(통합 4탭=/mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 반영), clarity/grill-me/grill-with-docs/to-prd 종료 시→다음 스킬. 매 응답 판단 X. 거절 시 다음 단계 경계까지 침묵. 대상 한정: clarity·grill-me·grill-with-docs·to-prd·design·mockup·brainstorming(나머지는 Checkpoint/hook 트리거 → 제외). 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료 직전 고위험·배포본 영향이면 /review 권장(강제 X); 광범위·맹점우려·설치 스크립트는 codex exec 에스컬레이션. 코딩 위임 제안(구현 진입 경계): SPEC_READY/written 설계 직후 코딩 진입 시 /code-delegate 1회 권장(강제 X, 선택 모델 서브에이전트 위임으로 부모 컨텍스트·토큰 절감; 설계 미작성 시 제안 X).
+다음 시점에 다음 스킬 또는 목업 1회 추천(강제 X): PRD/PRD-tree 갱신 직후→mockup(통합 4탭=/mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 반영), clarity/grill-me/to-prd 종료 시→다음 스킬. 매 응답 판단 X. 거절 시 다음 단계 경계까지 침묵. 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming(나머지는 Checkpoint/hook 트리거 → 제외). 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료 직전 고위험·배포본 영향이면 /review 권장(강제 X); 광범위·맹점우려·설치 스크립트는 codex exec 에스컬레이션. 코딩 위임 제안(구현 진입 경계): SPEC_READY/written 설계 직후 코딩 진입 시 /code-delegate 1회 권장(강제 X, 선택 모델 서브에이전트 위임으로 부모 컨텍스트·토큰 절감; 설계 미작성 시 제안 X).
 ### 선택지 질문 = 체크박스
 기획/설계 스킬 진행 중 선택지 N개 질문은 AskUserQuestion(체크박스)로, 자유서술·수치는 텍스트로.
 
@@ -3419,78 +3437,21 @@ Step-Begin "skill: grill-me"
 Write-FileContent ".claude\skills\grill-me\SKILL.md" -NoBom @"
 ---
 name: grill-me
-description: Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their design, or mentions "grill me".
+description: Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree, sharpening fuzzy terms and surfacing contradictions against the codebase. Use when user wants to stress-test a plan, get grilled on their design, or mentions "grill me".
 ---
 
 Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
 
 Ask the questions one at a time.
 
-If a question can be answered by exploring the codebase, explore the codebase instead.
+If a question can be answered by exploring the codebase, explore the codebase instead. During exploration also look for existing documentation (specs, PRD, decisions) that bears on the plan.
+
+While grilling, sharpen the conversation:
+
+- Sharpen fuzzy language — 모호하거나 중의적인 용어는 정확한 canonical 용어로 좁힌다. "'account'라고 했는데 Customer인가 User인가? 둘은 다른 개념이다."
+- Discuss concrete scenarios — 도메인 관계나 경계가 걸리면 구체 시나리오·엣지 케이스로 stress-test 해 개념 경계를 강제로 드러낸다.
+- Cross-reference with code — 사용자가 동작을 설명하면 코드와 일치하는지 확인하고, 모순을 즉시 표면화한다. "코드는 Order 전체를 취소하는데 방금 부분 취소가 가능하다고 했다 — 어느 게 맞나?"
 "@
-
-Step-Begin "skill: grill-with-docs"
-Write-FileContent ".claude\skills\grill-with-docs\SKILL.md" -NoBom @'
----
-name: grill-with-docs
-description: Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates project documentation (glossary + PawPad ADRs) inline as decisions crystallise. Use when user wants to stress-test a plan against the project's language and documented decisions.
----
-
-## What to Do
-
-Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
-
-Ask the questions one at a time, waiting for feedback on each question before continuing.
-
-If a question can be answered by exploring the codebase, explore the codebase instead.
-
-## Domain awareness
-
-During codebase exploration, also look for existing documentation.
-
-### 문서 위치 (이 프로젝트 / PawPad 규약)
-
-- 용어집(glossary): `CONTEXT.md` (프로젝트 루트). 없으면 첫 용어 확정 시 생성.
-- 아키텍처 결정(ADR): `.claude/pawpad/decisions/arch.md` (append, ADR-NNN 형식).
-- 거부된 접근: `.claude/pawpad/decisions/rejected.md`
-- 기능 spec: `.claude/pawpad/specs/{feature-id}.md`
-
-주의: Matt Pocock 원본의 `docs/adr/`, `CONTEXT-MAP.md` 다중 컨텍스트 구조는 이 프로젝트에서 쓰지 않는다. ADR은 PawPad `decisions/arch.md` 단일 위치로 통일.
-
-## During the session
-
-### Challenge against the glossary
-
-용어가 `CONTEXT.md` 기존 정의와 충돌하면 즉시 지적한다. "용어집은 '취소'를 X로 정의했는데 지금 Y를 의미하는 것 같다 — 어느 쪽인가?"
-
-### Sharpen fuzzy language
-
-모호하거나 중의적인 용어 → 정확한 canonical 용어 제안. "'account'라고 했는데 Customer인가 User인가? 둘은 다른 개념이다."
-
-### Discuss concrete scenarios
-
-도메인 관계를 논의할 때 구체 시나리오로 stress-test 한다. 엣지 케이스를 만들어 개념 경계를 명확히 하도록 강제한다.
-
-### Cross-reference with code
-
-사용자가 동작을 설명하면 코드와 일치하는지 확인한다. 모순 발견 시 표면화: "코드는 Order 전체를 취소하는데 방금 부분 취소가 가능하다고 했다 — 어느 게 맞나?"
-
-### Update CONTEXT.md inline
-
-용어가 확정되면 즉시 `CONTEXT.md`를 갱신한다. 모아두지 말고 그때그때 기록한다.
-
-`CONTEXT.md`는 구현 세부를 일절 담지 않는다. spec, 스크래치패드, 구현 결정 저장소로 쓰지 말 것. 용어집(glossary)일 뿐이다.
-
-### Offer ADRs sparingly
-
-다음 세 가지가 모두 참일 때만 ADR을 제안한다:
-
-1. **되돌리기 어려움** — 나중에 바꾸는 비용이 큼
-2. **맥락 없이는 의외** — 미래 독자가 "왜 이렇게 했지?" 의문을 가짐
-3. **실제 트레이드오프 결과** — 진짜 대안이 있었고 특정 이유로 선택함
-
-하나라도 빠지면 ADR을 생략한다. ADR 작성 시 `.claude/pawpad/decisions/arch.md`에 append 한다 (별도 `docs/adr/` 생성 금지).
-'@
 
 Step-Begin "skill: to-prd"
 Write-FileContent ".claude\skills\to-prd\SKILL.md" -NoBom @'
@@ -5353,7 +5314,7 @@ PowerShell hook을 stdin 주입으로 단독 검증:
 Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 # Skills Manifest
 
-프로젝트에 설치된 모든 스킬 목록. (20개)
+프로젝트에 설치된 모든 스킬 목록. (19개)
 
 > **환경별 활성 방식**
 > - Claude Code: `/skill` slash 호출 + description 자동 트리거 둘 다 지원.
@@ -5388,8 +5349,7 @@ Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 |------|------|------|
 | **handoff** | `.claude/skills/handoff/` | 세션/에이전트 인수인계 (PawPad snapshot + owner transfer) |
 | **checkpoint** | `.claude/skills/checkpoint/` | 컨텍스트 60% 롤오버 게이트 (상태 보존) |
-| **grill-me** | `.claude/skills/grill-me/` | 계획/설계 스트레스 테스트 (재귀적 질문) |
-| **grill-with-docs** | `.claude/skills/grill-with-docs/` | 문서 기반 그릴링 (`.claude/pawpad/decisions/arch.md` ADR 갱신) |
+| **grill-me** | `.claude/skills/grill-me/` | 계획/설계 스트레스 테스트 (재귀적 질문 + 용어 canonical 좁힘 + 코드 모순 표면화) |
 | **to-prd** | `.claude/skills/to-prd/` | 대화 → PRD (`.claude/pawpad/specs/` 저장 + SPEC_READY) |
 | **mockup** | `.claude/skills/mockup/` | PRD-tree→단일 HTML 목업 시각화 (lo/hi-fi, Feature ID 태깅 + drift 경고) |
 | **review** | `.claude/skills/review/` | 문서형 크로스에이전트/세션 리뷰 라운드트립 (codex exec 보완·저토큰, request 직접검증 체크리스트) |
@@ -5413,8 +5373,7 @@ Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 
 ### 협업/기획
 ```
-/grill-me        # 설계 스트레스 테스트
-/grill-with-docs # 문서 기반 그릴링 (용어집 + ADR)
+/grill-me        # 설계 스트레스 테스트 (용어 좁힘·코드 모순 표면화 포함)
 /to-prd          # 대화 → PRD + SPEC_READY 등록
 /checkpoint      # 60% 컨텍스트 정리
 /handoff         # 다음 에이전트 인수인계
@@ -5537,7 +5496,6 @@ $($p.StackInfo)
     "handoff",
     "checkpoint",
     "grill-me",
-    "grill-with-docs",
     "to-prd",
     "design",
     "mockup",
@@ -5621,7 +5579,7 @@ Write-Host ""
 if ($failed -eq 0) {
     Write-Host "프로젝트 초기화 완료 (PawPad v$ver)" -ForegroundColor Green
     Write-Host ""
-    Write-Host "v$ver 누적 (20 스킬 + hook + .ctxdb + codemap + codebase-map + security-check):" -ForegroundColor Cyan
+    Write-Host "v$ver 누적 (19 스킬 + hook + .ctxdb + codemap + codebase-map + security-check):" -ForegroundColor Cyan
     Write-Host "  - Stack 프리셋: $Stack (flutter|node|python|generic 중 -Stack로 선택)" -ForegroundColor Cyan
     Write-Host "  - 크로스플랫폼 hook: Windows=.ps1 / Unix=.sh (설치 OS 자동 선택)" -ForegroundColor Cyan
     Write-Host "  - statusLine: Claude Code 매 턴 컨텍스트 윈도우 사용량(%) 표시" -ForegroundColor Cyan

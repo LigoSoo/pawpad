@@ -14,16 +14,18 @@
 | "뭘 만들지 머릿속이 안 정리됐어" | `/clarity` | 애매한 부분을 콕 집어 질문 → 명확한 사양으로 정리 (+ 구현 경로가 갈리면 2-3 대안 제시 후 추천) |
 | "화면 좀 예쁘고 일관되게 해줘" | `/design` | 색·간격·배치 규칙(디자인 토큰) 잡고 반응형까지 |
 | "기획한 거 화면으로 미리 보고 싶어" | `/mockup` | PRD를 HTML 시안으로 — 와이어프레임/디자인, 어느 메뉴에 있는지 확인 |
+| "PRD·명세·메뉴·와이어를 한 화면에서 보고 편집" | `/mockup viewer` | 통합 뷰어(spec-viewer) 4탭으로 띄워 브라우저에서 편집·제자리 저장 |
+| "뷰어에서 정리한 거 스팩에 반영해줘" | `/viewer-apply` | 뷰어가 저장한 `src/viewer/*.json`을 스팩 문서에 동기 (남은 항목→스팩, 삭제→제거) |
 | "AI가 시키지도 않은 걸 막 고쳐!" | `/lean-code` | "딱 시킨 것만" 고삐 잡기 (오버엔지니어링 방지) |
 | "이 기능 코드가 어디 있더라?" | (자동) codemap | 위치+역할 즉시 — 안 찾아도 알려줌 |
 | "이 프로젝트 구조/관례가 어떻게 돼?" | `/codebase-map` | 아키텍처·구조·관례·관심사 7축 고수준 맵 (트리 안 뒤져도 정신모델) |
-| "내 계획에 허점 없나 따져봐" | `/grill-me` | 꼬치꼬치 캐물어 약점·빠진 부분 발견 |
-| "용어/구조 결정을 문서랑 맞춰 따져봐" | `/grill-with-docs` | 위 + 용어집·결정기록(ADR) 갱신하며 검토 |
+| "내 계획에 허점 없나 따져봐" | `/grill-me` | 꼬치꼬치 캐물어 약점·빠진 부분 발견 (모호 용어 좁힘·코드 모순 표면화 포함) |
 | "방금 얘기한 거 기획서로 정리해줘" | `/to-prd` | PRD(요구사항 문서)로 깔끔하게 |
 | "대화가 길어져서 느리고 까먹어" | `/checkpoint` → 새 세션 | 상태 저장 → 새 창에서 이어서 작업 |
 | "다른 AI(Codex)한테 넘기고 싶어" | `/handoff` | 작업을 상태째로 인계 |
 | "커밋/완료 전에 보안 문제 없나 봐줘" | `/security-check` | 하드코딩 비밀번호·API key·취약점·위험 설정 스캔 → 발견 시 완료 막고 조치 제안 |
 | "다 만든 거 다른 시각으로 검토받고 싶어" | `/review` | 변경을 문서로 정리해 다른 세션/에이전트가 직접 검증 리뷰 → 받아서 수정 (codex보다 저토큰) |
+| "코딩은 저렴한 모델한테 시키고 토큰 아껴" | `/code-delegate` | 설계는 상위 모델, 코딩은 고른 하위 모델 서브에이전트에 위임 → 요약만 받음 (부모 컨텍스트 절감) |
 | "답변이 너무 길어, 짧게" | `/caveman` | 군더더기 빼고 압축 (켜져 있음, 끄려면 "normal mode") |
 | "토큰 아끼고 싶어" | (자동) .ctxdb | 관련된 부분만 골라 읽음 |
 
@@ -102,14 +104,14 @@
 당신: "총시간+칼로리, 막대그래프, 일단 이번 주만"
 ```
 
-### [2] 계획 허점 따지기 — `/grill-me` (필요시 `/grill-with-docs`)
+### [2] 계획 허점 따지기 — `/grill-me`
 ```
 당신: "/grill-me"
   AI: "데이터 없는 주는 어떻게 보여줘요? 주 시작은 월요일? 일요일?
        나중에 과거 주 못 보면 답답하지 않을까요?"
 당신: (답하며 빈틈 메움)
 ```
-> 용어·구조 결정이 얽히면 `/grill-with-docs` — 용어집과 결정기록(ADR)을 그 자리서 갱신하며 따집니다.
+> 용어가 모호하거나 말한 동작이 코드와 어긋나면 `/grill-me`가 정확한 용어로 좁히고 모순을 그 자리서 짚습니다.
 
 ### [3] 사양 확정 — `/to-prd`
 ```
@@ -164,7 +166,7 @@
 
 ### 한 줄 요약 (스킬 흐름)
 ```
-세션시작(resume/ctxdb) → /clarity → /grill-me(/grill-with-docs)
+세션시작(resume/ctxdb) → /clarity → /grill-me
   → /to-prd → /design → /mockup(화면 시각화) → 구현(codemap+lean-code, caveman) → /security-check(커밋/완료 전) → /review(고위험 교차검증)
   → /checkpoint(context-saver) → 필요시 /handoff → 완료
 ```
@@ -206,21 +208,22 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 | `lean-code` | 오버엔지니어링·범위이탈 방지 |
 | `feature-architecture` | feature-first 구조 규율 (참조). 강제는 CLAUDE/AGENTS `Architecture Principles` |
 | `caveman` | 답변 압축 (기본 ON) |
-| `grill-me` | 계획 꼬치꼬치 따져 약점 발견 |
-| `grill-with-docs` | 위 + 용어집/ADR 갱신 |
+| `grill-me` | 계획 꼬치꼬치 따져 약점 발견 (용어 좁힘·코드 모순 표면화 포함) |
 | `to-prd` | 대화 → PRD 문서 |
 | `checkpoint` | 컨텍스트 차오를 때 중간 저장 |
 | `handoff` | 다른 AI/세션으로 작업 인계 |
 | `security-check` | 보안 검증 게이트 — secrets/취약점/위험 설정 스캔, 발견 시 완료 BLOCK |
 | `review` | 문서형 크로스에이전트/세션 리뷰 라운드트립 (codex exec 보완·저토큰) |
 | `code-delegate` | 코딩 단계를 고른 모델의 서브에이전트에 위임 (설계=상위, 코딩=하위 모델 → 부모 컨텍스트·토큰 절감) |
+| `viewer-apply` | 통합 뷰어(spec-viewer)가 저장한 `src/viewer/*.json`을 스팩에 동기 (남은 항목→spec 생성/갱신, 삭제→제거/아카이브, mockup viewer 모드와 짝) |
 
 각 스킬 상세는 `.claude/skills/{이름}/SKILL.md`.
 
 ---
 
 ## 변경 이력
-> PawPad v2.36 FROZEN.
+> PawPad v2.37 FROZEN.
+> - **v2.37**: `grill-with-docs` 스킬을 `grill-me`에 흡수(스킬 20→19) — 거의 안 쓰이던 중복 스킬 제거. `grill-me`가 이제 계획을 따지면서 모호한 용어를 정확한 용어로 좁히고, 엣지케이스 시나리오로 개념 경계를 캐묻고, 말한 동작이 코드와 어긋나면 그 자리서 짚는다. 잘 안 쓰이던 용어집(`CONTEXT.md`)과 ADR 제안 기능은 뺐다(결정기록은 기존 경로 유지). 기존 설치는 `-Upgrade`가 구 스킬을 자동 정리.
 > - **v2.36**: 통합 기획 뷰어(데이터-구동) — 기획 문서를 한 HTML의 4탭(PRD/기능명세서/메뉴구성도/와이어프레임)으로 본다. 뷰어 HTML에 데이터를 박지 않고 외부 JSON(`src/viewer/prd·fts·userflow·wire.json`, 고정 이름)을 읽어 띄운다. Chrome/Edge로 `spec-viewer.html`을 열고 `src/viewer` 폴더를 1번 선택하면 4탭 자동 로드 → 편집 → **같은 파일에 제자리 저장**(다운로드·서버 없음) → 재로드. 폴더 핸들을 IndexedDB에 기억 → 다음엔 `↻ 다시 열기` 1클릭 복원(임의 경로 자동열기는 브라우저 보안상 불가, 권한 1클릭만). **메뉴구성도** = 메뉴 계층 트리를 드래그앤드랍으로 순서·뎁스 재배치(뎁스별 색 구분), 저장. **와이어프레임** = 화면별 디바이스 프레임(mobile/web) + 컴포넌트 lo-fi UI(검토·조정 전용, 컴포넌트는 agent가 JSON 생성). 기획이 바뀌면 agent는 JSON만 고치면 됨(HTML 안 건드림 → 토큰 절약). 항목이 JSON에 남아있으면 = 설계/개발 대상(삭제하면 제외, 별도 승인 없음). 상태(예정/진행중/완료)는 개발 진행 표시로 agent가 갱신(사용자 불수정). 이 JSON들은 세션 시작/재개 때 자동으로 안 읽음(context 절약). 신규 스킬 viewer-apply(JSON→스팩 동기, 19→20), mockup에 viewer 모드.
 > - **v2.35**: 세션 재개(`/resume`) 시 읽는 문서를 줄여 토큰 절약 — 협업 프로토콜(HYBRID)은 진행 중 작업(lane)이 있을 때만 읽고, 완료 이력(_meta RECENT)은 재개에 불필요해 건너뜀. 동작·스킬 수(19) 불변, 재개 품질 동일.
 > - **v2.34**: `memory` 스킬 → `resume`로 이름 변경 — "기억 저장"으로 오해되던 이름을 "세션 재개"라는 실제 동작에 맞춤. 호출도 `/resume`. 기존 설치는 `-Upgrade` 시 자동 전환(스킬 수 19 불변).
@@ -232,4 +235,4 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 > - **v2.28**: `/mockup` 스킬 추가 — PRD-tree를 단일 HTML 목업(와이어프레임 lo-fi / 디자인 hi-fi)으로 시각화, Feature ID로 메뉴 위치 추적 + drift 경고. 기획/설계 스킬 선택지 질문은 체크박스로, 단계 경계에서 다음 스킬·목업 자동제안.
 > - **v2.27**: `Idea → PRD Routing` + `Active Skills` 표시 추가 — 아이디어→PRD 구체화 시 다음 스킬 추천(clarity→grill-me→to-prd, 강제 X) + 매 응답 `🐾 Active Skills` 라인. doc/스킬 군살 제거(중복·불필요 문구).
 > - **v2.26**: `feature-architecture` 추가 — feature-first 구조 규율(추후 기능 추가·수정이 쉽고, 사람이 코드 구조를 파악하기 쉽게). `lean-code`(오버엔지니어링 방지)와 짝.
-> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.36.md](docs/CHANGELOG_v2.36.md).
+> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.37.md](docs/CHANGELOG_v2.37.md).
