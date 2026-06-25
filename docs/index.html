@@ -1,0 +1,638 @@
+<title>PawPad — 소개 덱</title>
+<style>
+  :root{
+    --ground:#1E1A17;        /* warm espresso ink */
+    --ground-2:#26211C;      /* raised panel */
+    --ground-3:#2F2820;      /* hover / inset */
+    --text:#F2E9DC;          /* warm cream */
+    --muted:#A99B8B;         /* warm taupe */
+    --coral:#FF6F61;         /* paw pad coral */
+    --coral-d:#E5564A;
+    --mint:#7FD8B6;          /* pad mint accent */
+    --line:rgba(242,233,220,.13);
+    --line-2:rgba(242,233,220,.07);
+    --sans:"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Code",Consolas,"Liberation Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--ground);color:var(--text);
+    font-family:var(--sans);line-height:1.5;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+
+  /* ---------- deck scaffold ---------- */
+  .deck{
+    height:100vh;height:100svh;overflow-y:scroll;overflow-x:hidden;
+    scroll-snap-type:y mandatory;scroll-padding:0;
+  }
+  .slide{
+    min-height:100vh;min-height:100svh;scroll-snap-align:start;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:clamp(28px,6vw,96px);position:relative;
+    border-bottom:1px solid var(--line-2);
+  }
+  .wrap{width:100%;max-width:1080px;margin:0 auto;}
+
+  /* ---------- type ---------- */
+  .eyebrow{
+    font-family:var(--mono);font-size:clamp(11px,1.1vw,13px);
+    letter-spacing:.28em;text-transform:uppercase;color:var(--mint);
+    display:flex;align-items:center;gap:12px;margin:0 0 22px;
+  }
+  .eyebrow::before{content:"";width:26px;height:2px;background:var(--mint);display:inline-block;}
+  h1,h2{margin:0;font-weight:800;letter-spacing:-.025em;line-height:1.02;}
+  h1{font-size:clamp(56px,12vw,148px);}
+  h2{font-size:clamp(32px,5.4vw,68px);}
+  .lead{font-size:clamp(17px,2vw,23px);color:var(--muted);max-width:40ch;margin:22px 0 0;}
+  .mono{font-family:var(--mono);}
+  strong{color:var(--text);font-weight:700;}
+  .coral{color:var(--coral);}
+  .mint{color:var(--mint);}
+
+  /* ---------- cover ---------- */
+  #cover{justify-content:space-between;}
+  .cover-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;}
+  .badge{font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:.04em;}
+  .cover-mid{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin:auto 0;}
+  .cover-mid h1{display:flex;align-items:baseline;gap:.12em;}
+  .cover-sub{font-size:clamp(18px,2.6vw,30px);color:var(--text);font-weight:500;margin-top:18px;max-width:24ch;letter-spacing:-.01em;}
+  .cover-sub b{color:var(--coral);font-weight:700;}
+  .cover-foot{display:flex;flex-wrap:wrap;gap:10px 22px;font-family:var(--mono);font-size:13px;color:var(--muted);align-items:center;}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:7px 15px;color:var(--text);background:var(--ground-2);}
+
+  /* ---------- paw mark ---------- */
+  .paw{position:relative;flex:none;}
+  .paw .pad,.paw .toe{position:absolute;background:var(--coral);}
+  .paw .pad{
+    left:18%;top:42%;width:64%;height:50%;
+    border-radius:48% 48% 46% 46% / 62% 62% 40% 40%;
+    box-shadow:0 10px 30px rgba(255,111,97,.28);
+  }
+  .paw .toe{width:20%;height:27%;border-radius:50%;background:var(--mint);}
+  .paw .t1{left:8%;top:20%;transform:rotate(-18deg);}
+  .paw .t2{left:31%;top:4%;}
+  .paw .t3{left:54%;top:4%;}
+  .paw .t4{left:77%;top:20%;transform:rotate(18deg);}
+
+  /* ---------- pains (slide 2) ---------- */
+  .pains{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:38px;}
+  .pain{background:var(--ground-2);border:1px solid var(--line);border-radius:18px;padding:26px 24px;}
+  .pain .n{font-family:var(--mono);font-size:13px;color:var(--coral);letter-spacing:.1em;}
+  .pain h3{margin:14px 0 8px;font-size:20px;font-weight:700;letter-spacing:-.01em;}
+  .pain p{margin:0;color:var(--muted);font-size:15px;}
+  .thesis{margin-top:34px;font-size:clamp(18px,2.3vw,26px);font-weight:600;letter-spacing:-.01em;max-width:34ch;}
+
+  /* ---------- install list (slide 3) ---------- */
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,72px);align-items:center;}
+  .cmd{font-family:var(--mono);font-size:clamp(15px,1.8vw,20px);background:#15120f;border:1px solid var(--line);
+       border-radius:14px;padding:20px 22px;color:var(--mint);position:relative;overflow:auto;}
+  .cmd .pmt{color:var(--coral);}
+  .ships{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;}
+  .ships li{display:flex;gap:14px;align-items:baseline;padding:13px 4px;border-bottom:1px solid var(--line-2);font-size:16px;}
+  .ships li:last-child{border-bottom:0;}
+  .ships .k{font-family:var(--mono);color:var(--coral);font-size:13px;flex:none;width:34px;}
+  .ships .v b{font-weight:700;}
+  .ships .v span{color:var(--muted);}
+
+  /* ---------- pillar slides ---------- */
+  .pillar-head{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;}
+  .pillar-no{font-family:var(--mono);font-size:clamp(40px,7vw,84px);font-weight:800;color:transparent;
+             -webkit-text-stroke:1.5px var(--coral);text-stroke:1.5px var(--coral);letter-spacing:-.04em;line-height:1;}
+  .feat{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:40px;}
+  .feat .row{background:var(--ground-2);border:1px solid var(--line);border-radius:16px;padding:22px 24px;}
+  .feat .row .cmd-tag{font-family:var(--mono);font-size:13px;color:var(--mint);}
+  .feat .row h4{margin:9px 0 6px;font-size:18px;font-weight:700;letter-spacing:-.01em;}
+  .feat .row p{margin:0;color:var(--muted);font-size:14.5px;}
+  .feat .row .metric{margin-top:14px;padding-top:13px;border-top:1px solid var(--line-2);
+                     font-family:var(--mono);font-size:12.5px;display:flex;flex-wrap:wrap;align-items:center;gap:9px;}
+  .feat .row .metric .from{color:var(--muted);}
+  .feat .row .metric .ar{color:var(--coral);font-weight:700;}
+  .feat .row .metric .to{color:var(--mint);font-weight:600;}
+
+  /* ---------- viewer tabs ---------- */
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:26px;}
+  .tab{font-family:var(--mono);font-size:13px;padding:10px 18px;border-radius:11px 11px 0 0;
+       background:var(--ground-2);border:1px solid var(--line);border-bottom:2px solid var(--coral);color:var(--text);}
+  .tab:first-child{background:var(--ground-3);}
+
+  /* ---------- viewer mini previews ---------- */
+  .minis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:28px;}
+  .mini{background:var(--ground-2);border:1px solid var(--line);border-radius:13px;overflow:hidden;}
+  .mini .cap{font-family:var(--mono);font-size:11.5px;padding:9px 12px;color:var(--mint);
+             background:var(--ground-3);border-bottom:1px solid var(--line);}
+  .mini-body{height:122px;padding:14px;}
+  /* PRD: text lines */
+  .prd .l{display:block;height:7px;border-radius:4px;background:var(--line);margin-bottom:10px;}
+  .prd .l.t{height:9px;width:52%;background:var(--coral);opacity:.85;margin-bottom:14px;}
+  .prd .w90{width:90%;}.prd .w72{width:72%;}.prd .w48{width:48%;}
+  /* 기능명세서: node tree */
+  .tree{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;}
+  .tree .nd{height:15px;border-radius:5px;background:var(--ground-3);border:1px solid var(--line);}
+  .tree .root{width:48%;border-color:var(--coral);}
+  .tree .vbar{width:2px;height:12px;background:var(--line);}
+  .tree .leaves{display:flex;gap:9px;width:100%;justify-content:center;}
+  .tree .leaves .nd{width:28%;}
+  /* 메뉴구성도: hierarchy rows */
+  .menu{display:flex;flex-direction:column;gap:9px;justify-content:center;height:100%;}
+  .menu .mr{display:flex;align-items:center;gap:7px;}
+  .menu .mr::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--coral);flex:none;}
+  .menu .mr span{height:7px;border-radius:4px;background:var(--line);flex:1;}
+  .menu .i1{margin-left:14px;}.menu .i2{margin-left:28px;}
+  .menu .i1::before,.menu .i2::before{background:var(--mint);}
+  /* 와이어프레임: device */
+  .wire{display:flex;justify-content:center;align-items:center;height:100%;}
+  .wire .phone{width:60px;height:104px;border:2px solid var(--line);border-radius:12px;
+               padding:6px;display:flex;flex-direction:column;gap:5px;}
+  .wire .phone .b{border-radius:3px;background:var(--ground-3);}
+  .wire .phone .bar{height:9px;background:var(--coral);opacity:.8;}
+  .wire .phone .blk{flex:1;}
+  .wire .phone .half{flex:none;height:22px;}
+  .wire .phone .nav{height:11px;background:var(--mint);opacity:.7;}
+  @media(max-width:820px){.minis{grid-template-columns:repeat(2,1fr);}}
+  .proof{margin-top:30px;font-family:var(--mono);font-size:clamp(14px,1.7vw,18px);
+         display:flex;flex-wrap:wrap;gap:10px 28px;align-items:center;color:var(--text);}
+  .proof .big{color:var(--coral);font-weight:700;}
+  .proof .arrow{color:var(--mint);}
+  .proof .sep{color:var(--line);}
+
+  /* ---------- pipeline (slide 7) ---------- */
+  .flow{display:flex;flex-wrap:wrap;gap:10px;margin-top:36px;align-items:stretch;}
+  .step{flex:1 1 150px;background:var(--ground-2);border:1px solid var(--line);border-radius:14px;
+        padding:18px 16px;position:relative;min-width:140px;}
+  .step .si{font-family:var(--mono);font-size:12px;color:var(--coral);}
+  .step .sk{font-family:var(--mono);font-size:15px;color:var(--mint);margin:8px 0 6px;font-weight:600;}
+  .step p{margin:0;color:var(--muted);font-size:13.5px;}
+  .step::after{content:"\2192";position:absolute;right:-13px;top:50%;transform:translateY(-50%);
+               color:var(--coral);font-size:18px;z-index:2;}
+  .step:last-child::after{content:"";}
+
+  /* ---------- catalog (slide 9) ---------- */
+  .cats{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:34px;}
+  .cat{background:var(--ground-2);border:1px solid var(--line);border-radius:18px;padding:24px;}
+  .cat h3{margin:0 0 4px;font-size:17px;font-weight:700;display:flex;align-items:center;gap:10px;letter-spacing:-.01em;}
+  .cat .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .cat .cnt{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:auto;}
+  .cat ul{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:7px;}
+  .cat li{font-family:var(--mono);font-size:13px;color:var(--text);background:var(--ground-3);
+          border:1px solid var(--line-2);border-radius:8px;padding:6px 10px;}
+  .cat li span{color:var(--muted);}
+
+  /* ---------- closing (slide 10) ---------- */
+  #end{align-items:center;text-align:center;}
+  #end .wrap{display:flex;flex-direction:column;align-items:center;gap:26px;}
+  #end .cmd{display:inline-block;}
+  #end .cover-foot{justify-content:center;}
+
+  /* ---------- nav ---------- */
+  .nav{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:40;
+       display:flex;flex-direction:column;gap:11px;}
+  .nav a{width:9px;height:9px;border-radius:50%;background:var(--line);border:0;padding:0;cursor:pointer;
+         transition:background .25s,transform .25s;}
+  .nav a.on{background:var(--coral);transform:scale(1.5);}
+  .counter{position:fixed;left:22px;bottom:20px;z-index:40;font-family:var(--mono);font-size:12px;color:var(--muted);}
+  .counter b{color:var(--coral);}
+  .hint{position:fixed;right:22px;bottom:20px;z-index:40;font-family:var(--mono);font-size:11px;color:var(--muted);opacity:.7;}
+
+  /* ---------- reveal ---------- */
+  .rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease;}
+  .slide.in .rv{opacity:1;transform:none;}
+  .slide.in .rv:nth-child(2){transition-delay:.07s;}
+  .slide.in .rv:nth-child(3){transition-delay:.14s;}
+  .slide.in .rv:nth-child(4){transition-delay:.2s;}
+
+  /* ---------- responsive ---------- */
+  @media(max-width:820px){
+    .pains,.feat,.cats,.two{grid-template-columns:1fr;}
+    .step::after{content:"\2193";right:50%;top:auto;bottom:-15px;transform:translateX(50%);}
+    .slide{min-height:auto;padding-top:64px;padding-bottom:64px;}
+    .deck{scroll-snap-type:none;}
+    .nav{display:none;}
+  }
+  @media(prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto;}
+    .rv{transition:none;opacity:1;transform:none;}
+    .nav a{transition:none;}
+  }
+
+  /* ---------- print / PDF (1 slide = 1 page, 16:9 = PPT 규격) ---------- */
+  @media print{
+    @page{ size:1280px 720px; margin:0; }
+    html{scroll-behavior:auto;}
+    body{background:var(--ground)!important;}
+    .deck{height:auto;overflow:visible;display:block;scroll-snap-type:none;}
+    .slide{
+      width:1280px;height:720px;min-height:0;overflow:hidden;
+      padding:40px 64px;justify-content:center;border:0;
+      page-break-after:always;break-after:page;break-inside:avoid;
+    }
+    .slide:last-child{page-break-after:auto;break-after:auto;}
+    #cover{justify-content:space-between;}
+    .nav,.counter,.hint{display:none!important;}
+    .rv{opacity:1!important;transform:none!important;transition:none!important;}
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  }
+</style>
+
+<div class="deck" id="deck">
+
+  <!-- 1 · COVER -->
+  <section class="slide" id="cover" data-label="Cover">
+    <div class="wrap cover-top">
+      <span class="badge rv">AGENTIC ENGINEERING TOOLKIT</span>
+      <span class="badge rv">v2.38 · FROZEN</span>
+    </div>
+    <div class="wrap cover-mid">
+      <div class="paw rv" style="width:96px;height:104px;margin-bottom:26px;" aria-hidden="true">
+        <span class="toe t1"></span><span class="toe t2"></span><span class="toe t3"></span><span class="toe t4"></span>
+        <span class="pad"></span>
+      </div>
+      <h1 class="rv">Paw<span class="coral">Pad</span></h1>
+      <p class="cover-sub rv">코딩 에이전트를 위한 <b>상태관리 · 토큰절약</b> 하네스</p>
+    </div>
+    <div class="wrap cover-foot rv">
+      <span class="chip">Claude Code ⇄ Codex</span>
+      <span>하나의 PowerShell 스크립트 · 모든 프로젝트</span>
+    </div>
+  </section>
+
+  <!-- 2 · NAME -->
+  <section class="slide" data-label="이름의 뜻">
+    <div class="wrap two" style="align-items:center;">
+      <div>
+        <p class="eyebrow rv">이름의 뜻</p>
+        <h2 class="rv">딱딱한 코딩을,<br><span class="coral">말랑하게</span></h2>
+        <p class="lead rv" style="max-width:44ch;">PawPad는 고양이·강아지 발바닥의 말랑한 젤리, <strong>젤리발(paw&nbsp;pad)</strong>에서 왔다. 어렵고 딱딱해 보이는 AI 코딩과 에이전트 운영을 — 젤리발을 꾹 누르듯 부드럽고 가볍게 다가갈 수 있게. 그게 이 도구가 품은 마음이다.</p>
+      </div>
+      <div class="rv" style="display:flex;justify-content:center;">
+        <div class="paw" style="width:208px;height:224px;" aria-hidden="true">
+          <span class="toe t1"></span><span class="toe t2"></span><span class="toe t3"></span><span class="toe t4"></span>
+          <span class="pad"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · WHY -->
+  <section class="slide" data-label="왜">
+    <div class="wrap">
+      <p class="eyebrow rv">왜 만들었나</p>
+      <h2 class="rv">에이전트는<br>금방 길을 잃는다</h2>
+      <div class="pains rv">
+        <div class="pain">
+          <span class="n">01</span>
+          <h3>컨텍스트는 유한</h3>
+          <p>대화가 길어지면 맥락이 잘리고, 토큰 비용은 계속 오른다.</p>
+        </div>
+        <div class="pain">
+          <span class="n">02</span>
+          <h3>세션은 끊긴다</h3>
+          <p>새 세션을 열면 "어디까지 했는지"가 사라진다.</p>
+        </div>
+        <div class="pain">
+          <span class="n">03</span>
+          <h3>에이전트는 부딪힌다</h3>
+          <p>Claude와 Codex가 같은 파일을 동시에 건드린다.</p>
+        </div>
+      </div>
+      <p class="thesis rv">PawPad는 이 셋을 <span class="coral">파일 시스템 위에서</span> 푼다.</p>
+    </div>
+  </section>
+
+  <!-- 3 · WHAT -->
+  <section class="slide" data-label="무엇">
+    <div class="wrap">
+      <p class="eyebrow rv">PawPad란</p>
+      <h2 class="rv" style="margin-bottom:8px;">프로젝트에 에이전트의<br>기억과 규율을 심는다</h2>
+      <div class="two" style="margin-top:36px;">
+        <div class="rv">
+          <p class="lead" style="margin-top:0;">스택 무관. Claude Code와 Codex가 <strong>같은 상태 파일</strong>을 공유하는 단일 배포본. 한 번 깔면 다음이 따라온다.</p>
+        </div>
+        <ul class="ships rv">
+          <li><span class="k">19</span><span class="v"><b>스킬</b> <span>— 기획·구현·검증 워크플로</span></span></li>
+          <li><span class="k">▣</span><span class="v"><b>PawPad 상태머신</b> <span>— lane 기반</span></span></li>
+          <li><span class="k">⚙</span><span class="v"><b>양 런타임 hook</b> <span>— 자동 로드·저장</span></span></li>
+          <li><span class="k">▤</span><span class="v"><b>키워드 컨텍스트 DB</b> <span>— .ctxdb</span></span></li>
+          <li><span class="k">◇</span><span class="v"><b>7축 코드베이스 맵</b></span></li>
+          <li><span class="k">🛡</span><span class="v"><b>보안 검증 게이트</b></span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · PILLAR 1 TOKEN -->
+  <section class="slide" data-label="토큰절약">
+    <div class="wrap">
+      <p class="eyebrow rv">핵심 기둥 · 01</p>
+      <div class="pillar-head rv">
+        <span class="pillar-no">01</span>
+        <h2>토큰을 아끼는 게<br>1번 목표</h2>
+      </div>
+      <div class="feat rv">
+        <div class="row">
+          <span class="cmd-tag">.ctxdb · ctxdb-navigator</span>
+          <h4>배경지식은 관련된 것만 꺼낸다</h4>
+          <p>프로젝트 배경지식을 키워드별로 정리해둔 <strong>메모 보관함</strong>(.ctxdb)이 있다. 새 대화가 열리면 첫 질문의 키워드에 맞는 메모 몇 개만 꺼내 읽는다. 보관함을 통째로 책상에 펼치지 않으니, 지금 질문과 무관한 내용엔 토큰이 나가지 않는다.</p>
+          <div class="metric"><span class="from">보관함 통째</span><span class="ar">→</span><span class="to">키워드 맞는 메모만</span></div>
+        </div>
+        <div class="row">
+          <span class="cmd-tag">codemap · _meta</span>
+          <h4>색인은 통독하지 않는다</h4>
+          <p>codemap은 "코드 어디에 무엇이 있는지" 적어둔 <strong>위치 색인</strong>, _meta는 <strong>작업 일지</strong>다. 둘 다 쌓이면 커진다. 시작할 땐 전체를 펼치지 않고 자주 쓰는 항목·현재 상태만 보고, 특정 함수 위치가 필요하면 그때 그 줄만 찾는다 — 책을 통독하는 대신 목차·색인만 보는 셈.</p>
+          <div class="metric"><span class="from">색인 전체 ~7k</span><span class="ar">→</span><span class="to">조망만 ~0.5k tok</span></div>
+        </div>
+        <div class="row">
+          <span class="cmd-tag">caveman</span>
+          <h4>출력 토큰까지 압축</h4>
+          <p>입력만 비용이 아니다 — 답변도 토큰이다. 관사·인사말·군더더기를 덜어낸 전보식 어투로, 같은 내용을 더 적은 출력 토큰에 담는다.</p>
+          <div class="metric"><span class="from">서술형 응답</span><span class="ar">→</span><span class="to">전보식, 군더더기 0</span></div>
+        </div>
+        <div class="row">
+          <span class="cmd-tag">/code-delegate</span>
+          <h4>무거운 코딩은 조수에게</h4>
+          <p>코딩을 <strong>보조 에이전트</strong>에게 통째로 맡기고, 메인은 "무엇을 어떻게 끝냈는지" 요약만 돌려받는다. 코딩하며 생기는 수십 번의 파일 열기·고치기가 메인 대화엔 쌓이지 않는다. 단순·반복 작업은 더 가벼운(저렴한) 모델에 맡겨 비용도 준다.</p>
+          <div class="metric"><span class="from">메인이 코딩 찌꺼기로 가득</span><span class="ar">→</span><span class="to">요약 한 줄만</span></div>
+        </div>
+      </div>
+      <p class="lead rv" style="margin-top:28px;max-width:56ch;">왜 가능한가 — 상태가 전부 <strong>파일에 구조화</strong>돼 있어, "전부 읽기" 대신 <span class="coral">"필요한 조각만 짚어 읽기"</span>가 된다.</p>
+    </div>
+  </section>
+
+  <!-- 5 · PILLAR 2 RESUME -->
+  <section class="slide" data-label="영속성">
+    <div class="wrap">
+      <p class="eyebrow rv">핵심 기둥 · 02</p>
+      <div class="pillar-head rv">
+        <span class="pillar-no">02</span>
+        <h2>세션이 끊겨도<br>이어서</h2>
+      </div>
+      <div class="feat rv">
+        <div class="row">
+          <span class="cmd-tag">/resume</span>
+          <h4>ON START 복원</h4>
+          <p>세션 시작 시 lane·_meta·codemap을 읽어 "하던 일"을 즉시 복구.</p>
+        </div>
+        <div class="row">
+          <span class="cmd-tag">/checkpoint · context-saver</span>
+          <h4>롤오버 직전 저장</h4>
+          <p>컨텍스트가 차오르면 상태를 파일로 떨궈 다음 세션이 받는다.</p>
+        </div>
+        <div class="row">
+          <span class="cmd-tag">lane · _meta</span>
+          <h4>상태는 전부 파일</h4>
+          <p>진행 작업·다음 할 일·완료 이력이 디스크에 남는다.</p>
+        </div>
+        <div class="row">
+          <span class="cmd-tag">codemap</span>
+          <h4>심볼 위치 기억</h4>
+          <p>어디에 뭐가 있는지 레지스트리로. 매번 탐색하지 않는다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · PILLAR 3 MULTI-AGENT -->
+  <section class="slide" data-label="협업">
+    <div class="wrap">
+      <p class="eyebrow rv">핵심 기둥 · 03</p>
+      <div class="pillar-head rv">
+        <span class="pillar-no">03</span>
+        <h2>여러 에이전트가<br>안 부딪히게</h2>
+      </div>
+      <div class="feat rv">
+        <div class="row">
+          <span class="cmd-tag">lane 상태머신</span>
+          <h4>한 작업 = 한 lane</h4>
+          <p>owner 1명만 수정. 충돌·잠금을 파일 규칙으로 관리.</p>
+        </div>
+        <div class="row">
+          <span class="cmd-tag">/handoff</span>
+          <h4>인수인계</h4>
+          <p>Claude ⇄ Codex 작업 전환을 snapshot으로 무손실 전달.</p>
+        </div>
+        <div class="row">
+          <span class="cmd-tag">/review</span>
+          <h4>크로스 리뷰</h4>
+          <p>다른 에이전트·세션이 직접 검증하는 문서형 라운드트립.</p>
+        </div>
+        <div class="row">
+          <span class="cmd-tag">HYBRID 프로토콜</span>
+          <h4>협업 규칙</h4>
+          <p>state 전이·소유권·검증 근거를 한 곳에서 정의.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · PILLAR 4 WORKFLOW -->
+  <section class="slide" data-label="기획→구현">
+    <div class="wrap">
+      <p class="eyebrow rv">핵심 기둥 · 04</p>
+      <div class="pillar-head rv">
+        <span class="pillar-no">04</span>
+        <h2>아이디어를<br>구현까지 흐르게</h2>
+      </div>
+      <div class="flow rv">
+        <div class="step"><div class="si">STEP 1</div><div class="sk">/clarity</div><p>모호도 점검</p></div>
+        <div class="step"><div class="si">STEP 2</div><div class="sk">/grill-me</div><p>계획 심문</p></div>
+        <div class="step"><div class="si">STEP 3</div><div class="sk">/to-prd</div><p>PRD 생성</p></div>
+        <div class="step"><div class="si">STEP 4</div><div class="sk">/design</div><p>토큰·레이아웃</p></div>
+        <div class="step"><div class="si">STEP 5</div><div class="sk">/mockup</div><p>화면 시안</p></div>
+        <div class="step"><div class="si">STEP 6</div><div class="sk">/mockup viewer</div><p>4탭 통합 뷰어 검토</p></div>
+        <div class="step"><div class="si">STEP 7</div><div class="sk">/code-delegate</div><p>코딩 위임</p></div>
+      </div>
+      <p class="lead rv">단계마다 게이트가 있어, 모호한 채로 코딩에 진입하지 않는다.</p>
+    </div>
+  </section>
+
+  <!-- VIEWER -->
+  <section class="slide" data-label="기획 뷰어">
+    <div class="wrap">
+      <p class="eyebrow rv">더 · 기획을 눈으로</p>
+      <h2 class="rv" style="font-size:clamp(28px,4.4vw,52px);">기획 문서를 한 화면, 4개 탭으로</h2>
+      <div class="minis rv">
+        <div class="mini">
+          <div class="cap">PRD</div>
+          <div class="mini-body prd">
+            <span class="l t"></span><span class="l w90"></span><span class="l w72"></span><span class="l w90"></span><span class="l w48"></span>
+          </div>
+        </div>
+        <div class="mini">
+          <div class="cap">기능명세서</div>
+          <div class="mini-body">
+            <div class="tree">
+              <span class="nd root"></span>
+              <span class="vbar"></span>
+              <div class="leaves"><span class="nd"></span><span class="nd"></span><span class="nd"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="mini">
+          <div class="cap">메뉴구성도</div>
+          <div class="mini-body">
+            <div class="menu">
+              <div class="mr"><span></span></div>
+              <div class="mr i1"><span></span></div>
+              <div class="mr i1"><span></span></div>
+              <div class="mr i2"><span></span></div>
+              <div class="mr i1"><span></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="mini">
+          <div class="cap">와이어프레임</div>
+          <div class="mini-body wire">
+            <div class="phone">
+              <span class="b bar"></span><span class="b blk half"></span><span class="b blk"></span><span class="b nav"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="lead rv" style="max-width:60ch;">글로만 적힌 기획을 <strong>화면으로 보고 직접 만지며</strong> 다듬는다. 폴더를 한 번 고르면 4개 탭이 자동으로 뜨고, 그 자리에서 고쳐 <strong>같은 파일에 저장</strong> — 다운로드도 서버도 없다. 기획이 바뀌면 에이전트는 JSON만 손대니 토큰도 아낀다.</p>
+      <p class="rv mono" style="font-size:13px;color:var(--muted);margin-top:8px;">폴더 1번 열기 <span class="coral">→</span> 제자리 편집 <span class="coral">→</span> JSON 저장 <span class="coral">→</span> <span class="mint">/viewer-apply</span> 로 스팩 동기</p>
+    </div>
+  </section>
+
+  <!-- 8 · PILLAR 5 QUALITY -->
+  <section class="slide" data-label="품질게이트">
+    <div class="wrap">
+      <p class="eyebrow rv">핵심 기둥 · 05</p>
+      <div class="pillar-head rv">
+        <span class="pillar-no">05</span>
+        <h2>끝내기 전에<br>통과할 게이트</h2>
+      </div>
+      <div class="feat rv">
+        <div class="row">
+          <span class="cmd-tag">/security-check</span>
+          <h4>보안 스캔</h4>
+          <p>하드코딩 비밀키·취약점 검출. 🔴 발견 시 완료를 막는다.</p>
+        </div>
+        <div class="row">
+          <span class="cmd-tag">feature-architecture</span>
+          <h4>구조 규율</h4>
+          <p>feature-first 경계. 신규 코드가 모듈 경계를 넘지 않게.</p>
+        </div>
+        <div class="row">
+          <span class="cmd-tag">lean-code</span>
+          <h4>과설계 방지</h4>
+          <p>요청한 것만 구현. 범위 밖 파일은 건드리지 않는다.</p>
+        </div>
+        <div class="row">
+          <span class="cmd-tag">Definition of Done</span>
+          <h4>완료의 정의</h4>
+          <p>분석·테스트·검증 근거가 없으면 "완료"가 아니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · CATALOG -->
+  <section class="slide" data-label="전체 스킬">
+    <div class="wrap">
+      <p class="eyebrow rv">전체 19 스킬 · 한눈에</p>
+      <h2 class="rv" style="font-size:clamp(28px,4.4vw,52px);">핵심 위에, 나머지가 받친다</h2>
+      <div class="cats rv">
+        <div class="cat">
+          <h3><span class="dot" style="background:var(--coral)"></span>토큰 · 컨텍스트 절약 <span class="cnt">6</span></h3>
+          <ul>
+            <li>ctxdb-navigator</li><li>context-saver</li><li>codemap</li>
+            <li>codebase-map</li><li>caveman</li><li>checkpoint</li>
+          </ul>
+        </div>
+        <div class="cat">
+          <h3><span class="dot" style="background:var(--mint)"></span>세션 · 협업 상태 <span class="cnt">3</span></h3>
+          <ul>
+            <li>resume</li><li>handoff</li><li>review</li>
+          </ul>
+        </div>
+        <div class="cat">
+          <h3><span class="dot" style="background:var(--coral)"></span>기획 → 구현 파이프라인 <span class="cnt">7</span></h3>
+          <ul>
+            <li>clarity</li><li>grill-me</li><li>to-prd</li><li>design</li>
+            <li>mockup</li><li>viewer-apply</li><li>code-delegate</li>
+          </ul>
+        </div>
+        <div class="cat">
+          <h3><span class="dot" style="background:var(--mint)"></span>코드 품질 게이트 <span class="cnt">3</span></h3>
+          <ul>
+            <li>security-check</li><li>feature-architecture</li><li>lean-code</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · CLOSING -->
+  <section class="slide" id="end" data-label="설치">
+    <div class="wrap">
+      <div class="paw rv" style="width:74px;height:80px;" aria-hidden="true">
+        <span class="toe t1"></span><span class="toe t2"></span><span class="toe t3"></span><span class="toe t4"></span>
+        <span class="pad"></span>
+      </div>
+      <h2 class="rv">설치는 한 줄,<br>나머지는 PawPad가</h2>
+      <div class="cmd rv"><span class="pmt">PS&gt;</span> ./pawpad-setup.ps1</div>
+      <div class="cover-foot rv">
+        <span class="chip">FROZEN v2.38</span>
+        <span class="chip">Claude Code ⇄ Codex</span>
+        <span>🐾 토큰을 아끼고, 맥락을 잇고, 부딪히지 않게.</span>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<nav class="nav" id="nav" aria-label="슬라이드 이동"></nav>
+<div class="counter" id="counter"><b>01</b> / 12</div>
+<div class="hint">↑ ↓ 또는 스크롤</div>
+
+<script>
+(function(){
+  var deck=document.getElementById('deck');
+  var slides=Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+  var nav=document.getElementById('nav');
+  var counter=document.getElementById('counter');
+  var total=slides.length;
+
+  // build nav dots
+  slides.forEach(function(s,i){
+    var a=document.createElement('button');
+    a.setAttribute('aria-label',(i+1)+'. '+(s.dataset.label||''));
+    a.addEventListener('click',function(){s.scrollIntoView({behavior:'smooth'});});
+    nav.appendChild(a);
+  });
+  var dots=Array.prototype.slice.call(nav.children);
+
+  function pad(n){return n<10?'0'+n:''+n;}
+
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      var i=slides.indexOf(e.target);
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        if(e.intersectionRatio>0.5){
+          dots.forEach(function(d){d.classList.remove('on');});
+          if(dots[i])dots[i].classList.add('on');
+          counter.innerHTML='<b>'+pad(i+1)+'</b> / '+pad(total);
+        }
+      }
+    });
+  },{threshold:[0.01,0.5,0.9]});
+  slides.forEach(function(s){io.observe(s);});
+
+  // keyboard nav
+  function go(dir){
+    var cur=0,best=1e9;
+    slides.forEach(function(s,i){var d=Math.abs(s.getBoundingClientRect().top);if(d<best){best=d;cur=i;}});
+    var nx=Math.min(total-1,Math.max(0,cur+dir));
+    slides[nx].scrollIntoView({behavior:'smooth'});
+  }
+  window.addEventListener('keydown',function(e){
+    if(e.key==='ArrowDown'||e.key==='PageDown'){e.preventDefault();go(1);}
+    if(e.key==='ArrowUp'||e.key==='PageUp'){e.preventDefault();go(-1);}
+  });
+
+  slides[0].classList.add('in');
+  if(dots[0])dots[0].classList.add('on');
+})();
+</script>
