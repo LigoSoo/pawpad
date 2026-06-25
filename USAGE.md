@@ -222,7 +222,8 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 ---
 
 ## 변경 이력
-> PawPad v2.37 FROZEN.
+> PawPad v2.38 FROZEN.
+> - **v2.38**: codemap **ON START 부분읽기** — 코드 작업 세션을 시작할 때 codemap을 통째로 안 읽고 맨 위 조망부(MAP+HOT)만 읽는다. 전체 심볼표(INDEX)는 특정 심볼이 필요할 때만 검색(Grep)으로 그 줄만 가져온다. 더불어 HOT(최근 접근)를 규칙대로 5개·각 1줄로 정리(28개·장문 → 5개, 밀려난 심볼은 전체표로 강등·삭제 없음). 코드세션 시작 시 codemap 읽기 토큰 ~7k→~0.5k 절감(전체표는 필요할 때만 검색하므로 시작 비용 0). 동작·스킬 수(19) 불변.
 > - **v2.37**: `grill-with-docs` 스킬을 `grill-me`에 흡수(스킬 20→19) — 거의 안 쓰이던 중복 스킬 제거. `grill-me`가 이제 계획을 따지면서 모호한 용어를 정확한 용어로 좁히고, 엣지케이스 시나리오로 개념 경계를 캐묻고, 말한 동작이 코드와 어긋나면 그 자리서 짚는다. 잘 안 쓰이던 용어집(`CONTEXT.md`)과 ADR 제안 기능은 뺐다(결정기록은 기존 경로 유지). 기존 설치는 `-Upgrade`가 구 스킬을 자동 정리.
 > - **v2.36**: 통합 기획 뷰어(데이터-구동) — 기획 문서를 한 HTML의 4탭(PRD/기능명세서/메뉴구성도/와이어프레임)으로 본다. 뷰어 HTML에 데이터를 박지 않고 외부 JSON(`src/viewer/prd·fts·userflow·wire.json`, 고정 이름)을 읽어 띄운다. Chrome/Edge로 `spec-viewer.html`을 열고 `src/viewer` 폴더를 1번 선택하면 4탭 자동 로드 → 편집 → **같은 파일에 제자리 저장**(다운로드·서버 없음) → 재로드. 폴더 핸들을 IndexedDB에 기억 → 다음엔 `↻ 다시 열기` 1클릭 복원(임의 경로 자동열기는 브라우저 보안상 불가, 권한 1클릭만). **메뉴구성도** = 메뉴 계층 트리를 드래그앤드랍으로 순서·뎁스 재배치(뎁스별 색 구분), 저장. **와이어프레임** = 화면별 디바이스 프레임(mobile/web) + 컴포넌트 lo-fi UI(검토·조정 전용, 컴포넌트는 agent가 JSON 생성). 기획이 바뀌면 agent는 JSON만 고치면 됨(HTML 안 건드림 → 토큰 절약). 항목이 JSON에 남아있으면 = 설계/개발 대상(삭제하면 제외, 별도 승인 없음). 상태(예정/진행중/완료)는 개발 진행 표시로 agent가 갱신(사용자 불수정). 이 JSON들은 세션 시작/재개 때 자동으로 안 읽음(context 절약). 신규 스킬 viewer-apply(JSON→스팩 동기, 19→20), mockup에 viewer 모드.
 > - **v2.35**: 세션 재개(`/resume`) 시 읽는 문서를 줄여 토큰 절약 — 협업 프로토콜(HYBRID)은 진행 중 작업(lane)이 있을 때만 읽고, 완료 이력(_meta RECENT)은 재개에 불필요해 건너뜀. 동작·스킬 수(19) 불변, 재개 품질 동일.
@@ -235,4 +236,4 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 > - **v2.28**: `/mockup` 스킬 추가 — PRD-tree를 단일 HTML 목업(와이어프레임 lo-fi / 디자인 hi-fi)으로 시각화, Feature ID로 메뉴 위치 추적 + drift 경고. 기획/설계 스킬 선택지 질문은 체크박스로, 단계 경계에서 다음 스킬·목업 자동제안.
 > - **v2.27**: `Idea → PRD Routing` + `Active Skills` 표시 추가 — 아이디어→PRD 구체화 시 다음 스킬 추천(clarity→grill-me→to-prd, 강제 X) + 매 응답 `🐾 Active Skills` 라인. doc/스킬 군살 제거(중복·불필요 문구).
 > - **v2.26**: `feature-architecture` 추가 — feature-first 구조 규율(추후 기능 추가·수정이 쉽고, 사람이 코드 구조를 파악하기 쉽게). `lean-code`(오버엔지니어링 방지)와 짝.
-> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.37.md](docs/CHANGELOG_v2.37.md).
+> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.38.md](docs/CHANGELOG_v2.38.md).
