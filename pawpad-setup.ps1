@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.38 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.38. v2.37 기반 + codemap ON START 부분읽기 — MAP+HOT(조망)만 read, INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand. HOT를 spec(3~5개·1줄)대로 정리(28→5, HOT-only 심볼은 INDEX 강등). _index.md 25.8k→18.8k(총 파일; INDEX는 grep-on-demand라 ON START 미로드). 코드세션 ON START codemap read ~7k→~0.5k tok 절감, ON START 절감 3종(_meta·HYBRID·codemap) 완성. 스킬 19 불변. 보고서: docs/CHANGELOG_v2.38.md).
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.39 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.39. v2.38 기반 + 번들 선택 설치(-Preset lean|standard|full / -Bundles prd,ui,delegate,review, prune-at-end) + 안내 언어 i18n(-Lang en|ko, $TR 테이블, 사람 안내만). Core 11 고정 + Optional 4 번들(prd/ui/delegate/review, ui·delegate→prd 자동포함). 미선택 시 스킬 dir + config.json/SKILLS_MANIFEST + CLAUDE/AGENTS/HYBRID 본문까지 dangling 0 정리. 스킬 내용·19 불변. 보고서: docs/CHANGELOG_v2.39.md).
+#         이전: v2.38 codemap ON START 부분읽기 — MAP+HOT(조망)만 read, INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand. 코드세션 ON START codemap read ~7k→~0.5k tok 절감. 보고서: docs/CHANGELOG_v2.38.md).
 #         이전: v2.36 통합 기획 뷰어(데이터-구동, no-backend) — 범용 spec-viewer.html(File System Access API)가 고정명 외부 JSON(src/viewer/{prd,fts,userflow,wire}.json)을 폴더 1회 선택 후 자동 로드·편집·제자리 저장·재로드. 신규 스킬 viewer-apply(19→20) + mockup viewer 모드. 보고서: docs/CHANGELOG_v2.36.md).
 #         이전: v2.35 resume 최소로드 — ON START 읽기 토큰 절감(HYBRID 조건부화+_meta RECENT skip). 보고서: docs/CHANGELOG_v2.35.md).
 #         이전: v2.34 skill rename memory → resume. 보고서: docs/CHANGELOG_v2.34.md).
@@ -13,8 +14,8 @@
 #         - Codex native hooks: /hooks trust 후 ctxdb/codemap 최소 로드 + checkpoint continuation.
 #         이전: v2.17 statusLine/ctxdb/codemap(FROZEN). 보고서: docs/CHANGELOG_v2.17.md.
 #         변경 시 새 버전 번호 + 변경 보고서 + Codex 리뷰 절차 따를 것.
-# Usage: .\pawpad-setup.ps1 [-Stack <flutter|node|python|generic>] [-Force | -Upgrade] [-ShowLog]
-#        -Stack 생략 시 대화형 프롬프트. pwsh로 Mac/Linux에서도 실행 가능.
+# Usage: .\pawpad-setup.ps1 [-Stack <flutter|node|python|generic>] [-Force | -Upgrade] [-ShowLog] [-Preset <lean|standard|full>] [-Bundles <prd,ui,delegate,review>] [-Lang <en|ko>]
+#        -Stack/-Preset/-Lang 생략 시 대화형 프롬프트(Enter=generic/full/ko). pwsh로 Mac/Linux에서도 실행 가능.
 #
 # 한 번에 모든 것을 세팅합니다:
 # - CLAUDE.md, AGENTS.md (Context files, 하이브리드 프로토콜 반영)
@@ -45,14 +46,14 @@
 # 실행 정책 오류 시:
 #   Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
-param([switch]$Force, [switch]$Upgrade, [string]$Stack = "", [switch]$ShowLog)
+param([switch]$Force, [switch]$Upgrade, [string]$Stack = "", [switch]$ShowLog, [string]$Preset = "", [string]$Bundles = "", [string]$Lang = "")
 
 if ($Force -and $Upgrade) {
     Write-Host "ERROR: -Force와 -Upgrade는 동시 지정 불가. 하나만 선택하세요." -ForegroundColor Red
     exit 1
 }
 
-$ver = "2.38"
+$ver = "2.39"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -197,7 +198,7 @@ function Show-InstallChecklist {
         Write-UiLine $final $script:uiMint Cyan
     }
     Write-Host ""
-    Write-Host "  설치 체크리스트 (✓ 설치/갱신/병합 · - 기존 유지 · ✗ 실패):" -ForegroundColor White
+    Write-Host $L.checklistHeader -ForegroundColor White
     $items = @($script:stepResults)
     # merge-q 확정: 후단 병합 pass(이 함수보다 먼저 실행됨) 실패 여부로 판정
     foreach ($pending in $items) {
@@ -223,13 +224,83 @@ function Show-InstallChecklist {
 
 Show-PawBanner
 
+# ── 안내 언어 테이블 (Install guidance i18n, v2.39) ──────────────────────────────
+# 사람 대상 안내 메시지만 지역화. 스킬 내용/CLAUDE.md 등 에이전트 문서는 무관(단일 소스).
+$TR = @{
+    ko = @{
+        stackPrompt = "스택 선택 (Enter=generic):"; stackOpts = "  1) flutter   2) node   3) python   4) generic"
+        inputNumName = "번호 또는 이름"; unknownStack = "알 수 없는 스택 '{0}' -> generic 사용"
+        bundlePrompt = "스킬 번들 선택 (Enter=full 전체 설치):"; bundleOpts = "  1) lean (Core 11)   2) standard (Core+PRD+위임+리뷰 16)   3) full (전체 19)"
+        unknownPreset = "알 수 없는 preset '{0}' -> full 사용"; bundleLine = "번들 설치: {0} = {1} 스킬 (제거 {2}: {3})"
+        coreOnly = "Core 전용"; corePlus = "Core + "
+        complete = "프로젝트 초기화 완료 (PawPad v{0})"; failed = "{0} 개 항목 실패. 권한 확인 후 다시 시도하세요."
+        genericNote1 = "[generic] CLAUDE.md / AGENTS.md / config.json 의 <YOUR_*> 플레이스홀더를 실제 값으로 채우세요."
+        genericNote2 = "          (analyze 명령 미지정 -> PostToolUse 자동검사 hook은 생략됨)"
+        nextSteps = "다음 단계:"
+        step1 = "  1. CLAUDE.md / AGENTS.md 의 Stack(Commands/Boundaries) 정보 확인 및 수정"
+        step2 = "  2. .claude/pawpad/_meta.md 의 STACK 정보 확인"
+        step3 = "  3. .claude/HYBRID.md 읽기 (협업 프로토콜 숙지)"
+        step4 = "  4. 기존 코드 있으면: '.claude/codemap/_index.md 초기값 만들어줘' 요청"
+        forceHint1 = "기존 파일 덮어쓰려면: .\pawpad-setup.ps1 -Force"
+        forceHint2 = "기존 설치 업그레이드: .\pawpad-setup.ps1 -Upgrade (사용자 데이터 보존, 툴킷 파일만 갱신)"
+        forceHint3 = "(둘 다 PawPad + Context files 자동 백업됩니다)"
+        shadow1 = "⚠ 전역 Codex 스킬 섀도잉 감지: ~/.codex/skills/ 에 동일 이름 스킬 {0}개"
+        shadow3 = "  Codex는 전역을 repo mirror(.agents/skills)보다 우선 조회 -> 구버전 섀도잉 위험."
+        shadow4 = "  정리 권장(삭제 아닌 백업 이동): Move-Item '{0}\{{skill}}' '{0}.pawpad-backup\'"
+        doneShort = "설치 완료 (PawPad v{0})."
+        checklistHeader = "  설치 체크리스트 (✓ 설치/갱신/병합 · - 기존 유지 · ✗ 실패):"
+        backupNone = "  (백업할 데이터 없음)"
+    }
+    en = @{
+        stackPrompt = "Select stack (Enter=generic):"; stackOpts = "  1) flutter   2) node   3) python   4) generic"
+        inputNumName = "number or name"; unknownStack = "Unknown stack '{0}' -> using generic"
+        bundlePrompt = "Select skill bundles (Enter=full):"; bundleOpts = "  1) lean (Core 11)   2) standard (Core+PRD+delegate+review 16)   3) full (all 19)"
+        unknownPreset = "Unknown preset '{0}' -> using full"; bundleLine = "Bundles: {0} = {1} skills (removed {2}: {3})"
+        coreOnly = "Core only"; corePlus = "Core + "
+        complete = "Project initialized (PawPad v{0})"; failed = "{0} item(s) failed. Check permissions and retry."
+        genericNote1 = "[generic] Fill <YOUR_*> placeholders in CLAUDE.md / AGENTS.md / config.json with real values."
+        genericNote2 = "          (no analyze command set -> PostToolUse auto-check hook skipped)"
+        nextSteps = "Next steps:"
+        step1 = "  1. Review/edit Stack info (Commands/Boundaries) in CLAUDE.md / AGENTS.md"
+        step2 = "  2. Check STACK info in .claude/pawpad/_meta.md"
+        step3 = "  3. Read .claude/HYBRID.md (collaboration protocol)"
+        step4 = "  4. If existing code: ask 'create initial .claude/codemap/_index.md'"
+        forceHint1 = "Overwrite existing files: .\pawpad-setup.ps1 -Force"
+        forceHint2 = "Upgrade existing install: .\pawpad-setup.ps1 -Upgrade (preserves user data, toolkit files only)"
+        forceHint3 = "(both auto-backup PawPad + Context files)"
+        shadow1 = "WARNING: global Codex skill shadowing: {0} same-named skill(s) in ~/.codex/skills/"
+        shadow3 = "  Codex queries global before repo mirror (.agents/skills) -> stale-version shadowing risk."
+        shadow4 = "  Recommended (backup-move, not delete): Move-Item '{0}\{{skill}}' '{0}.pawpad-backup\'"
+        doneShort = "Install complete (PawPad v{0})."
+        checklistHeader = "  Install checklist (✓ installed/updated/merged · - kept · ✗ failed):"
+        backupNone = "  (no data to back up)"
+    }
+}
+# ── 언어 선택 (Language) ─────────────────────────────────────────────────────────
+$validLangs = @('en', 'ko')
+if (-not $Lang) {
+    $lsel = ''
+    try {
+        if (-not [Console]::IsInputRedirected) {
+            Write-Host ""
+            Write-Host "Language / 언어 (Enter=ko):" -ForegroundColor Cyan
+            Write-Host "  1) English   2) 한국어"
+            $lsel = Read-Host "number / 번호"
+        }
+    } catch { $lsel = '' }
+    switch -Regex ($lsel.Trim().ToLower()) { '^(1|en|english)$' { $Lang = 'en' } default { $Lang = 'ko' } }
+}
+$Lang = $Lang.Trim().ToLower()
+if ($validLangs -notcontains $Lang) { $Lang = 'ko' }
+$L = $TR[$Lang]
+
 # ── Stack 선택 (v2.15) ─────────────────────────────────────────────────────────
 $validStacks = @('flutter', 'node', 'python', 'generic')
 if (-not $Stack) {
     Write-Host ""
-    Write-Host "스택 선택 (Enter=generic):" -ForegroundColor Cyan
-    Write-Host "  1) flutter   2) node   3) python   4) generic"
-    try { $sel = Read-Host "번호 또는 이름" } catch { $sel = "" }
+    Write-Host $L.stackPrompt -ForegroundColor Cyan
+    Write-Host $L.stackOpts
+    try { $sel = Read-Host $L.inputNumName } catch { $sel = "" }
     switch -Regex ($sel.Trim().ToLower()) {
         '^(1|flutter)$' { $Stack = 'flutter' }
         '^(2|node)$'    { $Stack = 'node' }
@@ -239,8 +310,41 @@ if (-not $Stack) {
 }
 $Stack = $Stack.Trim().ToLower()
 if ($validStacks -notcontains $Stack) {
-    Write-Host "알 수 없는 스택 '$Stack' -> generic 사용" -ForegroundColor Yellow
+    Write-Host ($L.unknownStack -f $Stack) -ForegroundColor Yellow
     $Stack = 'generic'
+}
+
+# ── Bundle 선택 (선택 번들 설치, v2.39) ──────────────────────────────────────────
+# Core 11 항상 설치. Optional 번들: prd / ui / delegate / review. ui·delegate는 prd 의존(자동 포함).
+$validBundles = @('prd', 'ui', 'delegate', 'review')
+$bundlePresets = @{ lean = @(); standard = @('prd', 'delegate', 'review'); full = @('prd', 'ui', 'delegate', 'review') }
+$script:bundleSelected = @()
+$script:bundleMode = 'full'
+if ($Preset) {
+    $pk = $Preset.Trim().ToLower()
+    if (-not $bundlePresets.ContainsKey($pk)) { Write-Host ($L.unknownPreset -f $pk) -ForegroundColor Yellow; $pk = 'full' }
+    $script:bundleSelected = @($bundlePresets[$pk])
+    $script:bundleMode = if ($pk -eq 'full') { 'full' } else { 'custom' }
+}
+elseif ($Bundles) {
+    $script:bundleSelected = @($Bundles.Split(',') | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $_ -and ($validBundles -contains $_) })
+    $script:bundleMode = 'custom'
+}
+else {
+    $bsel = ''
+    try {
+        if (-not [Console]::IsInputRedirected) {
+            Write-Host ""
+            Write-Host $L.bundlePrompt -ForegroundColor Cyan
+            Write-Host $L.bundleOpts
+            $bsel = Read-Host $L.inputNumName
+        }
+    } catch { $bsel = '' }
+    switch -Regex ($bsel.Trim().ToLower()) {
+        '^(1|lean)$' { $script:bundleSelected = @($bundlePresets['lean']); $script:bundleMode = 'custom' }
+        '^(2|standard)$' { $script:bundleSelected = @($bundlePresets['standard']); $script:bundleMode = 'custom' }
+        default { $script:bundleSelected = @($bundlePresets['full']); $script:bundleMode = 'full' }
+    }
 }
 
 # OS 감지 (Windows PowerShell 5.1: $IsWindows 자동변수 미정의 -> Windows로 간주. pwsh: 정의됨)
@@ -801,7 +905,7 @@ if ($Force -or $Upgrade) {
     if ($backupPath) {
         Write-Host "  BACKUP  $backupPath" -ForegroundColor Yellow
     } else {
-        Write-Host "  (백업할 데이터 없음)" -ForegroundColor DarkGray
+        Write-Host $L.backupNone -ForegroundColor DarkGray
     }
     Write-Host ""
 }
@@ -929,7 +1033,7 @@ ACTIVE EVERY RESPONSE. Off: "normal mode"
 
 ### Active Skills 표시 (매 응답 최상단 1줄)
 형식: ``🐾 Active Skills: {활성 스킬 | 구분}`` (🐾=pawpad). 단계 첨자: ``clarity r2/5``, ``grill-me``, ``to-prd``, ``brainstorming``, ``design``, ``mockup lo/hi``, ``review``.
-caveman 항상 포함(normal mode 제외). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.
+caveman 항상 포함. off 시 라인에 ``normal mode (caveman 압축 off)``로 표기(자기설명). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.
 "@
 Write-FileContent "CLAUDE.md" $tmplClaudeMd
 
@@ -5574,6 +5678,79 @@ if ($Upgrade -and $mergePending.Count -gt 0) {
 Step-Begin ".gitignore"
 Update-Gitignore
 
+# ── Bundle prune (선택 번들 외 제거 + 정합, v2.39) ───────────────────────────────
+# 전체 설치 후 미선택 번들 정리(가산적). docs/config/manifest dangling 0 유지.
+if ($script:bundleMode -eq 'custom') {
+    $bpCore = @('resume', 'ctxdb-navigator', 'checkpoint', 'context-saver', 'handoff', 'codemap', 'codebase-map', 'caveman', 'lean-code', 'feature-architecture', 'security-check')
+    $bpMap = [ordered]@{ prd = @('clarity', 'grill-me', 'to-prd'); ui = @('design', 'mockup', 'viewer-apply'); delegate = @('code-delegate'); review = @('review') }
+    $bpAll = @($bpCore); foreach ($k in $bpMap.Keys) { $bpAll += $bpMap[$k] }
+    $bpDeps = @{ ui = @('prd'); delegate = @('prd') }
+    $sel = @($script:bundleSelected)
+    $chg = $true; while ($chg) { $chg = $false; foreach ($b in @($sel)) { if ($bpDeps.ContainsKey($b)) { foreach ($d in $bpDeps[$b]) { if ($sel -notcontains $d) { $sel += $d; $chg = $true } } } } }
+    $bpKeep = @($bpCore); foreach ($b in $sel) { $bpKeep += $bpMap[$b] }; $bpKeep = $bpKeep | Select-Object -Unique
+    $bpRemove = @($bpAll | Where-Object { $bpKeep -notcontains $_ })
+
+    $root2 = (Get-Location).Path
+    $utf8nb = New-Object System.Text.UTF8Encoding $false
+    # 1) 미선택 스킬 디렉토리 제거 (.claude/skills + .agents/skills)
+    foreach ($s in $bpRemove) { foreach ($base in @('.claude\skills', '.agents\skills')) { $d = Join-Path $root2 (Join-Path $base $s); if (Test-Path $d) { Remove-Item $d -Recurse -Force -ErrorAction SilentlyContinue } } }
+    # 2) config.json skills 배열 동기
+    $cfgP = Join-Path $root2 '.codex\config.json'
+    if (Test-Path $cfgP) {
+        $cfg = [System.IO.File]::ReadAllText($cfgP, $utf8nb)
+        $mm = [regex]::Match($cfg, '"skills":\s*\[(.*?)\]', 'Singleline')
+        if ($mm.Success) {
+            $on = @([regex]::Matches($mm.Groups[1].Value, '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value })
+            $ko = @($on | Where-Object { $bpKeep -contains $_ })
+            $at = ($ko | ForEach-Object { '    "' + $_ + '"' }) -join ",`r`n"
+            $cfg = $cfg.Substring(0, $mm.Index) + "`"skills`": [`r`n$at`r`n  ]" + $cfg.Substring($mm.Index + $mm.Length)
+            [System.IO.File]::WriteAllText($cfgP, $cfg, $utf8nb)
+        }
+    }
+    # 3) SKILLS_MANIFEST.md 카운트 + 행 + 호출/체이닝 줄 동기
+    $manP = Join-Path $root2 '.claude\SKILLS_MANIFEST.md'
+    if (Test-Path $manP) {
+        $man = [System.IO.File]::ReadAllText($manP, $utf8nb)
+        $gae = [char]0xAC1C
+        $man = [regex]::Replace($man, '\(\d+' + $gae + '\)', '(' + $bpKeep.Count + $gae + ')')
+        foreach ($s in $bpRemove) {
+            $man = [regex]::Replace($man, '(?m)^\|\s*\*\*' + [regex]::Escape($s) + '\*\*\s*\|.*\r?\n', '')
+            $man = [regex]::Replace($man, '(?m)^.*/' + [regex]::Escape($s) + '(\b|\s).*\r?\n', '')
+        }
+        [System.IO.File]::WriteAllText($manP, $man, $utf8nb)
+    }
+    # 4) docs 트림 (CLAUDE.md / AGENTS.md / HYBRID.md)
+    $mdc = [char]0xB7
+    foreach ($doc in @('CLAUDE.md', 'AGENTS.md', '.claude\HYBRID.md')) {
+        $p = Join-Path $root2 $doc
+        if (-not (Test-Path $p)) { continue }
+        $t = [System.IO.File]::ReadAllText($p, $utf8nb)
+        if ($sel -notcontains 'prd') { $t = [regex]::Replace($t, '(?sm)^## Idea.*?(?=^## |\z)', '') }
+        if ($bpRemove -contains 'mockup') { $t = [regex]::Replace($t, '(?m)^.*/mockup viewer.*\r?\n', '') }
+        if ($bpRemove -contains 'review') { $t = [regex]::Replace($t, '(?m)^.*review skill.*\r?\n', '') }
+        if ($bpRemove -contains 'design') { $t = [regex]::Replace($t, '(?m)^.*design\(.*\r?\n', '') }
+        foreach ($s in $bpRemove) { $t = $t -replace ($mdc + [regex]::Escape($s)), ''; $t = $t -replace ([regex]::Escape($s) + $mdc), '' }
+        $rmc = $bpRemove
+        $t = [regex]::Replace($t, '\{[^}]*\}', { param($m) $parts = ($m.Value.Substring(1, $m.Value.Length - 2)) -split ','; $kept = @($parts | Where-Object { $rmc -notcontains $_.Trim() }); '{' + ($kept -join ',') + '}' })
+        foreach ($s in $bpRemove) { $t = [regex]::Replace($t, '`' + [regex]::Escape($s) + '[^`]*`,?\s?', '') }
+        [System.IO.File]::WriteAllText($p, $t, $utf8nb)
+    }
+    # 5) 가드 1줄 (설치 스킬만 추천)
+    foreach ($gp in @('CLAUDE.md', 'AGENTS.md')) {
+        $p = Join-Path $root2 $gp
+        if (Test-Path $p) {
+            $t = [System.IO.File]::ReadAllText($p, $utf8nb)
+            if ($t -notmatch 'pawpad-bundles guard') {
+                $t = $t.TrimEnd() + "`r`n`r`n> NOTE (pawpad-bundles guard): Only recommend or invoke skills installed under .claude/skills/. Do not suggest skills absent from this install.`r`n"
+                [System.IO.File]::WriteAllText($p, $t, $utf8nb)
+            }
+        }
+    }
+    Write-Host ""
+    $selTxt = if ($sel.Count -gt 0) { $L.corePlus + (($sel | Sort-Object) -join ', ') } else { $L.coreOnly }
+    Write-Host ($L.bundleLine -f $selTxt, $bpKeep.Count, $bpRemove.Count, ($bpRemove -join ', ')) -ForegroundColor Cyan
+}
+
 # ── 완료 요약 ────────────────────────────────────────────────────────────────
 Show-InstallChecklist
 Write-Host ""
@@ -5582,44 +5759,55 @@ Write-Host "Setup Complete: $created created | $updated updated | $merged merged
 Write-Host ""
 
 if ($failed -eq 0) {
-    Write-Host "프로젝트 초기화 완료 (PawPad v$ver)" -ForegroundColor Green
+    Write-Host ($L.complete -f $ver) -ForegroundColor Green
     Write-Host ""
-    Write-Host "v$ver 누적 (19 스킬 + hook + .ctxdb + codemap + codebase-map + security-check):" -ForegroundColor Cyan
-    Write-Host "  - Stack 프리셋: $Stack (flutter|node|python|generic 중 -Stack로 선택)" -ForegroundColor Cyan
-    Write-Host "  - 크로스플랫폼 hook: Windows=.ps1 / Unix=.sh (설치 OS 자동 선택)" -ForegroundColor Cyan
-    Write-Host "  - statusLine: Claude Code 매 턴 컨텍스트 윈도우 사용량(%) 표시" -ForegroundColor Cyan
-    Write-Host "  - Codex native adapter: .agents/skills mirror + .codex/hooks.json (/hooks trust 필요)" -ForegroundColor Cyan
-    Write-Host "  - codemap: 위치+시그니처+역할 1줄 + MAP 조망 (파일 안 열고 파악)" -ForegroundColor Cyan
-    Write-Host "  - .ctxdb 키워드 depth DB + context-saver 키워드 자동 갱신" -ForegroundColor Cyan
-    Write-Host "  - codebase-map: 7축 고수준 맵(.claude/pawpad/codebase/) + digest-only 주입" -ForegroundColor Cyan
-    Write-Host "  - security-check: 보안 검증 게이트(secrets/취약점/설정/PawPad, 🔴=BLOCK, DoD#8)" -ForegroundColor Cyan
-    Write-Host "  - -Upgrade: 기존 설치 업그레이드(툴킷 파일만 갱신, 사용자 데이터 보존, 혼합 병합)" -ForegroundColor Cyan
-    Write-Host "  - 구조 경로: .claude/pawpad/ (구 KMS — v2.21 이하 설치본은 -Upgrade 시 자동 마이그레이션)" -ForegroundColor Cyan
-    Write-Host "  - 설치 UI: paw 배너 + 진행 바 live 1줄 갱신 + 실측 체크리스트 (-ShowLog로 파일 상세 로그)" -ForegroundColor Cyan
-    Write-Host "  - lean-code: 과설계/범위이탈 방지 원칙 스킬 (구 karpathy, v2.25 rename + 병합 마이그레이션)" -ForegroundColor Cyan
-    Write-Host "  - feature-architecture: feature-first 구조 규율 스킬 (CLAUDE/AGENTS Architecture Principles 강제)" -ForegroundColor Cyan
-    Write-Host "  - 상세: docs/CHANGELOG_v2.36.md" -ForegroundColor Cyan
+    if ($Lang -eq 'ko') {
+        Write-Host "v$ver 누적 (19 스킬 + hook + .ctxdb + codemap + codebase-map + security-check):" -ForegroundColor Cyan
+        Write-Host "  - Stack 프리셋: $Stack (flutter|node|python|generic 중 -Stack로 선택)" -ForegroundColor Cyan
+        Write-Host "  - 크로스플랫폼 hook: Windows=.ps1 / Unix=.sh (설치 OS 자동 선택)" -ForegroundColor Cyan
+        Write-Host "  - statusLine: Claude Code 매 턴 컨텍스트 윈도우 사용량(%) 표시" -ForegroundColor Cyan
+        Write-Host "  - Codex native adapter: .agents/skills mirror + .codex/hooks.json (/hooks trust 필요)" -ForegroundColor Cyan
+        Write-Host "  - codemap: 위치+시그니처+역할 1줄 + MAP 조망 (파일 안 열고 파악)" -ForegroundColor Cyan
+        Write-Host "  - .ctxdb 키워드 depth DB + context-saver 키워드 자동 갱신" -ForegroundColor Cyan
+        Write-Host "  - codebase-map: 7축 고수준 맵(.claude/pawpad/codebase/) + digest-only 주입" -ForegroundColor Cyan
+        Write-Host "  - security-check: 보안 검증 게이트(secrets/취약점/설정/PawPad, 🔴=BLOCK, DoD#8)" -ForegroundColor Cyan
+        Write-Host "  - -Upgrade: 기존 설치 업그레이드(툴킷 파일만 갱신, 사용자 데이터 보존, 혼합 병합)" -ForegroundColor Cyan
+        Write-Host "  - 구조 경로: .claude/pawpad/ (구 KMS — v2.21 이하 설치본은 -Upgrade 시 자동 마이그레이션)" -ForegroundColor Cyan
+        Write-Host "  - 설치 UI: paw 배너 + 진행 바 live 1줄 갱신 + 실측 체크리스트 (-ShowLog로 파일 상세 로그)" -ForegroundColor Cyan
+        Write-Host "  - lean-code: 과설계/범위이탈 방지 원칙 스킬 (구 karpathy, v2.25 rename + 병합 마이그레이션)" -ForegroundColor Cyan
+        Write-Host "  - feature-architecture: feature-first 구조 규율 스킬 (CLAUDE/AGENTS Architecture Principles 강제)" -ForegroundColor Cyan
+        Write-Host "  - 번들 선택: -Preset lean|standard|full 또는 -Bundles prd,ui,delegate,review (미지정 시 대화형, Enter=full)" -ForegroundColor Cyan
+        Write-Host "  - 안내 언어: -Lang en|ko (사람 안내 메시지만, 스킬/문서는 단일 소스 무변경)" -ForegroundColor Cyan
+        Write-Host "  - 상세: docs/CHANGELOG_v2.39.md" -ForegroundColor Cyan
+    } else {
+        Write-Host "v${ver}: 19 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
+        Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review" -ForegroundColor Cyan
+        Write-Host "  - cross-platform hooks (.ps1/.sh), statusLine, Codex adapter, -Upgrade (preserves user data)" -ForegroundColor Cyan
+        Write-Host "  - codemap / codebase-map / .ctxdb context DB / security-check gate (DoD)" -ForegroundColor Cyan
+        Write-Host "  - -Lang en|ko (install guidance only; skills/docs single source) | details: docs/CHANGELOG_v2.39.md" -ForegroundColor Cyan
+    }
     Write-Host ""
 } else {
-    Write-Host "$failed 개 항목 실패. 권한 확인 후 다시 시도하세요." -ForegroundColor Yellow
+    Write-Host ($L.failed -f $failed) -ForegroundColor Yellow
 }
 
 if ($Stack -eq 'generic') {
-    Write-Host "[generic] CLAUDE.md / AGENTS.md / config.json 의 <YOUR_*> 플레이스홀더를 실제 값으로 채우세요." -ForegroundColor Magenta
-    Write-Host "          (analyze 명령 미지정 -> PostToolUse 자동검사 hook은 생략됨)" -ForegroundColor Magenta
+    Write-Host $L.genericNote1 -ForegroundColor Magenta
+    Write-Host $L.genericNote2 -ForegroundColor Magenta
     Write-Host ""
 }
-Write-Host "다음 단계:" -ForegroundColor Yellow
-Write-Host "  1. CLAUDE.md / AGENTS.md 의 Stack(Commands/Boundaries) 정보 확인 및 수정" -ForegroundColor Yellow
-Write-Host "  2. .claude/pawpad/_meta.md 의 STACK 정보 확인" -ForegroundColor Yellow
-Write-Host "  3. .claude/HYBRID.md 읽기 (협업 프로토콜 숙지)" -ForegroundColor Yellow
-Write-Host "  4. 기존 코드 있으면: '.claude/codemap/_index.md 초기값 만들어줘' 요청" -ForegroundColor Yellow
+Write-Host $L.nextSteps -ForegroundColor Yellow
+Write-Host $L.step1 -ForegroundColor Yellow
+Write-Host $L.step2 -ForegroundColor Yellow
+Write-Host $L.step3 -ForegroundColor Yellow
+Write-Host $L.step4 -ForegroundColor Yellow
 Write-Host ""
 
 if (-not $Force -and -not $Upgrade) {
-    Write-Host "기존 파일 덮어쓰려면: .\pawpad-setup.ps1 -Force" -ForegroundColor DarkGray
-    Write-Host "기존 설치 업그레이드: .\pawpad-setup.ps1 -Upgrade (사용자 데이터 보존, 툴킷 파일만 갱신)" -ForegroundColor DarkGray
-    Write-Host "(둘 다 PawPad + Context files 자동 백업됩니다)" -ForegroundColor DarkGray
+    Write-Host $L.forceHint1 -ForegroundColor DarkGray
+    Write-Host $L.forceHint2 -ForegroundColor DarkGray
+    Write-Host $L.forceHint3 -ForegroundColor DarkGray
+    Write-Host "options: -Preset lean|standard|full  -Bundles prd,ui,delegate,review  -Lang en|ko" -ForegroundColor DarkGray
     Write-Host ""
 }
 
@@ -5629,10 +5817,10 @@ if (Test-Path $globalSkillRoot) {
     $localSkillNames = @(Get-ChildItem ".claude\skills" -Directory -ErrorAction SilentlyContinue | ForEach-Object { $_.Name })
     $shadowedSkills = @(Get-ChildItem $globalSkillRoot -Directory -ErrorAction SilentlyContinue | Where-Object { $localSkillNames -contains $_.Name } | ForEach-Object { $_.Name })
     if ($shadowedSkills.Count -gt 0) {
-        Write-Host "⚠ 전역 Codex 스킬 섀도잉 감지: ~/.codex/skills/ 에 동일 이름 스킬 $($shadowedSkills.Count)개" -ForegroundColor Yellow
+        Write-Host ($L.shadow1 -f $shadowedSkills.Count) -ForegroundColor Yellow
         Write-Host "  ($($shadowedSkills -join ', '))" -ForegroundColor Yellow
-        Write-Host "  Codex는 전역을 repo mirror(.agents/skills)보다 우선 조회 -> 구버전 섀도잉 위험." -ForegroundColor Yellow
-        Write-Host "  정리 권장(삭제 아닌 백업 이동): Move-Item '$globalSkillRoot\{skill}' '$globalSkillRoot.pawpad-backup\'" -ForegroundColor Yellow
+        Write-Host $L.shadow3 -ForegroundColor Yellow
+        Write-Host ($L.shadow4 -f $globalSkillRoot) -ForegroundColor Yellow
         Write-Host ""
     }
 }

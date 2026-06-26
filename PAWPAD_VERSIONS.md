@@ -1,4 +1,4 @@
-# PawPad 버전별 업데이트 (v2.18 → v2.38)
+# PawPad 버전별 업데이트 (v2.18 → v2.39)
 
 | 버전 | 날짜 | 핵심 변경 | 주요 영향 요소 |
 |------|------|----------|--------------|
@@ -24,7 +24,9 @@
 | v2.37 | 2026-06-23 | grill-with-docs → grill-me 흡수 (스킬 20→19) | 죽은 중복 스킬 제거. grill-with-docs 고유가치 중 순수 인터뷰 품질만 grill-me에 흡수: 모호 용어→canonical 좁힘, 엣지케이스 시나리오 stress-test, 진술 vs 코드 모순 표면화, 탐색 시 기존 문서 확인. 미사용 `CONTEXT.md` 용어집·Decision Placement Matrix와 중복인 ADR offering은 DROP. 표면: grill-me live+embed+.agents 미러 보강 / grill-with-docs live+미러 dir 제거 / SKILLS_MANIFEST·config.json·CLAUDE/AGENTS 자동제안목록 정리 / README·GUIDE·USAGE 스킬 카운트 20→19 / -Upgrade 구 dir+config 자동 정리(ADR-002 선례) |
 | v2.38 | 2026-06-25 | codemap ON START 부분읽기 | 코드세션 ON START codemap read 토큰 절감(~7k→~0.5k). MAP+HOT(조망)만 read, INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand. HOT를 spec(최근 3~5개·1줄)대로 정리(28→5, HOT-only 심볼 INDEX 강등·무손실; `_index.md` 25.8k→18.8k 총파일, INDEX는 grep-on-demand 미로드). ON START 절감 3종(_meta·HYBRID·codemap) 완성. 표면: Session Protocol step7(CLAUDE/AGENTS live+setup $tmpl 2) / codemap SKILL ON START 규칙(live+.agents 미러+setup embed) / _index.md HOT 트림 / README·GUIDE·USAGE·PAWPAD_VERSIONS·CHANGELOG. 동작·스킬 19 불변 |
 
-# 누적 현황 (현재 v2.38)
+| v2.39 | 2026-06-26 | 번들 선택 설치 + 안내 언어 i18n | 설치 시 스킬 번들 선택(`-Preset lean\|standard\|full` / `-Bundles prd,ui,delegate,review`, prune-at-end). Core 11 고정 + Optional 4 번들(prd/ui/delegate/review, ui·delegate→prd 하드의존 자동포함). 미선택 시 스킬 dir + `config.json`/`SKILLS_MANIFEST` + CLAUDE/AGENTS/HYBRID 본문 참조까지 dangling 0 정리. 안내 메시지 언어 `-Lang en\|ko`($TR 테이블, 사람 안내만 — 스킬/에이전트 문서는 단일 소스 무변경). 스킬 내용·19 불변(가드는 install-time 1줄) |
+
+# 누적 현황 (현재 v2.39)
 
 | 항목 | 수치 |
 |------|------|

@@ -107,7 +107,7 @@ ACTIVE EVERY RESPONSE. Off: "normal mode"
 
 ### Active Skills 표시 (매 응답 최상단 1줄)
 형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`, `design`, `mockup lo/hi`, `review`.
-caveman 항상 포함(normal mode 제외). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.
+caveman 항상 포함. off 시 라인에 `normal mode (caveman 압축 off)`로 표기(자기설명). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.
 ## Idea → PRD Routing
 아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선).
 판정: 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
