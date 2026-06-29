@@ -222,7 +222,8 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 ---
 
 ## 변경 이력
-> PawPad v2.39 FROZEN.
+> PawPad v2.40 FROZEN.
+> - **v2.40**: codemap trim-router — 코드맵이 커지면(약 50KB+) 한 파일을 작은 페이지로 쪼갠다. 길찾기 페이지(`_root.md`), 한국어→기능 매핑(`keywords.md`), 기능별 실제 파일/심볼(`features/{id}.md`). 페이지 크기 상한(루트 2KB·그외 4KB)으로 "실수로 코드맵 전체 읽기" 토큰 사고를 구조적으로 막는다(평상시 grep 검색 속도는 그대로). 자동생성 파일(`*.g.dart`/`*.freezed.dart`)은 코드맵에서 제외. 작은 코드맵은 기존 flat 유지(과분할 안 함). account-link 실측 pilot로 검증. 스킬 내용 갱신·스킬 수(19) 불변.
 > - **v2.39**: 설치 번들 선택 + 안내 언어 — 스킬을 기능 번들 단위로 골라 설치(`-Preset lean|standard|full` 또는 `-Bundles prd,ui,delegate,review`, 미지정 시 대화형). Core 11(인프라)는 항상, 기획(prd)·UI(설계·목업)·코딩위임(delegate)·교차리뷰(review)는 선택 — UI·위임은 prd 자동 포함. 안 고른 번들은 스킬 파일·설정·문서 참조에서 깔끔히 빠진다(죽은 추천 0). 설치 안내 메시지 언어 `-Lang en|ko`(Enter=ko). **스킬 내용은 단일 소스 무변경**, 스킬 수(19) 불변.
 > - **v2.38**: codemap **ON START 부분읽기** — 코드 작업 세션을 시작할 때 codemap을 통째로 안 읽고 맨 위 조망부(MAP+HOT)만 읽는다. 전체 심볼표(INDEX)는 특정 심볼이 필요할 때만 검색(Grep)으로 그 줄만 가져온다. 더불어 HOT(최근 접근)를 규칙대로 5개·각 1줄로 정리(28개·장문 → 5개, 밀려난 심볼은 전체표로 강등·삭제 없음). 코드세션 시작 시 codemap 읽기 토큰 ~7k→~0.5k 절감(전체표는 필요할 때만 검색하므로 시작 비용 0). 동작·스킬 수(19) 불변.
 > - **v2.37**: `grill-with-docs` 스킬을 `grill-me`에 흡수(스킬 20→19) — 거의 안 쓰이던 중복 스킬 제거. `grill-me`가 이제 계획을 따지면서 모호한 용어를 정확한 용어로 좁히고, 엣지케이스 시나리오로 개념 경계를 캐묻고, 말한 동작이 코드와 어긋나면 그 자리서 짚는다. 잘 안 쓰이던 용어집(`CONTEXT.md`)과 ADR 제안 기능은 뺐다(결정기록은 기존 경로 유지). 기존 설치는 `-Upgrade`가 구 스킬을 자동 정리.
@@ -237,4 +238,4 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 > - **v2.28**: `/mockup` 스킬 추가 — PRD-tree를 단일 HTML 목업(와이어프레임 lo-fi / 디자인 hi-fi)으로 시각화, Feature ID로 메뉴 위치 추적 + drift 경고. 기획/설계 스킬 선택지 질문은 체크박스로, 단계 경계에서 다음 스킬·목업 자동제안.
 > - **v2.27**: `Idea → PRD Routing` + `Active Skills` 표시 추가 — 아이디어→PRD 구체화 시 다음 스킬 추천(clarity→grill-me→to-prd, 강제 X) + 매 응답 `🐾 Active Skills` 라인. doc/스킬 군살 제거(중복·불필요 문구).
 > - **v2.26**: `feature-architecture` 추가 — feature-first 구조 규율(추후 기능 추가·수정이 쉽고, 사람이 코드 구조를 파악하기 쉽게). `lean-code`(오버엔지니어링 방지)와 짝.
-> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.39.md](docs/CHANGELOG_v2.39.md).
+> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.40.md](docs/CHANGELOG_v2.40.md).
