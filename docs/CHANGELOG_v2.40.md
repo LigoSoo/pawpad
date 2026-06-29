@@ -13,7 +13,8 @@ codemap 성장 전략을 flat single-index에서 **trim-router(small-page)**로 
     - `keywords.md` — 한국어/동의어를 feature로 라우팅. source pointer 금지. hard-cap **4KB**.
     - `features/{feature-id}.md` — source pointer + 최소 판단근거. hard-cap **4KB**.
   - **domain 중간층 없음** (feature leaf와 내용 중복·3중쓰기 drift 유발 → 스팩 원안에서 제외 = trim).
-  - Lookup 알고리즘 (최대 3 read): 한국어→keywords→leaf→source / 영문 심볼→features grep 직행 / 통째읽기 금지.
+  - Lookup 알고리즘 (최대 3 read): 한국어/증상→keywords **통째 read 후 의미·맥락 매칭**(grep 아님, agent가 의도로 해석 → 표현/공백 흔들림 강건)→leaf→source / 영문 심볼→features rg 정확매칭 / codemap전체·keywords grep정확매칭·통째읽기 금지.
+  - keywords.md 작성 지향: 동의어 나열보다 "의도·증상→feature" 서술(정확 단어 불요, agent가 의미 매칭).
   - **generated 제외**: `*.g.dart`, `*.freezed.dart`, `lib/generated/**` 는 source pointer 대상 아님. fallback rg에 exclude glob.
   - entry **1줄 규율** 강조(긴 문단 entry가 진짜 bloat 원인 — 상세는 spec/lane).
   - size cap 완료 게이트(root 2KB / 그외 4KB UTF-8 byte).
@@ -32,3 +33,4 @@ codemap 성장 전략을 flat single-index에서 **trim-router(small-page)**로 
 - 동작 변경은 codemap lookup 방법론(에이전트 지침)만. 코드 로직·hook·스킬 수(19) 불변.
 - 전체 167 entry 마이그레이션은 다운스트림 프로젝트 작업(pilot로 방법론 검증 완료). 본 릴리스는 방법론 배포.
 - trim-router는 **size-aware**: 소규모 codemap(~30KB 이하)은 flat 유지 권장(분할 과설계 회피).
+- lookup 의미매칭 명시(v2.40 내 보강): 자연어 키워드는 grep 정확매칭이 아니라 agent가 keywords.md를 의미로 해석 → "최근완료"="최근 완료" 등 표현/공백 흔들림 무영향(취약점은 source 직접 grep 쪽). downstream(TodayQuest) 52KB→trim-router 실마이그레이션 + 3-케이스 토큰실험에서 도출: ①라벨 greppable=평탄 grep 우위 ②대형파일 통째읽기 사고=codemap ~85% 상한 ③증상형(grep 불가)=토큰 무승부+decoy 회피/정타율이 codemap 가치.
