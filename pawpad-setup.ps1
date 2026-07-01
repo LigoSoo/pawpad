@@ -1,6 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.40 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.40. v2.39 기반 + codemap trim-router(small-page): flat 50KB+ → _root.md(route)+keywords.md(한국어→feature)+features/{id}.md(source pointer), cap root2KB·그외4KB, generated(*.g/*.freezed/lib/generated) 제외, lookup 알고리즘+1줄규율. 통째읽기 사고 ~14k→~1k 봉쇄·grep 성능 불변. account-link pilot 검증(size PASS·lookup 2/2). 스킬 내용 갱신(codemap SKILL live+미러+embed)·19 불변. 보고서: docs/CHANGELOG_v2.40.md).
-#         이전: v2.38 codemap ON START 부분읽기 — MAP+HOT(조망)만 read, INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand. 코드세션 ON START codemap read ~7k→~0.5k tok 절감. 보고서: docs/CHANGELOG_v2.38.md).
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.41 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.41. PostToolUse analyze hook bash 디스패치 호환 fix — Windows settings.json "command"에 raw PowerShell 파이프라인(`... | Select-Object -Last 5`)을 직접 넣던 방식이 Claude Code의 hook 커맨드 Git Bash 디스패치와 충돌(`Select-Object: command not found`)하던 문제를, 다른 훅과 동일한 `-File` 스크립트 실행 방식(`.claude/hooks/analyze.ps1` 신규)으로 통일해 해결. 스킬 19·기능 로직 불변. 보고서: docs/CHANGELOG_v2.41.md).
+#         이전: v2.40 codemap trim-router(small-page) — flat 50KB+ → _root.md(route)+keywords.md(한국어→feature)+features/{id}.md(source pointer), cap root2KB·그외4KB. 보고서: docs/CHANGELOG_v2.40.md).
 #         이전: v2.36 통합 기획 뷰어(데이터-구동, no-backend) — 범용 spec-viewer.html(File System Access API)가 고정명 외부 JSON(src/viewer/{prd,fts,userflow,wire}.json)을 폴더 1회 선택 후 자동 로드·편집·제자리 저장·재로드. 신규 스킬 viewer-apply(19→20) + mockup viewer 모드. 보고서: docs/CHANGELOG_v2.36.md).
 #         이전: v2.35 resume 최소로드 — ON START 읽기 토큰 절감(HYBRID 조건부화+_meta RECENT skip). 보고서: docs/CHANGELOG_v2.35.md).
 #         이전: v2.34 skill rename memory → resume. 보고서: docs/CHANGELOG_v2.34.md).
@@ -53,7 +53,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.40"
+$ver = "2.41"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -1190,7 +1190,7 @@ $sessionCmd = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File
 $promptCmd  = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook ctxdb-inject.ps1" } else { "sh $claudeHookRoot/ctxdb-inject.sh" }
 $compactCmd = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook pre-compact.ps1" } else { "sh $claudeHookRoot/pre-compact.sh" }
 $stopCmd    = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook stop-check.ps1" } else { "bash $claudeHookRoot/stop-check.sh" }
-$analyzeCmd = if ($isWin) { $p.AnalyzePS } else { $p.AnalyzeBash }
+$analyzeCmd = if ($isWin) { if ($p.AnalyzePS) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook analyze.ps1" } else { '' } } else { $p.AnalyzeBash }
 $statusCmd  = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook statusline.ps1" } else { "bash $claudeHookRoot/statusline.sh" }
 
 # JSON 하드빌드 (5.1 ConvertTo-Json 단일요소 배열 unwrap 회피). analyzeCmd 없으면 PostToolUse 생략.
@@ -1308,6 +1308,14 @@ try {
     exit 0
 }
 '@
+
+# ── hooks: analyze.ps1 (PostToolUse:Edit 정적분석 — 스택별 raw 커맨드 파일화) ──
+# 배경: settings.json "command"에 raw PowerShell 파이프라인(`... | Select-Object ...`)을 직접 넣으면
+#       Claude Code가 hook command를 bash로 디스패치할 때 `Select-Object`를 못 찾아 실패한다(Git Bash에는 없는 cmdlet).
+#       다른 훅과 동일하게 -File로 .ps1 스크립트를 실행시켜 셸(bash/cmd) 종류와 무관하게 powershell.exe 내부에서 파이프가 해석되도록 한다.
+if ($isWin -and $p.AnalyzePS) {
+    Write-FileContent ".claude\hooks\analyze.ps1" $p.AnalyzePS
+}
 
 # ── hooks: session-start.ps1 (INDEX 라우터 주입 + session state reset + codemap 토글) ──
 Write-FileContent ".claude\hooks\session-start.ps1" @'
@@ -5801,13 +5809,14 @@ if ($failed -eq 0) {
         Write-Host "  - 번들 선택: -Preset lean|standard|full 또는 -Bundles prd,ui,delegate,review (미지정 시 대화형, Enter=full)" -ForegroundColor Cyan
         Write-Host "  - 안내 언어: -Lang en|ko (사람 안내 메시지만, 스킬/문서는 단일 소스 무변경)" -ForegroundColor Cyan
         Write-Host "  - codemap trim-router: 대규모 codemap을 _root+keywords+features leaf로 분할(cap 2/4KB, 통째읽기 사고 봉쇄, grep 성능 불변)" -ForegroundColor Cyan
-        Write-Host "  - 상세: docs/CHANGELOG_v2.40.md" -ForegroundColor Cyan
+        Write-Host "  - analyze hook fix: PostToolUse 정적분석을 -File 스크립트(.claude/hooks/analyze.ps1)로 실행 → Git Bash 디스패치 호환(Select-Object 에러 해소)" -ForegroundColor Cyan
+        Write-Host "  - 상세: docs/CHANGELOG_v2.41.md" -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 19 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review" -ForegroundColor Cyan
         Write-Host "  - cross-platform hooks (.ps1/.sh), statusLine, Codex adapter, -Upgrade (preserves user data)" -ForegroundColor Cyan
         Write-Host "  - codemap / codebase-map / .ctxdb context DB / security-check gate (DoD)" -ForegroundColor Cyan
-        Write-Host "  - codemap trim-router (small-page split: _root+keywords+features, cap 2/4KB) | details: docs/CHANGELOG_v2.40.md" -ForegroundColor Cyan
+        Write-Host "  - analyze hook now runs via -File script (Git Bash dispatch compatible, fixes Select-Object error) | details: docs/CHANGELOG_v2.41.md" -ForegroundColor Cyan
     }
     Write-Host ""
 } else {
