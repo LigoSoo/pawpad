@@ -1,4 +1,4 @@
-# PawPad 버전별 업데이트 (v2.18 → v2.42)
+# PawPad 버전별 업데이트 (v2.18 → v2.40)
 
 | 버전 | 날짜 | 핵심 변경 | 주요 영향 요소 |
 |------|------|----------|--------------|
@@ -25,11 +25,9 @@
 | v2.38 | 2026-06-25 | codemap ON START 부분읽기 | 코드세션 ON START codemap read 토큰 절감(~7k→~0.5k). MAP+HOT(조망)만 read, INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand. HOT를 spec(최근 3~5개·1줄)대로 정리(28→5, HOT-only 심볼 INDEX 강등·무손실; `_index.md` 25.8k→18.8k 총파일, INDEX는 grep-on-demand 미로드). ON START 절감 3종(_meta·HYBRID·codemap) 완성. 표면: Session Protocol step7(CLAUDE/AGENTS live+setup $tmpl 2) / codemap SKILL ON START 규칙(live+.agents 미러+setup embed) / _index.md HOT 트림 / README·GUIDE·USAGE·PAWPAD_VERSIONS·CHANGELOG. 동작·스킬 19 불변 |
 
 | v2.39 | 2026-06-26 | 번들 선택 설치 + 안내 언어 i18n | 설치 시 스킬 번들 선택(`-Preset lean\|standard\|full` / `-Bundles prd,ui,delegate,review`, prune-at-end). Core 11 고정 + Optional 4 번들(prd/ui/delegate/review, ui·delegate→prd 하드의존 자동포함). 미선택 시 스킬 dir + `config.json`/`SKILLS_MANIFEST` + CLAUDE/AGENTS/HYBRID 본문 참조까지 dangling 0 정리. 안내 메시지 언어 `-Lang en\|ko`($TR 테이블, 사람 안내만 — 스킬/에이전트 문서는 단일 소스 무변경). 스킬 내용·19 불변(가드는 install-time 1줄) |
-| v2.40 | 2026-06-30 | codemap trim-router (small-page) | codemap 성장전략 flat→trim-router: 대규모(50KB+) `_index.md`를 `_root.md`(route)+`keywords.md`(한국어→feature)+`features/{id}.md`(source pointer)로 분할, cap root 2KB·그외 4KB. generated(`*.g.dart`/`*.freezed.dart`/`lib/generated`) source pointer 제외, lookup 알고리즘(최대 3 read, 자연어=keywords 의미매칭·표현 흔들림 강건/영문심볼=rg 정확매칭)+1줄규율. **domain 중간층 제외**(leaf 중복·3중쓰기 drift 회피 = trim). 통째읽기 사고 ~14k→~1k 봉쇄·grep 성능 불변(다운사이드 0). account-link pilot 검증(size PASS·lookup 2/2·non-circular). codemap SKILL(live+`.agents` 미러+setup embed) 동기, 스킬 19 불변 |
-| v2.41 | 2026-07-01 | analyze hook bash 디스패치 호환 fix | Windows PostToolUse(analyze) 훅이 settings.json `"command"`에 raw PowerShell 파이프라인(`... \| Select-Object -Last 5`)을 직접 넣던 방식이라, Claude Code가 hook command를 Git Bash로 디스패치하면서 `Select-Object: command not found`로 실패하던 문제 수정. 다른 모든 훅(session-start/ctxdb-inject/pre-compact/stop-check/statusline)과 동일하게 `-File`로 `.claude/hooks/analyze.ps1`(신규, 스택별 raw 커맨드 파일화)을 실행하는 방식으로 통일 — bash/cmd 어느 경로로 디스패치돼도 powershell.exe 내부에서 파이프 해석. Opus 서브에이전트 교차 리뷰 반영(cmd.exe 경유 시 `-Command` 인라인 래핑의 취약점 지적 → `-File` 스크립트화로 대체). 샌드박스 설치+bash 디스패치 재현 테스트로 검증. 스킬 19·기능 로직 불변 |
-| v2.42 | 2026-07-01 | analyze hook stderr 피드백 fix | v2.41 적용 후에도 PostToolUse:Edit hook이 `blocking error ... No stderr output`으로 계속 실패한다는 리포트 → claude-code-guide 서브에이전트로 Claude Code 공식 문서 조사, PostToolUse hook은 **exit 2일 때만 stderr**를 agent에게 전달(stdout 무시)함을 확인. analyze 훅이 tsc/dart/mypy 진단 결과를 stdout(`Select-Object`/`tail`)으로만 내보내던 게 근본 원인(v2.41 이전부터 있던 별개 설계 결함) — 진단이 있어도 agent는 내용을 전혀 못 받음. 진단 결과를 캡처해 stderr로 재전송 + exit 2(에러 있음)/0(클린) 정규화. Windows(`analyze.ps1`) + 신규 Unix(`analyze.sh`, 기존엔 wrapper 파일조차 없이 raw bash 커맨드였음) 동일 패턴 적용. 샌드박스 설치 + 실패/클린 양쪽 시나리오 bash 디스패치 재현 테스트로 exit code·stderr 내용 검증. 스킬 19·기능 로직 불변 |
+| v2.40 | 2026-06-30 | codemap trim-router (small-page) | codemap 성장전략 flat→trim-router: 대규모(50KB+) `_index.md`를 `_root.md`(route)+`keywords.md`(한국어→feature)+`features/{id}.md`(source pointer)로 분할, cap root 2KB·그외 4KB. generated(`*.g.dart`/`*.freezed.dart`/`lib/generated`) source pointer 제외, lookup 알고리즘(최대 3 read, 자연어=keywords 의미매칭·표현 흔들림 강건/영문심볼=rg 정확매칭)+1줄규율. **domain 중간층 제외**(leaf 중복·3중쓰기 drift 회피 = trim). 통째읽기 사고 ~14k→~1k 봉쇄·grep 성능 불변(다운사이드 0). account-link pilot 검증(size PASS·lookup 2/2·non-circular). codemap SKILL(live+`.agents` 미러+setup embed) 동기, 스킬 19 불변. **[v2.40 내 보강, 2026-07-01]** analyze hook 2단계 fix: ①raw PowerShell 파이프라인이 Git Bash 디스패치와 충돌(`Select-Object: command not found`) → `-File` 스크립트(`analyze.ps1`) 통일. ②PostToolUse는 exit2만 stderr 전달하는데 진단결과가 stdout뿐이라 "No stderr output" → stderr 재전송+exit2/0 정규화, Unix `analyze.sh` 신규(claude-code-guide 조사로 근본원인 확인, 샌드박스+bash 디스패치 재현 테스트 검증) |
 
-# 누적 현황 (현재 v2.42)
+# 누적 현황 (현재 v2.40)
 
 | 항목 | 수치 |
 |------|------|

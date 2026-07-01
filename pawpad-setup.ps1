@@ -1,7 +1,7 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.42 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.42. analyze hook stderr 피드백 fix — Claude Code PostToolUse hook은 exit 2일 때만 stderr를 agent에게 전달하는데(stdout은 무시), analyze.ps1/향후 analyze.sh는 tsc/dart/mypy 진단 결과를 stdout(Select-Object/tail)으로만 내보내 "No stderr output"만 뜨고 실제 진단 내용이 agent에 전혀 전달 안 되던 문제 수정. 진단 결과를 캡처해 stderr로 재전송 + exit 2(에러)/0(클린) 정규화(Windows analyze.ps1 + 신규 Unix analyze.sh 동일 패턴). 스킬 19·기능 로직 불변. 보고서: docs/CHANGELOG_v2.42.md).
-#         이전: v2.41 analyze hook bash 디스패치 호환 fix — settings.json에 raw PowerShell 파이프라인을 직접 넣던 방식이 Git Bash 디스패치와 충돌하던 문제를 -File 스크립트 실행으로 통일. 보고서: docs/CHANGELOG_v2.41.md).
-#         이전: v2.40 codemap trim-router(small-page) — flat 50KB+ → _root.md(route)+keywords.md(한국어→feature)+features/{id}.md(source pointer), cap root2KB·그외4KB. 보고서: docs/CHANGELOG_v2.40.md).
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.40 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.40. v2.39 기반 + codemap trim-router(small-page): flat 50KB+ → _root.md(route)+keywords.md(한국어→feature)+features/{id}.md(source pointer), cap root2KB·그외4KB, generated(*.g/*.freezed/lib/generated) 제외, lookup 알고리즘+1줄규율. 통째읽기 사고 ~14k→~1k 봉쇄·grep 성능 불변. account-link pilot 검증(size PASS·lookup 2/2). 스킬 내용 갱신(codemap SKILL live+미러+embed)·19 불변.
+#         v2.40 내 보강: analyze hook 2단계 fix — ①raw PowerShell 파이프라인이 Git Bash 디스패치와 충돌 → -File 스크립트(analyze.ps1) 통일. ②PostToolUse는 exit2만 stderr 전달하는데 진단결과가 stdout뿐이라 "No stderr output" → stderr 재전송+exit2/0 정규화, Unix analyze.sh 신규. 보고서: docs/CHANGELOG_v2.40.md).
+#         이전: v2.38 codemap ON START 부분읽기 — MAP+HOT(조망)만 read, INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand. 코드세션 ON START codemap read ~7k→~0.5k tok 절감. 보고서: docs/CHANGELOG_v2.38.md).
 #         이전: v2.36 통합 기획 뷰어(데이터-구동, no-backend) — 범용 spec-viewer.html(File System Access API)가 고정명 외부 JSON(src/viewer/{prd,fts,userflow,wire}.json)을 폴더 1회 선택 후 자동 로드·편집·제자리 저장·재로드. 신규 스킬 viewer-apply(19→20) + mockup viewer 모드. 보고서: docs/CHANGELOG_v2.36.md).
 #         이전: v2.35 resume 최소로드 — ON START 읽기 토큰 절감(HYBRID 조건부화+_meta RECENT skip). 보고서: docs/CHANGELOG_v2.35.md).
 #         이전: v2.34 skill rename memory → resume. 보고서: docs/CHANGELOG_v2.34.md).
@@ -54,7 +54,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.42"
+$ver = "2.40"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -1310,11 +1310,11 @@ try {
 }
 '@
 
-# ── hooks: analyze.ps1 / analyze.sh (PostToolUse:Edit 정적분석 — 스택별 raw 커맨드 파일화) ──
-# 배경1(v2.41): settings.json "command"에 raw PowerShell 파이프라인(`... | Select-Object ...`)을 직접 넣으면
+# ── hooks: analyze.ps1 / analyze.sh (PostToolUse:Edit 정적분석 — 스택별 raw 커맨드 파일화, v2.40 내 보강) ──
+# 배경1: settings.json "command"에 raw PowerShell 파이프라인(`... | Select-Object ...`)을 직접 넣으면
 #       Claude Code가 hook command를 bash로 디스패치할 때 `Select-Object`를 못 찾아 실패한다(Git Bash에는 없는 cmdlet).
 #       다른 훅과 동일하게 -File로 .ps1 스크립트를 실행시켜 셸(bash/cmd) 종류와 무관하게 powershell.exe 내부에서 파이프가 해석되도록 한다.
-# 배경2(v2.42): Claude Code PostToolUse hook은 exit 2일 때만 **stderr**를 agent에게 전달한다(stdout은 무시).
+# 배경2: Claude Code PostToolUse hook은 exit 2일 때만 **stderr**를 agent에게 전달한다(stdout은 무시).
 #       analyze 커맨드는 진단 결과를 stdout으로만 내보내 왔으므로, 에러가 있어도 "No stderr output"만 뜨고
 #       실제 tsc/dart/mypy 진단 내용은 agent에게 전혀 전달되지 않았다. 진단 결과를 stderr로 재전송 + exit 2/0 정규화.
 if ($isWin -and $p.AnalyzePS) {
@@ -5834,15 +5834,14 @@ if ($failed -eq 0) {
         Write-Host "  - 번들 선택: -Preset lean|standard|full 또는 -Bundles prd,ui,delegate,review (미지정 시 대화형, Enter=full)" -ForegroundColor Cyan
         Write-Host "  - 안내 언어: -Lang en|ko (사람 안내 메시지만, 스킬/문서는 단일 소스 무변경)" -ForegroundColor Cyan
         Write-Host "  - codemap trim-router: 대규모 codemap을 _root+keywords+features leaf로 분할(cap 2/4KB, 통째읽기 사고 봉쇄, grep 성능 불변)" -ForegroundColor Cyan
-        Write-Host "  - analyze hook fix (v2.41): PostToolUse 정적분석을 -File 스크립트(.claude/hooks/analyze.ps1)로 실행 → Git Bash 디스패치 호환(Select-Object 에러 해소)" -ForegroundColor Cyan
-        Write-Host "  - analyze hook fix (v2.42): 진단 결과를 stderr로 재전송 + exit 2/0 정규화 → PostToolUse 'No stderr output' 해소, agent가 실제 분석 내용 수신" -ForegroundColor Cyan
-        Write-Host "  - 상세: docs/CHANGELOG_v2.42.md" -ForegroundColor Cyan
+        Write-Host "  - analyze hook fix (v2.40 보강): -File 스크립트(analyze.ps1/analyze.sh) 실행 → Git Bash 디스패치 호환 + 진단 결과 stderr 재전송(exit 2/0 정규화)로 agent가 실제 분석 내용 수신" -ForegroundColor Cyan
+        Write-Host "  - 상세: docs/CHANGELOG_v2.40.md" -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 19 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review" -ForegroundColor Cyan
         Write-Host "  - cross-platform hooks (.ps1/.sh), statusLine, Codex adapter, -Upgrade (preserves user data)" -ForegroundColor Cyan
         Write-Host "  - codemap / codebase-map / .ctxdb context DB / security-check gate (DoD)" -ForegroundColor Cyan
-        Write-Host "  - analyze hook now forwards diagnostics to stderr (exit 2/0 normalized) so agent actually receives lint/typecheck feedback | details: docs/CHANGELOG_v2.42.md" -ForegroundColor Cyan
+        Write-Host "  - analyze hook now runs via -File script + forwards diagnostics to stderr (exit 2/0 normalized) | details: docs/CHANGELOG_v2.40.md" -ForegroundColor Cyan
     }
     Write-Host ""
 } else {
