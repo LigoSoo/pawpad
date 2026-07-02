@@ -52,4 +52,15 @@ if ($limit -ge 1000000) {
 }
 $out = "ctx $pct% (${usedK}k/$limitLabel)"
 if ($model) { $out += " | $model" }
+# retrieval 계측 표시 (read-track hook 누적: cmap=.claude/codemap, ctx=.ctxdb, src=그 외. 세션 시작 시 reset)
+$statsFile = ".ctxdb/.state/claude-read-stats"
+if (Test-Path -LiteralPath $statsFile) {
+    $st = @(Get-Content -LiteralPath $statsFile -ErrorAction SilentlyContinue)
+    $cmapN = @($st -eq 'cmap').Count
+    $ctxN = @($st -eq 'ctx').Count
+    $srcN = @($st -eq 'src').Count
+    if (($cmapN + $ctxN + $srcN) -gt 0) {
+        $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) cmap $cmapN ctx $ctxN src $srcN"
+    }
+}
 Write-Output $out

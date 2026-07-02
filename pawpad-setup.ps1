@@ -1,6 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.40 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.40. v2.39 기반 + codemap trim-router(small-page): flat 50KB+ → _root.md(route)+keywords.md(한국어→feature)+features/{id}.md(source pointer), cap root2KB·그외4KB, generated(*.g/*.freezed/lib/generated) 제외, lookup 알고리즘+1줄규율. 통째읽기 사고 ~14k→~1k 봉쇄·grep 성능 불변. account-link pilot 검증(size PASS·lookup 2/2). 스킬 내용 갱신(codemap SKILL live+미러+embed)·19 불변.
-#         v2.40 내 보강: analyze hook 2단계 fix — ①raw PowerShell 파이프라인이 Git Bash 디스패치와 충돌 → -File 스크립트(analyze.ps1) 통일. ②PostToolUse는 exit2만 stderr 전달하는데 진단결과가 stdout뿐이라 "No stderr output" → stderr 재전송+exit2/0 정규화, Unix analyze.sh 신규. 보고서: docs/CHANGELOG_v2.40.md).
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.41 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.41. v2.40 기반 + retrieval-source 표시 A+B: ①선언식 — CLAUDE/AGENTS Response Style에 "📡 Retrieval" 라인(탐색 응답만, codemap/ctxdb hit·miss·full-scan 사유 선언, codemap-first 행동 유도). ②계측식(Claude 전용) — PostToolUse(Read|Grep|Glob) read-track hook이 read 경로를 cmap/ctx/src 분류해 세션 카운터 누적 → statusline "📡 cmap N ctx N src N" 실측 표시(전체 소스 스캔=src 폭증 즉시 관측). 스킬 19 불변. 보고서: docs/CHANGELOG_v2.41.md.
+#         이전: v2.40 codemap trim-router(small-page, cap root2KB·그외4KB, lookup 알고리즘+의미매칭) + 내 보강: analyze hook 2단계 fix(-File 스크립트 통일 + stderr 재전송·exit2/0 정규화 + Unix pipefail). 보고서: docs/CHANGELOG_v2.40.md).
 #         이전: v2.38 codemap ON START 부분읽기 — MAP+HOT(조망)만 read, INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand. 코드세션 ON START codemap read ~7k→~0.5k tok 절감. 보고서: docs/CHANGELOG_v2.38.md).
 #         이전: v2.36 통합 기획 뷰어(데이터-구동, no-backend) — 범용 spec-viewer.html(File System Access API)가 고정명 외부 JSON(src/viewer/{prd,fts,userflow,wire}.json)을 폴더 1회 선택 후 자동 로드·편집·제자리 저장·재로드. 신규 스킬 viewer-apply(19→20) + mockup viewer 모드. 보고서: docs/CHANGELOG_v2.36.md).
 #         이전: v2.35 resume 최소로드 — ON START 읽기 토큰 절감(HYBRID 조건부화+_meta RECENT skip). 보고서: docs/CHANGELOG_v2.35.md).
@@ -54,7 +54,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.40"
+$ver = "2.41"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -1035,6 +1035,12 @@ ACTIVE EVERY RESPONSE. Off: "normal mode"
 ### Active Skills 표시 (매 응답 최상단 1줄)
 형식: ``🐾 Active Skills: {활성 스킬 | 구분}`` (🐾=pawpad). 단계 첨자: ``clarity r2/5``, ``grill-me``, ``to-prd``, ``brainstorming``, ``design``, ``mockup lo/hi``, ``review``.
 caveman 항상 포함. off 시 라인에 ``normal mode (caveman 압축 off)``로 표기(자기설명). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.
+
+### Retrieval 표시 (탐색 수행 응답만, Active Skills 라인 아래 1줄)
+형식: ``📡 Retrieval: codemap {hit(경로)|miss|미사용} | ctxdb {hit(파일)|miss|미사용} | src {read N (codemap 경유)|full-scan N (사유)}``
+- 소스 탐색 전 codemap lookup 의무. miss여도 곧장 full-scan 금지 — keywords/INDEX 의미매칭 재시도 후에도 miss면 **사유와 함께 full-scan 선언**.
+- 코드/컨텍스트 탐색이 없는 응답(순수 문답·이미 아는 파일 재편집)은 라인 생략.
+- 허위 선언 금지: statusline ``📡 cmap/ctx/src`` 실측 카운터(PostToolUse read-track hook)와 대조된다.
 "@
 Write-FileContent "CLAUDE.md" $tmplClaudeMd
 
@@ -1172,6 +1178,11 @@ ACTIVE EVERY RESPONSE.
 형식: ``🐾 Active Skills: {활성 스킬 | 구분}`` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 첨자: ``clarity r2/5``, ``grill-me``, ``to-prd``, ``brainstorming``, ``design``, ``mockup lo/hi``, ``review``.
 스킬 없으면 생략 가능. ON START는 📂 ctxdb 라인 아래.
 
+### Retrieval 표시 (탐색 수행 응답만, Active Skills 라인 아래 1줄)
+형식: ``📡 Retrieval: codemap {hit(경로)|miss|미사용} | ctxdb {hit(파일)|miss|미사용} | src {read N (codemap 경유)|full-scan N (사유)}``
+- 소스 탐색 전 codemap lookup 의무. miss여도 곧장 full-scan 금지 — keywords/INDEX 의미매칭 재시도 후에도 miss면 **사유와 함께 full-scan 선언**.
+- 코드/컨텍스트 탐색이 없는 응답(순수 문답·이미 아는 파일 재편집)은 라인 생략.
+
 ## Checkpoint (매 응답 종료 전 확인 - hooks 대체)
 자세한 운영은 .claude/HYBRID.md 참조.
 - [ ] lane 파일 (또는 _wip.md) 현재 상태 반영됐나?
@@ -1192,9 +1203,10 @@ $promptCmd  = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File
 $compactCmd = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook pre-compact.ps1" } else { "sh $claudeHookRoot/pre-compact.sh" }
 $stopCmd    = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook stop-check.ps1" } else { "bash $claudeHookRoot/stop-check.sh" }
 $analyzeCmd = if ($isWin) { if ($p.AnalyzePS) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook analyze.ps1" } else { '' } } else { if ($p.AnalyzeBash) { "bash $claudeHookRoot/analyze.sh" } else { '' } }
+$readTrackCmd = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook read-track.ps1" } else { "bash $claudeHookRoot/read-track.sh" }
 $statusCmd  = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook statusline.ps1" } else { "bash $claudeHookRoot/statusline.sh" }
 
-# JSON 하드빌드 (5.1 ConvertTo-Json 단일요소 배열 unwrap 회피). analyzeCmd 없으면 PostToolUse 생략.
+# JSON 하드빌드 (5.1 ConvertTo-Json 단일요소 배열 unwrap 회피). PostToolUse: read-track(항상) + analyze(스택 조건부).
 $nl = "`n"
 $sl = @()
 $sl += '{'
@@ -1229,8 +1241,17 @@ $sl += '          }'
 $sl += '        ]'
 $sl += '      }'
 $sl += '    ],'
+$sl += '    "PostToolUse": ['
+$sl += '      {'
+$sl += '        "matcher": "Read|Grep|Glob",'
+$sl += '        "hooks": ['
+$sl += '          {'
+$sl += '            "type": "command",'
+$sl += "            ""command"": ""$readTrackCmd"""
+$sl += '          }'
+$sl += '        ]'
 if ($analyzeCmd) {
-    $sl += '    "PostToolUse": ['
+    $sl += '      },'
     $sl += '      {'
     $sl += '        "matcher": "Write|Edit|MultiEdit",'
     $sl += '        "hooks": ['
@@ -1240,8 +1261,10 @@ if ($analyzeCmd) {
     $sl += '          }'
     $sl += '        ]'
     $sl += '      }'
-    $sl += '    ],'
+} else {
+    $sl += '      }'
 }
+$sl += '    ],'
 $sl += '    "Stop": ['
 $sl += '      {'
 $sl += '        "hooks": ['
@@ -1329,9 +1352,12 @@ exit 0
     Write-FileContent ".claude\hooks\analyze.ps1" $analyzeScript
 }
 if (-not $isWin -and $p.AnalyzeBash) {
+    # bash에서 `cmd | tail -N` 뒤의 `$?`는 파이프 마지막 명령(tail)의 exit(항상 0)라 에러가 소실되고,
+    # `2>&1`도 마지막 명령에만 바인딩된다. pipefail + 그룹 리다이렉트로 analyze 명령의 exit/stderr를 함께 캡처.
     $analyzeScript = @"
 #!/bin/bash
-out=`$($($p.AnalyzeBash) 2>&1)
+set -o pipefail
+out=`$( { $($p.AnalyzeBash); } 2>&1 )
 code=`$?
 if [ `$code -ne 0 ]; then
     echo "`$out" >&2
@@ -1341,6 +1367,55 @@ exit 0
 "@
     Write-FileContent ".claude\hooks\analyze.sh" $analyzeScript -Unix
 }
+
+# ── hooks: read-track.ps1 / read-track.sh (PostToolUse:Read|Grep|Glob retrieval 계측, v2.41) ──
+# 목적: agent가 읽은 경로를 cmap(.claude/codemap)/ctx(.ctxdb)/src(그 외)로 분류해 세션 카운터에 누적.
+#       statusline이 "📡 cmap N ctx N src N"으로 실측 표시 → codemap을 안 타고 전체 소스를 뒤지는
+#       행동(src 폭증)을 자기보고가 아닌 계측으로 관측. 관측 전용: 항상 exit 0, agent 피드백 없음(exit 2 금지).
+# ctx는 agent 직접 read 기준(UserPromptSubmit hook 자동주입 로드는 미포함). toolkit 내부(.claude/.agents/.codex) read는 잡음 → 미집계.
+Write-FileContent ".claude\hooks\read-track.ps1" @'
+# PostToolUse(Read|Grep|Glob) - retrieval 계측. 분류: cmap / ctx / src. 관측 전용(항상 exit 0).
+$ErrorActionPreference = 'SilentlyContinue'
+try {
+    $raw = (New-Object System.IO.StreamReader([Console]::OpenStandardInput(), (New-Object System.Text.UTF8Encoding $false))).ReadToEnd()
+    if (-not $raw.Trim()) { exit 0 }
+    $ev = $raw | ConvertFrom-Json
+    $ti = $ev.tool_input
+    $target = ''
+    if ($ti) {
+        if ($ti.file_path) { $target = [string]$ti.file_path }
+        elseif ($ti.path) { $target = [string]$ti.path }
+    }
+    $target = $target -replace '\\', '/'
+    $kind = 'src'
+    if ($target -match '(^|/)\.claude/codemap(/|$)') { $kind = 'cmap' }
+    elseif ($target -match '(^|/)\.ctxdb(/|$)') { $kind = 'ctx' }
+    elseif ($target -match '(^|/)(\.claude|\.agents|\.codex)(/|$)') { exit 0 }
+    $stateDir = ".ctxdb/.state"
+    if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -Force | Out-Null }
+    Add-Content -Path (Join-Path $stateDir "claude-read-stats") -Value $kind -Encoding ascii
+} catch {}
+exit 0
+'@
+
+Write-FileContent ".claude\hooks\read-track.sh" -Unix @'
+#!/bin/bash
+# PostToolUse(Read|Grep|Glob) - retrieval 계측 (read-track.ps1 bash 포트). 관측 전용(항상 exit 0).
+raw="$(cat)"
+target="$(printf '%s' "$raw" | sed -n 's/.*"file_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+[ -z "$target" ] && target="$(printf '%s' "$raw" | sed -n 's/.*"path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+# 경계 정규화: 앞뒤 / 부착 → 디렉토리 자체 경로(트레일링 / 없음)·유사 이름(myproject.claude) 오분류 방지
+target="/$target/"
+case "$target" in
+  *"/.claude/codemap/"*) kind=cmap ;;
+  *"/.ctxdb/"*) kind=ctx ;;
+  *"/.claude/"*|*"/.agents/"*|*"/.codex/"*) exit 0 ;;
+  *) kind=src ;;
+esac
+mkdir -p ".ctxdb/.state"
+echo "$kind" >> ".ctxdb/.state/claude-read-stats"
+exit 0
+'@
 
 # ── hooks: session-start.ps1 (INDEX 라우터 주입 + session state reset + codemap 토글) ──
 Write-FileContent ".claude\hooks\session-start.ps1" @'
@@ -1362,6 +1437,7 @@ $stateDir = ".ctxdb/.state"
 if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -Force | Out-Null }
 Set-Content -Path (Join-Path $stateDir "turn-count") -Value @("session:$sessionId", "turn:0") -Encoding ascii
 Set-Content -Path (Join-Path $stateDir "claude-loaded") -Value @($sessionId) -Encoding UTF8
+Set-Content -Path (Join-Path $stateDir "claude-read-stats") -Value @() -Encoding ascii
 
 function Test-CodemapInject {
     $cfg = ".claude/pawpad-config.json"
@@ -1753,6 +1829,7 @@ sid="$(printf '%s' "$raw" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\(
 mkdir -p ".ctxdb/.state"
 printf 'session:%s\nturn:0\n' "$sid" > ".ctxdb/.state/turn-count"
 printf '%s\n' "$sid" > ".ctxdb/.state/claude-loaded"
+: > ".ctxdb/.state/claude-read-stats"
 
 cm=".claude/codemap/_index.md"
 idx=".ctxdb/INDEX.md"
@@ -1945,6 +2022,17 @@ if ($limit -ge 1000000) {
 }
 $out = "ctx $pct% (${usedK}k/$limitLabel)"
 if ($model) { $out += " | $model" }
+# retrieval 계측 표시 (read-track hook 누적: cmap=.claude/codemap, ctx=.ctxdb, src=그 외. 세션 시작 시 reset)
+$statsFile = ".ctxdb/.state/claude-read-stats"
+if (Test-Path -LiteralPath $statsFile) {
+    $st = @(Get-Content -LiteralPath $statsFile -ErrorAction SilentlyContinue)
+    $cmapN = @($st -eq 'cmap').Count
+    $ctxN = @($st -eq 'ctx').Count
+    $srcN = @($st -eq 'src').Count
+    if (($cmapN + $ctxN + $srcN) -gt 0) {
+        $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) cmap $cmapN ctx $ctxN src $srcN"
+    }
+}
 Write-Output $out
 '@
 
@@ -1989,6 +2077,15 @@ usedk=$(( used / 1000 ))
 if [ "$limit" -ge 1000000 ]; then limitlabel="$(( limit / 1000000 ))M"; else limitlabel="$(( limit / 1000 ))k"; fi
 out="ctx ${pct}% (${usedk}k/${limitlabel})"
 [ -n "$model" ] && out="$out | $model"
+# retrieval 계측 표시 (read-track hook 누적: cmap/ctx/src. 세션 시작 시 reset)
+sf=".ctxdb/.state/claude-read-stats"
+if [ -f "$sf" ]; then
+  cmapn="$(grep -c '^cmap$' "$sf" 2>/dev/null)"; ctxn="$(grep -c '^ctx$' "$sf" 2>/dev/null)"; srcn="$(grep -c '^src$' "$sf" 2>/dev/null)"
+  case "$cmapn" in (''|*[!0-9]*) cmapn=0 ;; esac
+  case "$ctxn" in (''|*[!0-9]*) ctxn=0 ;; esac
+  case "$srcn" in (''|*[!0-9]*) srcn=0 ;; esac
+  if [ $(( cmapn + ctxn + srcn )) -gt 0 ]; then out="$out | 📡 cmap ${cmapn} ctx ${ctxn} src ${srcn}"; fi
+fi
 printf '%s' "$out"
 '@
 
@@ -5835,13 +5932,15 @@ if ($failed -eq 0) {
         Write-Host "  - 안내 언어: -Lang en|ko (사람 안내 메시지만, 스킬/문서는 단일 소스 무변경)" -ForegroundColor Cyan
         Write-Host "  - codemap trim-router: 대규모 codemap을 _root+keywords+features leaf로 분할(cap 2/4KB, 통째읽기 사고 봉쇄, grep 성능 불변)" -ForegroundColor Cyan
         Write-Host "  - analyze hook fix (v2.40 보강): -File 스크립트(analyze.ps1/analyze.sh) 실행 → Git Bash 디스패치 호환 + 진단 결과 stderr 재전송(exit 2/0 정규화)로 agent가 실제 분석 내용 수신" -ForegroundColor Cyan
-        Write-Host "  - 상세: docs/CHANGELOG_v2.40.md" -ForegroundColor Cyan
+        Write-Host "  - retrieval 표시 (v2.41): 응답 내 📡 Retrieval 선언(codemap/ctxdb hit·full-scan 사유) + statusline 📡 cmap/ctx/src 실측 카운터(read-track hook) — 전체 소스 스캔 토큰 사고 관측" -ForegroundColor Cyan
+        Write-Host "  - 상세: docs/CHANGELOG_v2.41.md" -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 19 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review" -ForegroundColor Cyan
         Write-Host "  - cross-platform hooks (.ps1/.sh), statusLine, Codex adapter, -Upgrade (preserves user data)" -ForegroundColor Cyan
         Write-Host "  - codemap / codebase-map / .ctxdb context DB / security-check gate (DoD)" -ForegroundColor Cyan
-        Write-Host "  - analyze hook now runs via -File script + forwards diagnostics to stderr (exit 2/0 normalized) | details: docs/CHANGELOG_v2.40.md" -ForegroundColor Cyan
+        Write-Host "  - analyze hook now runs via -File script + forwards diagnostics to stderr (exit 2/0 normalized)" -ForegroundColor Cyan
+        Write-Host "  - retrieval indicator (v2.41): in-response 📡 Retrieval declaration + statusline 📡 cmap/ctx/src measured counters (read-track hook) | details: docs/CHANGELOG_v2.41.md" -ForegroundColor Cyan
     }
     Write-Host ""
 } else {

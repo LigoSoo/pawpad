@@ -37,4 +37,13 @@ usedk=$(( used / 1000 ))
 if [ "$limit" -ge 1000000 ]; then limitlabel="$(( limit / 1000000 ))M"; else limitlabel="$(( limit / 1000 ))k"; fi
 out="ctx ${pct}% (${usedk}k/${limitlabel})"
 [ -n "$model" ] && out="$out | $model"
+# retrieval 계측 표시 (read-track hook 누적: cmap/ctx/src. 세션 시작 시 reset)
+sf=".ctxdb/.state/claude-read-stats"
+if [ -f "$sf" ]; then
+  cmapn="$(grep -c '^cmap$' "$sf" 2>/dev/null)"; ctxn="$(grep -c '^ctx$' "$sf" 2>/dev/null)"; srcn="$(grep -c '^src$' "$sf" 2>/dev/null)"
+  case "$cmapn" in (''|*[!0-9]*) cmapn=0 ;; esac
+  case "$ctxn" in (''|*[!0-9]*) ctxn=0 ;; esac
+  case "$srcn" in (''|*[!0-9]*) srcn=0 ;; esac
+  if [ $(( cmapn + ctxn + srcn )) -gt 0 ]; then out="$out | 📡 cmap ${cmapn} ctx ${ctxn} src ${srcn}"; fi
+fi
 printf '%s' "$out"

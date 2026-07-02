@@ -1,4 +1,4 @@
-# PawPad 버전별 업데이트 (v2.18 → v2.40)
+# PawPad 버전별 업데이트 (v2.18 → v2.41)
 
 | 버전 | 날짜 | 핵심 변경 | 주요 영향 요소 |
 |------|------|----------|--------------|
@@ -25,15 +25,16 @@
 | v2.38 | 2026-06-25 | codemap ON START 부분읽기 | 코드세션 ON START codemap read 토큰 절감(~7k→~0.5k). MAP+HOT(조망)만 read, INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand. HOT를 spec(최근 3~5개·1줄)대로 정리(28→5, HOT-only 심볼 INDEX 강등·무손실; `_index.md` 25.8k→18.8k 총파일, INDEX는 grep-on-demand 미로드). ON START 절감 3종(_meta·HYBRID·codemap) 완성. 표면: Session Protocol step7(CLAUDE/AGENTS live+setup $tmpl 2) / codemap SKILL ON START 규칙(live+.agents 미러+setup embed) / _index.md HOT 트림 / README·GUIDE·USAGE·PAWPAD_VERSIONS·CHANGELOG. 동작·스킬 19 불변 |
 
 | v2.39 | 2026-06-26 | 번들 선택 설치 + 안내 언어 i18n | 설치 시 스킬 번들 선택(`-Preset lean\|standard\|full` / `-Bundles prd,ui,delegate,review`, prune-at-end). Core 11 고정 + Optional 4 번들(prd/ui/delegate/review, ui·delegate→prd 하드의존 자동포함). 미선택 시 스킬 dir + `config.json`/`SKILLS_MANIFEST` + CLAUDE/AGENTS/HYBRID 본문 참조까지 dangling 0 정리. 안내 메시지 언어 `-Lang en\|ko`($TR 테이블, 사람 안내만 — 스킬/에이전트 문서는 단일 소스 무변경). 스킬 내용·19 불변(가드는 install-time 1줄) |
-| v2.40 | 2026-06-30 | codemap trim-router (small-page) | codemap 성장전략 flat→trim-router: 대규모(50KB+) `_index.md`를 `_root.md`(route)+`keywords.md`(한국어→feature)+`features/{id}.md`(source pointer)로 분할, cap root 2KB·그외 4KB. generated(`*.g.dart`/`*.freezed.dart`/`lib/generated`) source pointer 제외, lookup 알고리즘(최대 3 read, 자연어=keywords 의미매칭·표현 흔들림 강건/영문심볼=rg 정확매칭)+1줄규율. **domain 중간층 제외**(leaf 중복·3중쓰기 drift 회피 = trim). 통째읽기 사고 ~14k→~1k 봉쇄·grep 성능 불변(다운사이드 0). account-link pilot 검증(size PASS·lookup 2/2·non-circular). codemap SKILL(live+`.agents` 미러+setup embed) 동기, 스킬 19 불변. **[v2.40 내 보강, 2026-07-01]** analyze hook 2단계 fix: ①raw PowerShell 파이프라인이 Git Bash 디스패치와 충돌(`Select-Object: command not found`) → `-File` 스크립트(`analyze.ps1`) 통일. ②PostToolUse는 exit2만 stderr 전달하는데 진단결과가 stdout뿐이라 "No stderr output" → stderr 재전송+exit2/0 정규화, Unix `analyze.sh` 신규(claude-code-guide 조사로 근본원인 확인, 샌드박스+bash 디스패치 재현 테스트 검증) |
+| v2.40 | 2026-06-30 | codemap trim-router (small-page) | codemap 성장전략 flat→trim-router: 대규모(50KB+) `_index.md`를 `_root.md`(route)+`keywords.md`(한국어→feature)+`features/{id}.md`(source pointer)로 분할, cap root 2KB·그외 4KB. generated(`*.g.dart`/`*.freezed.dart`/`lib/generated`) source pointer 제외, lookup 알고리즘(최대 3 read)+1줄규율. **domain 중간층 제외**(leaf 중복·3중쓰기 drift 회피 = trim). 통째읽기 사고 ~14k→~1k 봉쇄·grep 성능 불변(다운사이드 0). account-link pilot 검증(size PASS·lookup 2/2·non-circular). codemap SKILL(live+`.agents` 미러+setup embed) 동기, 스킬 19 불변. **v2.40 내 보강(2026-07-01~02, 버전 불변·v2.25 BOM-fix 선례)**: ① analyze hook 2단계 fix — settings.json raw PowerShell 파이프라인이 Git Bash 디스패치와 충돌 → 다른 훅과 동일 `-File` 스크립트(`analyze.ps1`/`analyze.sh` 신규)로 통일 + PostToolUse는 exit 2의 stderr만 agent에 전달하므로 진단 결과 stderr 재전송·exit 2/0 정규화(설계 이래 미동작이던 Edit 직후 진단 피드백 최초 활성화, 기존 설치는 `-Upgrade` 필요). Unix `analyze.sh`는 파이프 exit 소실 버그(`$?`=tail exit) 발견 → `set -o pipefail`+그룹 리다이렉트로 보정. ② codemap lookup 의미매칭 명시 — 자연어 키워드는 keywords.md를 grep 정확매칭이 아닌 **통째 read 후 의미·맥락 매칭**(표현/공백 흔들림 강건, lookup miss→전체 소스 스캔 토큰 폭증 방지). 상세: docs/CHANGELOG_v2.40.md Addendum |
+| v2.41 | 2026-07-02 | retrieval-source 표시 (A 선언식 + B 계측식) | agent가 코드를 codemap/ctxdb로 찾았는지 소스 전체를 뒤졌는지 가시화(Sonnet 5 "codemap 미경유 전체 스캔→토큰 2~3배" 관측 대응). **A 선언식**: CLAUDE/AGENTS Response Style `### Retrieval 표시` — 탐색 수행 응답 상단 `📡 Retrieval: codemap {hit\|miss\|미사용} \| ctxdb {…} \| src {read N\|full-scan N (사유)}` 1줄, 소스 탐색 전 codemap lookup 의무+full-scan 사유 선언(codemap-first 행동 유도). **B 계측식**(Claude 전용): 신규 `read-track` 훅(`PostToolUse: Read\|Grep\|Glob`)이 read 경로를 cmap/ctx/src 분류→`.ctxdb/.state/claude-read-stats` 누적(toolkit 내부 미집계, SessionStart reset)→statusline `📡 cmap N ctx N src N` 실측(자기보고와 달리 위조 불가). settings.json PostToolUse=read-track(항상)+analyze(스택 조건부). 기존 설치 `-Upgrade`, 스킬 19 불변 |
 
-# 누적 현황 (현재 v2.40)
+# 누적 현황 (현재 v2.41)
 
 | 항목 | 수치 |
 |------|------|
 | 스킬 | 19개 |
 | 런타임 | Claude Code + Codex (단일 배포본) |
-| hook | 양 런타임 5종 (SessionStart/UserPromptSubmit/PreCompact/Stop/statusLine) |
+| hook | 양 런타임 5종 (SessionStart/UserPromptSubmit/PreCompact/Stop/statusLine) + Claude PostToolUse(read-track 항상·analyze 스택 조건부) |
 | DoD 게이트 | 9개 (security-check #8, feature-architecture #9 포함) |
 | 컨텍스트 DB | `.ctxdb` 키워드 depth 로딩 (INDEX→L1→L2) |
 | 코드 맵 | codemap(심볼 레지스트리, size-aware: flat→trim-router) + codebase-map(7축 고수준) |

@@ -124,6 +124,11 @@ ACTIVE EVERY RESPONSE.
 형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`, `design`, `mockup lo/hi`, `review`.
 스킬 없으면 생략 가능. ON START는 📂 ctxdb 라인 아래.
 
+### Retrieval 표시 (탐색 수행 응답만, Active Skills 라인 아래 1줄)
+형식: `📡 Retrieval: codemap {hit(경로)|miss|미사용} | ctxdb {hit(파일)|miss|미사용} | src {read N (codemap 경유)|full-scan N (사유)}`
+- 소스 탐색 전 codemap lookup 의무. miss여도 곧장 full-scan 금지 — keywords/INDEX 의미매칭 재시도 후에도 miss면 **사유와 함께 full-scan 선언**.
+- 코드/컨텍스트 탐색이 없는 응답(순수 문답·이미 아는 파일 재편집)은 라인 생략.
+
 ## Checkpoint (매 응답 종료 전 확인 - hooks 대체)
 자세한 운영은 .claude/HYBRID.md 참조.
 - [ ] lane 파일 (또는 _wip.md) 현재 상태 반영됐나?

@@ -30,6 +30,17 @@
                                                    ]
                                      }
                                  ],
+                  "PostToolUse":  [
+                                      {
+                                          "matcher":  "Read|Grep|Glob",
+                                          "hooks":  [
+                                                        {
+                                                            "type":  "command",
+                                                            "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File D:/Antigravity_Project/pawpad-toolkit/.claude/hooks/run-hook.ps1 read-track.ps1"
+                                                        }
+                                                    ]
+                                      }
+                                  ],
                   "Stop":  [
                                {
                                    "hooks":  [

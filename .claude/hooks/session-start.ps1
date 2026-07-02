@@ -16,6 +16,7 @@ $stateDir = ".ctxdb/.state"
 if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -Force | Out-Null }
 Set-Content -Path (Join-Path $stateDir "turn-count") -Value @("session:$sessionId", "turn:0") -Encoding ascii
 Set-Content -Path (Join-Path $stateDir "claude-loaded") -Value @($sessionId) -Encoding UTF8
+Set-Content -Path (Join-Path $stateDir "claude-read-stats") -Value @() -Encoding ascii
 
 function Test-CodemapInject {
     $cfg = ".claude/pawpad-config.json"

@@ -7,6 +7,7 @@ sid="$(printf '%s' "$raw" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\(
 mkdir -p ".ctxdb/.state"
 printf 'session:%s\nturn:0\n' "$sid" > ".ctxdb/.state/turn-count"
 printf '%s\n' "$sid" > ".ctxdb/.state/claude-loaded"
+: > ".ctxdb/.state/claude-read-stats"
 
 cm=".claude/codemap/_index.md"
 idx=".ctxdb/INDEX.md"

@@ -1,0 +1,22 @@
+﻿# PostToolUse(Read|Grep|Glob) - retrieval 계측. 분류: cmap / ctx / src. 관측 전용(항상 exit 0).
+$ErrorActionPreference = 'SilentlyContinue'
+try {
+    $raw = (New-Object System.IO.StreamReader([Console]::OpenStandardInput(), (New-Object System.Text.UTF8Encoding $false))).ReadToEnd()
+    if (-not $raw.Trim()) { exit 0 }
+    $ev = $raw | ConvertFrom-Json
+    $ti = $ev.tool_input
+    $target = ''
+    if ($ti) {
+        if ($ti.file_path) { $target = [string]$ti.file_path }
+        elseif ($ti.path) { $target = [string]$ti.path }
+    }
+    $target = $target -replace '\\', '/'
+    $kind = 'src'
+    if ($target -match '(^|/)\.claude/codemap(/|$)') { $kind = 'cmap' }
+    elseif ($target -match '(^|/)\.ctxdb(/|$)') { $kind = 'ctx' }
+    elseif ($target -match '(^|/)(\.claude|\.agents|\.codex)(/|$)') { exit 0 }
+    $stateDir = ".ctxdb/.state"
+    if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -Force | Out-Null }
+    Add-Content -Path (Join-Path $stateDir "claude-read-stats") -Value $kind -Encoding ascii
+} catch {}
+exit 0
