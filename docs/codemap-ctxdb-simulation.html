@@ -185,25 +185,25 @@
   <section id="ctxdb">
     <div class="kicker">Act 2 · 세션 시작</div>
     <h2>ctxdb — 키워드 depth 컨텍스트 로더</h2>
-    <p class="lead">세션을 다시 열 때 과거 이력을 전부 다시 읽지 않는다. <code>INDEX → L1 → L2</code> 를 첫 메시지 키워드로 매칭해 <b>최소한만</b> 로드.</p>
+    <p class="lead">세션을 다시 열 때 상태 요약이 없으면 원문 파일에서 작업 맥락을 다시 만들어야 한다. ctxdb는 <code>INDEX → L1 → L2</code> 를 첫 메시지 키워드로 매칭해 <b>요약 1개</b>에서 멈춘다.</p>
 
     <div class="scenario">
       <span class="ic">RESTART</span>
-      <div>새 세션 시작. 이전 작업은 "펫 부화 UX". 필요한 건 <b>지금 상태 요약</b>(L2) 뿐인데,
-      순진하게 하면 <b>지난 달 구현 로그 전체</b>(L3, 2.6K tok)까지 다 읽는다.</div>
+      <div>새 세션 시작. 이전 작업은 "펫 부화 UX". ctxdb가 없으면 <b>L2 요약도 없다</b>.
+      에이전트는 현재 상태를 알아내려고 AGENTS, 작업 메타, PRD/spec, 관련 소스를 직접 열어 <b>상태를 재구성</b>한다.</div>
     </div>
 
     <div class="grid2">
       <div class="lane bad" id="ctxBad">
-        <h3><span class="tag">✗ load-all</span> 전부 다시 읽기</h3>
+        <h3><span class="tag">✗ no ctxdb</span> 요약 없이 재구성</h3>
         <div class="counter"><span class="num">0</span> <small>tok</small></div>
         <div class="bar"><span></span></div>
         <ul class="steps">
-          <li><span class="f">read INDEX.md</span><span class="t">+621</span></li>
-          <li><span class="f">read L1/domain-codebase-map.md</span><span class="t">+135</span></li>
-          <li><span class="f">read L2/progress-current.md</span><span class="t">+654</span></li>
-          <li><span class="f">read L2/codebase-map, arch-overview</span><span class="t">+147</span></li>
-          <li><span class="f">read L3/progress-2026-06.md (과거이력)</span><span class="t">+2,625</span></li>
+          <li><span class="f">read AGENTS.md (프로토콜)</span><span class="t">+3,244</span></li>
+          <li><span class="f">read _wip.md (작업 라우터)</span><span class="t">+2,330</span></li>
+          <li><span class="f">read _meta.md 전체 이력</span><span class="t">+14,491</span></li>
+          <li><span class="f">read PRD-tree + 관련 spec 3개</span><span class="t">+10,415</span></li>
+          <li><span class="f">grep/read pet·hatch 관련 소스 7개</span><span class="t">+16,336</span></li>
         </ul>
       </div>
       <div class="lane good" id="ctxGood">
@@ -214,7 +214,7 @@
           <li><span class="f">hook: INDEX 키워드 매칭 (자동)</span><span class="t">+621</span></li>
           <li><span class="f">→ "부화·펫" = 진행상태 질의</span><span class="t free">+0</span></li>
           <li><span class="f">load L2/progress-current.md (L2≤2)</span><span class="t">+654</span></li>
-          <li><span class="f">L3 과거이력 = 미로드 (skip)</span><span class="t free">skip 2,625</span></li>
+          <li><span class="f">원문 재구성 = 미로드 (skip)</span><span class="t free">skip 45,541</span></li>
         </ul>
       </div>
     </div>
@@ -229,9 +229,9 @@
       <span class="chip">키워드</span><span class="arrow">→</span>
       <span class="chip hit">INDEX.md</span><span class="arrow">→</span>
       <span class="chip hit">L2/progress-current</span><span class="arrow">·</span>
-      <span class="chip skip">L3 과거이력</span>
+      <span class="chip skip">원문 재구성</span>
     </div>
-    <p class="note">L3(지난 달 상세 로그)는 <b>필요할 때만</b> on-demand. depth 구조(INDEX→L1 요약→L2 현재→L3 이력)가 "지금 재개에 필요한 깊이"에서 로딩을 멈춘다. hook이 자동 주입하므로 에이전트가 명시적으로 읽는 양은 더 적다.</p>
+    <p class="note">no-ctxdb 쪽은 "L2를 더 많이 읽는" 상황이 아니라 <b>L2 자체가 없어</b> 원문에서 맥락을 복원하는 상황이다. 위 46,816 tok는 TodayQuest 현재 파일 크기(바이트÷4) 기반 보수적 묶음: AGENTS, _wip, _meta, PRD-tree, 관련 spec 3개, pet/hatch 관련 소스 7개.</p>
   </section>
 
   <!-- ─────────────── 종합 대시보드 ─────────────── -->
@@ -252,7 +252,7 @@
         <tbody>
           <tr><td>위치 탐색 (버그 수정)</td><td class="num">21,730</td><td class="num">7,237</td><td class="num hi">67% ↓</td></tr>
           <tr><td>└ 순수 탐색 오버헤드</td><td class="num">16,388</td><td class="num">1,895</td><td class="num hi">88% ↓</td></tr>
-          <tr><td>세션 재개 로드</td><td class="num">4,182</td><td class="num">1,275</td><td class="num hi">70% ↓</td></tr>
+          <tr><td>세션 재개 로드</td><td class="num">46,816</td><td class="num">1,275</td><td class="num hi">97% ↓</td></tr>
           <tr><td>앱 소스 스캔 회피</td><td class="num">254,308</td><td class="num">7,237</td><td class="num hi">97% ↓</td></tr>
         </tbody>
       </table>
@@ -273,8 +273,8 @@
       </div>
       <div class="card">
         <h4>ctxdb</h4>
-        <p>세션 재개 비용은 "과거를 얼마나 다시 읽느냐"에 비례. 콜드 재개는 CLAUDE.md·이력·설계를 통째로 흡수한다.</p>
-        <p>ctxdb는 이력을 <b>depth</b>로 층화(INDEX→L1→L2→L3)하고, 첫 메시지 <b>키워드로 필요한 깊이까지만</b> 로드한다. 지난 달 상세 로그(L3)는 건드리지 않는다.</p>
+        <p>세션 재개 비용은 "현재 상태를 어디서 복원하느냐"에 비례. ctxdb가 없으면 요약 파일이 없어서 메타 이력, PRD/spec, 관련 소스를 읽으며 상태를 추론한다.</p>
+        <p>ctxdb는 이력을 <b>depth</b>로 층화(INDEX→L1→L2→L3)하고, 첫 메시지 <b>키워드로 필요한 깊이까지만</b> 로드한다. 현재 상태가 L2에 있으면 원문 재구성을 건너뛴다.</p>
         <p style="margin:0;color:var(--faint);font-size:13px">UserPromptSubmit hook이 이 최소 로드를 자동 수행 → 에이전트 부담은 더 줄어든다.</p>
       </div>
     </div>
@@ -293,8 +293,8 @@
   // ── 시나리오 데이터(실측 바이트÷4 근사 토큰) ──
   const CM_BAD  = [0,5342,1040,1253,526,13569];      // full-scan → 21,730
   const CM_GOOD = [428,720,747,0,5342];              // routed   → 7,237
-  const CT_BAD  = [621,135,654,147,2625];            // load-all → 4,182
-  const CT_GOOD = [621,0,654,0];                     // keyword  → 1,275 (skip 2,625)
+  const CT_BAD  = [3244,2330,14491,10415,16336];     // no ctxdb cold start → 46,816
+  const CT_GOOD = [621,0,654,0];                     // keyword → 1,275; raw reconstruction skipped
 
   function fmt(n){return n.toLocaleString('en-US');}
 
@@ -363,11 +363,11 @@
   });
 
   // ── ACT 2 ctxdb ──
-  const ctBadTotal=CT_BAD.reduce((a,b)=>a+b,0);   // 4,182
+  const ctBadTotal=CT_BAD.reduce((a,b)=>a+b,0);   // 46,816
   const ctGoodTotal=CT_GOOD.reduce((a,b)=>a+b,0); // 1,275
   document.getElementById('ctxRun').addEventListener('click',function(){
     runPair('#ctxBad',CT_BAD,ctBadTotal,'#ctxGood',CT_GOOD,ctGoodTotal,'#ctxVerdict',
-      (b,g,s)=>`세션 재개 · load-all ${fmt(b)} vs keyword ${fmt(g)} tok · ${s}% 절감 (L3 이력 skip)`,
+      (b,g,s)=>`세션 재개 · no ctxdb ${fmt(b)} vs keyword ${fmt(g)} tok · ${s}% 절감 (원문 재구성 skip)`,
       this);
   });
   document.getElementById('ctxReset').addEventListener('click',function(){
@@ -385,7 +385,7 @@
   const io=new IntersectionObserver((es)=>{es.forEach(e=>{
     if(e.isIntersecting && !seen.s){seen.s=1;
       countTo(document.getElementById('s1'),67,'%');
-      countTo(document.getElementById('s2'),70,'%');
+      countTo(document.getElementById('s2'),97,'%');
       countTo(document.getElementById('s3'),3,'%');
     }
   });},{threshold:.5});
