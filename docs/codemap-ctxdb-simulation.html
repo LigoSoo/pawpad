@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PawPad — codemap · ctxdb 동작 원리 & 토큰 절감 시뮬레이션</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --panel:#ffffff; --panel2:#f0f4f8; --line:#d8e0e8;
+    --ink:#172026; --dim:#53616f; --faint:#778391;
+    --paw:#b86614; --paw2:#d88924;
+    --bad:#c43d4b; --bad-bg:#fff0f2;
+    --good:#08795f; --good-bg:#eaf7f2;
+    --blue:#2563eb; --violet:#6d5bd0;
+    --mono:"SF Mono",ui-monospace,"Cascadia Code","Consolas",monospace;
+    --sans:-apple-system,"Segoe UI",Roboto,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:
+    linear-gradient(180deg,#eef4fb 0,#f6f8fb 360px,#f9fbfd 100%);
+    color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 22px 120px}
+  header.hero{text-align:center;padding:64px 0 34px}
+  .paw{font-size:15px;line-height:1;font-weight:700;color:var(--paw);font-family:var(--mono);letter-spacing:0}
+  h1{font-size:34px;margin:14px 0 6px;letter-spacing:0}
+  h1 .accent{color:var(--paw)}
+  .sub{color:var(--dim);font-size:16px;max-width:640px;margin:0 auto}
+  .badge{display:inline-block;font-family:var(--mono);font-size:12px;color:var(--paw2);
+    border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:4px 12px;margin-top:16px}
+  section{margin-top:56px}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:2px;color:var(--paw);text-transform:uppercase}
+  h2{font-size:26px;margin:6px 0 4px;letter-spacing:0}
+  .lead{color:var(--dim);font-size:15.5px;margin:0 0 22px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:22px 24px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}h1{font-size:27px}}
+  .lane{border-radius:8px;border:1px solid var(--line);padding:18px;background:var(--panel);position:relative;overflow:hidden}
+  .lane.bad{border-color:#e9b8be;background:#fff8f9}
+  .lane.good{border-color:#b7dfd3;background:#f6fcfa}
+  .lane h3{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:8px}
+  .lane .tag{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:6px}
+  .bad .tag{background:var(--bad-bg);color:var(--bad)}
+  .good .tag{background:var(--good-bg);color:var(--good)}
+  .counter{font-family:var(--mono);font-size:30px;font-weight:600;margin:8px 0 2px;letter-spacing:0}
+  .bad .counter{color:var(--bad)} .good .counter{color:var(--good)}
+  .counter small{font-size:13px;color:var(--faint);font-weight:400}
+  .bar{height:10px;border-radius:6px;background:#e6edf4;overflow:hidden;margin:10px 0 14px;border:1px solid var(--line)}
+  .bar>span{display:block;height:100%;width:0;transition:width .35s cubic-bezier(.4,0,.2,1)}
+  .bad .bar>span{background:linear-gradient(90deg,#de7180,var(--bad))}
+  .good .bar>span{background:linear-gradient(90deg,#3fb98f,var(--good))}
+  .steps{list-style:none;margin:0;padding:0;font-family:var(--mono);font-size:12.5px}
+  .steps li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed #d6dee7;
+    opacity:.25;transform:translateX(-4px);transition:.3s}
+  .steps li.on{opacity:1;transform:none}
+  .steps li .f{color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .steps li .t{white-space:nowrap}
+  .bad .steps li.on .t{color:var(--bad2,#ff8a8a)}
+  .good .steps li.on .t{color:var(--paw2)}
+  .steps li .t.free{color:var(--faint)!important}
+  .ctrls{display:flex;gap:12px;align-items:center;justify-content:center;margin:20px 0 4px;flex-wrap:wrap}
+  button.run{font-family:var(--sans);font-size:15px;font-weight:600;color:#20160a;
+    background:linear-gradient(180deg,#f1b257,var(--paw2));border:none;border-radius:8px;
+    padding:12px 26px;cursor:pointer;box-shadow:0 6px 20px rgba(240,160,60,.28);transition:.15s}
+  button.run:hover{transform:translateY(-1px)}
+  button.run:active{transform:translateY(1px)}
+  button.run:disabled{opacity:.5;cursor:wait;transform:none}
+  button.ghost{background:var(--panel);border:1px solid var(--line);color:var(--dim);font-family:var(--sans);
+    padding:11px 18px;border-radius:8px;cursor:pointer;font-size:14px}
+  .scenario{display:flex;gap:12px;align-items:center;background:var(--panel2);border:1px solid var(--line);
+    border-radius:8px;padding:14px 16px;margin-bottom:18px}
+  .scenario .ic{font-size:22px}
+  .scenario b{color:var(--paw2)}
+  .verdict{text-align:center;margin-top:18px;font-size:15px;color:var(--dim);min-height:24px}
+  .verdict b{color:var(--good);font-size:19px}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-family:var(--mono);font-size:12.5px;margin:6px 0 2px}
+  .chip{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--dim)}
+  .chip.hit{border-color:#9fd8c8;color:var(--good)}
+  .chip.skip{border-color:#e9b8be;color:var(--faint);text-decoration:line-through}
+  .chip.tgt{border-color:var(--paw);color:var(--paw2)}
+  .arrow{color:var(--faint)}
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
+  @media(max-width:760px){.stat-row{grid-template-columns:1fr}}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;text-align:center}
+  .stat .n{font-size:30px;font-weight:700;color:var(--paw);letter-spacing:0;font-family:var(--mono)}
+  .stat .l{font-size:12.5px;color:var(--dim);margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--faint);font-weight:600;font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:1px}
+  td.num{font-family:var(--mono);text-align:right}
+  tr td.hi{color:var(--good);font-weight:600}
+  .how{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.how{grid-template-columns:1fr}}
+  .how .card h4{margin:0 0 8px;font-size:15px;color:var(--paw2);font-family:var(--mono)}
+  .how .card p{margin:0 0 10px;font-size:14px;color:var(--dim)}
+  code{font-family:var(--mono);background:var(--panel2);border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;font-size:.86em;color:var(--paw)}
+  .note{font-size:12.5px;color:var(--faint);margin-top:14px;border-left:2px solid var(--line);padding-left:12px}
+  footer{margin-top:70px;text-align:center;color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);padding-top:24px}
+  .pulse{animation:pl 1s ease-in-out infinite}
+  @keyframes pl{50%{opacity:.55}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="paw">PAWPAD CONTEXT DEMO</div>
+    <h1><span class="accent">codemap</span> · <span class="accent">ctxdb</span> 는 어떻게 토큰을 줄이나</h1>
+    <p class="sub">파일을 전부 열지 않고 <b>레지스트리 1줄</b>로 위치를 찾고, 세션 시작 시 <b>키워드로 필요한 것만</b> 로드한다. 실제 프로젝트 <b>TodayQuest</b>(Flutter, lib 160파일) 수치로 시뮬레이션.</p>
+    <div class="badge">PawPad Toolkit · 실측 데이터 기반 인터랙티브 데모</div>
+  </header>
+
+  <!-- ─────────────── 문제 정의 ─────────────── -->
+  <section>
+    <div class="card">
+      <div class="scenario">
+        <span class="ic">BUG</span>
+        <div>실제 리포트(v2.41 계기): <b>"작은 버그 하나 고치는데 context가 2~3배로 불어나고 토큰이 급증"</b>.
+        원인 — 에이전트가 codemap을 안 거치고 <b>소스 전체를 뒤져서</b> 대상을 찾았다.</div>
+      </div>
+      <p class="lead" style="margin:0">아래 시뮬레이션은 같은 작업을 <b style="color:var(--bad)">codemap 없이(full-scan)</b> vs <b style="color:var(--good)">codemap 경유</b>로 나란히 실행해, 대상을 찾기까지 읽는 토큰을 실시간으로 센다.</p>
+    </div>
+  </section>
+
+  <!-- ─────────────── ACT 1: codemap ─────────────── -->
+  <section id="codemap">
+    <div class="kicker">Act 1 · 위치 찾기</div>
+    <h2>codemap — 심볼 위치 레지스트리</h2>
+    <p class="lead"><code>도메인:심볼 → 파일경로 + 시그니처 + 역할(1줄)</code>. 파일을 열지 않고 어디에 뭐가 있는지 1줄로 안다.</p>
+
+    <div class="scenario">
+      <span class="ic">TARGET</span>
+      <div>작업: <b>"퀘스트 완료 토글을 눌러도 보상이 안 들어온다"</b> 버그 수정 →
+      실제 고칠 곳은 <code>quest_providers.dart</code> 의 <code>CompletionController.toggle</code> 단 하나.
+      문제는 <b>에이전트가 그 위치를 모른다</b>는 것.</div>
+    </div>
+
+    <div class="grid2">
+      <!-- BAD -->
+      <div class="lane bad" id="cmBad">
+        <h3><span class="tag">✗ full-scan</span> codemap 없이</h3>
+        <div class="counter"><span class="num">0</span> <small>tok</small></div>
+        <div class="bar"><span></span></div>
+        <ul class="steps">
+          <li><span class="f">grep "완료|toggle|reward"</span><span class="t free">+0 (히트 12곳)</span></li>
+          <li><span class="f">read quest_providers.dart</span><span class="t">+5,342</span></li>
+          <li><span class="f">read local_quest_repository.dart</span><span class="t">+1,040</span></li>
+          <li><span class="f">read quest_repository.dart</span><span class="t">+1,253</span></li>
+          <li><span class="f">read group_progress.dart</span><span class="t">+526</span></li>
+          <li><span class="f">read … quest feature 나머지 7파일</span><span class="t">+13,569</span></li>
+        </ul>
+      </div>
+      <!-- GOOD -->
+      <div class="lane good" id="cmGood">
+        <h3><span class="tag">✓ routed</span> codemap 경유</h3>
+        <div class="counter"><span class="num">0</span> <small>tok</small></div>
+        <div class="bar"><span></span></div>
+        <ul class="steps">
+          <li><span class="f">read _root.md (MAP+HOT+ROUTE)</span><span class="t">+428</span></li>
+          <li><span class="f">read keywords.md · "완료·토글" → quest</span><span class="t">+720</span></li>
+          <li><span class="f">read features/quest.md · 시그니처</span><span class="t">+747</span></li>
+          <li><span class="f">→ CompletionController 위치 확정</span><span class="t free">+0</span></li>
+          <li><span class="f">read quest_providers.dart (타깃 1파일)</span><span class="t">+5,342</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ctrls">
+      <button class="run" id="cmRun">▶ 시뮬레이션 실행</button>
+      <button class="ghost" id="cmReset">초기화</button>
+    </div>
+    <div class="verdict" id="cmVerdict"></div>
+
+    <div class="flow" style="margin-top:18px">
+      <span class="chip">한국어 질문</span><span class="arrow">→</span>
+      <span class="chip hit">keywords.md</span><span class="arrow">→</span>
+      <span class="chip hit">features/quest.md</span><span class="arrow">→</span>
+      <span class="chip tgt">quest_providers.dart 만 open</span>
+    </div>
+    <p class="note">codemap 전체는 60KB(~15K tok)지만 <b>통째로 읽지 않는다</b>. trim-router가 <code>_root.md</code>(2KB)→<code>keywords.md</code>→<code>features/{id}.md</code>(각 4KB cap)로 쪼개, 매 조회는 3파일(~1.9K tok)만 경유한다.</p>
+  </section>
+
+  <!-- ─────────────── ACT 2: ctxdb ─────────────── -->
+  <section id="ctxdb">
+    <div class="kicker">Act 2 · 세션 시작</div>
+    <h2>ctxdb — 키워드 depth 컨텍스트 로더</h2>
+    <p class="lead">세션을 다시 열 때 과거 이력을 전부 다시 읽지 않는다. <code>INDEX → L1 → L2</code> 를 첫 메시지 키워드로 매칭해 <b>최소한만</b> 로드.</p>
+
+    <div class="scenario">
+      <span class="ic">RESTART</span>
+      <div>새 세션 시작. 이전 작업은 "펫 부화 UX". 필요한 건 <b>지금 상태 요약</b>(L2) 뿐인데,
+      순진하게 하면 <b>지난 달 구현 로그 전체</b>(L3, 2.6K tok)까지 다 읽는다.</div>
+    </div>
+
+    <div class="grid2">
+      <div class="lane bad" id="ctxBad">
+        <h3><span class="tag">✗ load-all</span> 전부 다시 읽기</h3>
+        <div class="counter"><span class="num">0</span> <small>tok</small></div>
+        <div class="bar"><span></span></div>
+        <ul class="steps">
+          <li><span class="f">read INDEX.md</span><span class="t">+621</span></li>
+          <li><span class="f">read L1/domain-codebase-map.md</span><span class="t">+135</span></li>
+          <li><span class="f">read L2/progress-current.md</span><span class="t">+654</span></li>
+          <li><span class="f">read L2/codebase-map, arch-overview</span><span class="t">+147</span></li>
+          <li><span class="f">read L3/progress-2026-06.md (과거이력)</span><span class="t">+2,625</span></li>
+        </ul>
+      </div>
+      <div class="lane good" id="ctxGood">
+        <h3><span class="tag">✓ keyword</span> 키워드 최소 로드</h3>
+        <div class="counter"><span class="num">0</span> <small>tok</small></div>
+        <div class="bar"><span></span></div>
+        <ul class="steps">
+          <li><span class="f">hook: INDEX 키워드 매칭 (자동)</span><span class="t">+621</span></li>
+          <li><span class="f">→ "부화·펫" = 진행상태 질의</span><span class="t free">+0</span></li>
+          <li><span class="f">load L2/progress-current.md (L2≤2)</span><span class="t">+654</span></li>
+          <li><span class="f">L3 과거이력 = 미로드 (skip)</span><span class="t free">skip 2,625</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="ctrls">
+      <button class="run" id="ctxRun">▶ 시뮬레이션 실행</button>
+      <button class="ghost" id="ctxReset">초기화</button>
+    </div>
+    <div class="verdict" id="ctxVerdict"></div>
+
+    <div class="flow" style="margin-top:18px">
+      <span class="chip">키워드</span><span class="arrow">→</span>
+      <span class="chip hit">INDEX.md</span><span class="arrow">→</span>
+      <span class="chip hit">L2/progress-current</span><span class="arrow">·</span>
+      <span class="chip skip">L3 과거이력</span>
+    </div>
+    <p class="note">L3(지난 달 상세 로그)는 <b>필요할 때만</b> on-demand. depth 구조(INDEX→L1 요약→L2 현재→L3 이력)가 "지금 재개에 필요한 깊이"에서 로딩을 멈춘다. hook이 자동 주입하므로 에이전트가 명시적으로 읽는 양은 더 적다.</p>
+  </section>
+
+  <!-- ─────────────── 종합 대시보드 ─────────────── -->
+  <section id="summary">
+    <div class="kicker">종합</div>
+    <h2>두 축을 합치면</h2>
+    <p class="lead">TodayQuest 실측: 앱 소스 <code>lib/</code>는 <b>160파일 / 1.02MB / ~254,308 tok</b>. 작은 수정 하나에 이걸 다 뒤지느냐, 레지스트리로 좁히느냐의 차이.</p>
+
+    <div class="stat-row">
+      <div class="stat"><div class="n" id="s1">—</div><div class="l">codemap: 위치 찾기 토큰 절감</div></div>
+      <div class="stat"><div class="n" id="s2">—</div><div class="l">ctxdb: 세션 재개 토큰 절감</div></div>
+      <div class="stat"><div class="n" id="s3">—</div><div class="l">앱 소스 대비 실제 읽은 비율</div></div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <table>
+        <thead><tr><th>항목</th><th>codemap 없이</th><th>codemap/ctxdb 경유</th><th>절감</th></tr></thead>
+        <tbody>
+          <tr><td>위치 탐색 (버그 수정)</td><td class="num">21,730</td><td class="num">7,237</td><td class="num hi">67% ↓</td></tr>
+          <tr><td>└ 순수 탐색 오버헤드</td><td class="num">16,388</td><td class="num">1,895</td><td class="num hi">88% ↓</td></tr>
+          <tr><td>세션 재개 로드</td><td class="num">4,182</td><td class="num">1,275</td><td class="num hi">70% ↓</td></tr>
+          <tr><td>앱 소스 스캔 회피</td><td class="num">254,308</td><td class="num">7,237</td><td class="num hi">97% ↓</td></tr>
+        </tbody>
+      </table>
+      <p class="note">단위: 근사 토큰(파일 바이트÷4). `lib/` 160파일과 codemap/ctxdb 라우터 파일은 현재 TodayQuest에서 재계산했다. "순수 탐색 오버헤드"=타깃 1파일 read를 양쪽에서 제외한, 위치를 찾기 위한 부가 read.</p>
+    </div>
+  </section>
+
+  <!-- ─────────────── 원리 요약 ─────────────── -->
+  <section id="how">
+    <div class="kicker">원리</div>
+    <h2>왜 줄어드나 — 한 줄 요약</h2>
+    <div class="how" style="margin-top:14px">
+      <div class="card">
+        <h4>codemap</h4>
+        <p><b>파일 read ≈ 13 tok/줄.</b> 150줄 파일 하나가 ~2K tok. 위치를 모르면 후보 파일을 여러 개 열어야 하고, 그게 곧 context 폭증이다.</p>
+        <p>codemap은 그 "어디에 뭐가 있나"를 <b>심볼당 1줄</b>로 미리 적어둔다. 시그니처·역할까지 있어 <b>파일을 안 열고도</b> 고칠 지점을 확정 → 딱 1파일만 open.</p>
+        <p style="margin:0;color:var(--faint);font-size:13px">trim-router: 큰 codemap을 <code>_root</code>+<code>keywords</code>+<code>features/{id}</code>로 분할해 "통째 읽기" 사고 자체를 봉쇄.</p>
+      </div>
+      <div class="card">
+        <h4>ctxdb</h4>
+        <p>세션 재개 비용은 "과거를 얼마나 다시 읽느냐"에 비례. 콜드 재개는 CLAUDE.md·이력·설계를 통째로 흡수한다.</p>
+        <p>ctxdb는 이력을 <b>depth</b>로 층화(INDEX→L1→L2→L3)하고, 첫 메시지 <b>키워드로 필요한 깊이까지만</b> 로드한다. 지난 달 상세 로그(L3)는 건드리지 않는다.</p>
+        <p style="margin:0;color:var(--faint);font-size:13px">UserPromptSubmit hook이 이 최소 로드를 자동 수행 → 에이전트 부담은 더 줄어든다.</p>
+      </div>
+    </div>
+    <p class="note">두 축은 <b>관측(v2.41)</b>과도 맞물린다: 응답의 <code>📡 Retrieval</code> 선언 + statusline <code>cmap/ctx/src</code> 실측 카운터가 "codemap을 안 거치고 full-scan했는지"를 실시간으로 드러내, 위 시나리오의 <b>이탈을 즉시 발견</b>한다.</p>
+  </section>
+
+  <footer>
+    PawPad Agentic Engineering Toolkit · codemap + ctxdb 시뮬레이션<br>
+    데이터 출처: TodayQuest (Flutter/Dart, lib 160파일, ~254.3K tok) · 근사 토큰 = 바이트÷4 · 생성 2026-07
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  // ── 시나리오 데이터(실측 바이트÷4 근사 토큰) ──
+  const CM_BAD  = [0,5342,1040,1253,526,13569];      // full-scan → 21,730
+  const CM_GOOD = [428,720,747,0,5342];              // routed   → 7,237
+  const CT_BAD  = [621,135,654,147,2625];            // load-all → 4,182
+  const CT_GOOD = [621,0,654,0];                     // keyword  → 1,275 (skip 2,625)
+
+  function fmt(n){return n.toLocaleString('en-US');}
+
+  // 한 레인 애니메이션: 누적 카운터 + 바 + 스텝 하이라이트
+  function animateLane(rootSel, steps, total, maxScale, done){
+    const root=document.querySelector(rootSel);
+    const numEl=root.querySelector('.counter .num');
+    const barEl=root.querySelector('.bar>span');
+    const lis=root.querySelectorAll('.steps li');
+    lis.forEach(li=>li.classList.remove('on'));
+    let acc=0,i=0;
+    numEl.textContent='0'; barEl.style.width='0';
+    function step(){
+      if(i>=steps.length){ if(done)done(acc); return; }
+      const li=lis[i]; if(li)li.classList.add('on');
+      const target=acc+steps[i];
+      // 카운트업
+      const from=acc, dur=460, t0=performance.now();
+      function tick(now){
+        const p=Math.min(1,(now-t0)/dur);
+        const ease=1-Math.pow(1-p,3);
+        const cur=Math.round(from+(target-from)*ease);
+        numEl.textContent=fmt(cur);
+        barEl.style.width=(cur/maxScale*100).toFixed(1)+'%';
+        if(p<1) requestAnimationFrame(tick);
+        else { acc=target; i++; setTimeout(step, 180); }
+      }
+      requestAnimationFrame(tick);
+    }
+    step();
+  }
+
+  function runPair(badSel,badData,badTotal, goodSel,goodData,goodTotal, verdictSel, msgFn, runBtn){
+    const maxScale=Math.max(badTotal,goodTotal);
+    if(runBtn){runBtn.disabled=true;}
+    const v=document.querySelector(verdictSel);
+    v.classList.add('pulse');
+    v.textContent='시뮬레이션 진행 중...';
+    animateLane(badSel,badData,badTotal,maxScale,function(){
+      animateLane(goodSel,goodData,goodTotal,maxScale,function(){
+        const save=Math.round((1-goodTotal/badTotal)*100);
+        v.classList.remove('pulse');
+        v.textContent=msgFn(badTotal,goodTotal,save);
+        if(runBtn){runBtn.disabled=false;}
+      });
+    });
+  }
+
+  function resetLane(sel){
+    const root=document.querySelector(sel);
+    root.querySelector('.counter .num').textContent='0';
+    root.querySelector('.bar>span').style.width='0';
+    root.querySelectorAll('.steps li').forEach(li=>li.classList.remove('on'));
+  }
+
+  // ── ACT 1 codemap ──
+  const cmBadTotal=CM_BAD.reduce((a,b)=>a+b,0);   // 21,730
+  const cmGoodTotal=CM_GOOD.reduce((a,b)=>a+b,0); // 7,237
+  document.getElementById('cmRun').addEventListener('click',function(){
+    runPair('#cmBad',CM_BAD,cmBadTotal,'#cmGood',CM_GOOD,cmGoodTotal,'#cmVerdict',
+      (b,g,s)=>`같은 버그 수정 · full-scan ${fmt(b)} vs codemap ${fmt(g)} tok · ${s}% 절감`,
+      this);
+  });
+  document.getElementById('cmReset').addEventListener('click',function(){
+    resetLane('#cmBad');resetLane('#cmGood');document.getElementById('cmVerdict').textContent='';
+  });
+
+  // ── ACT 2 ctxdb ──
+  const ctBadTotal=CT_BAD.reduce((a,b)=>a+b,0);   // 4,182
+  const ctGoodTotal=CT_GOOD.reduce((a,b)=>a+b,0); // 1,275
+  document.getElementById('ctxRun').addEventListener('click',function(){
+    runPair('#ctxBad',CT_BAD,ctBadTotal,'#ctxGood',CT_GOOD,ctGoodTotal,'#ctxVerdict',
+      (b,g,s)=>`세션 재개 · load-all ${fmt(b)} vs keyword ${fmt(g)} tok · ${s}% 절감 (L3 이력 skip)`,
+      this);
+  });
+  document.getElementById('ctxReset').addEventListener('click',function(){
+    resetLane('#ctxBad');resetLane('#ctxGood');document.getElementById('ctxVerdict').textContent='';
+  });
+
+  // ── 종합 통계 카운트업(스크롤 진입 시) ──
+  function countTo(el,target,suffix){
+    const t0=performance.now(),dur=900;
+    function tick(now){const p=Math.min(1,(now-t0)/dur);const e=1-Math.pow(1-p,3);
+      el.textContent=Math.round(target*e)+suffix; if(p<1)requestAnimationFrame(tick);}
+    requestAnimationFrame(tick);
+  }
+  const seen={};
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{
+    if(e.isIntersecting && !seen.s){seen.s=1;
+      countTo(document.getElementById('s1'),67,'%');
+      countTo(document.getElementById('s2'),70,'%');
+      countTo(document.getElementById('s3'),3,'%');
+    }
+  });},{threshold:.5});
+  io.observe(document.getElementById('summary'));
+})();
+</script>
+</body>
+</html>
