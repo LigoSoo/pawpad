@@ -1,4 +1,4 @@
-# PawPad 버전별 업데이트 (v2.18 → v2.41)
+# PawPad 버전별 업데이트 (v2.18 → v2.42)
 
 | 버전 | 날짜 | 핵심 변경 | 주요 영향 요소 |
 |------|------|----------|--------------|
@@ -28,7 +28,9 @@
 | v2.40 | 2026-06-30 | codemap trim-router (small-page) | codemap 성장전략 flat→trim-router: 대규모(50KB+) `_index.md`를 `_root.md`(route)+`keywords.md`(한국어→feature)+`features/{id}.md`(source pointer)로 분할, cap root 2KB·그외 4KB. generated(`*.g.dart`/`*.freezed.dart`/`lib/generated`) source pointer 제외, lookup 알고리즘(최대 3 read)+1줄규율. **domain 중간층 제외**(leaf 중복·3중쓰기 drift 회피 = trim). 통째읽기 사고 ~14k→~1k 봉쇄·grep 성능 불변(다운사이드 0). account-link pilot 검증(size PASS·lookup 2/2·non-circular). codemap SKILL(live+`.agents` 미러+setup embed) 동기, 스킬 19 불변. **v2.40 내 보강(2026-07-01~02, 버전 불변·v2.25 BOM-fix 선례)**: ① analyze hook 2단계 fix — settings.json raw PowerShell 파이프라인이 Git Bash 디스패치와 충돌 → 다른 훅과 동일 `-File` 스크립트(`analyze.ps1`/`analyze.sh` 신규)로 통일 + PostToolUse는 exit 2의 stderr만 agent에 전달하므로 진단 결과 stderr 재전송·exit 2/0 정규화(설계 이래 미동작이던 Edit 직후 진단 피드백 최초 활성화, 기존 설치는 `-Upgrade` 필요). Unix `analyze.sh`는 파이프 exit 소실 버그(`$?`=tail exit) 발견 → `set -o pipefail`+그룹 리다이렉트로 보정. ② codemap lookup 의미매칭 명시 — 자연어 키워드는 keywords.md를 grep 정확매칭이 아닌 **통째 read 후 의미·맥락 매칭**(표현/공백 흔들림 강건, lookup miss→전체 소스 스캔 토큰 폭증 방지). 상세: docs/CHANGELOG_v2.40.md Addendum |
 | v2.41 | 2026-07-02 | retrieval-source 표시 (A 선언식 + B 계측식) | agent가 코드를 codemap/ctxdb로 찾았는지 소스 전체를 뒤졌는지 가시화(Sonnet 5 "codemap 미경유 전체 스캔→토큰 2~3배" 관측 대응). **A 선언식**: CLAUDE/AGENTS Response Style `### Retrieval 표시` — 탐색 수행 응답 상단 `📡 Retrieval: codemap {hit\|miss\|미사용} \| ctxdb {…} \| src {read N\|full-scan N (사유)}` 1줄, 소스 탐색 전 codemap lookup 의무+full-scan 사유 선언(codemap-first 행동 유도). **B 계측식**(Claude 전용): 신규 `read-track` 훅(`PostToolUse: Read\|Grep\|Glob`)이 read 경로를 cmap/ctx/src 분류→`.ctxdb/.state/claude-read-stats` 누적(toolkit 내부 미집계, SessionStart reset)→statusline `📡 cmap N ctx N src N` 실측(자기보고와 달리 위조 불가). settings.json PostToolUse=read-track(항상)+analyze(스택 조건부). 기존 설치 `-Upgrade`, 스킬 19 불변 |
 
-# 누적 현황 (현재 v2.41)
+| v2.42 | 2026-07-08 | retrieval routing 가시화 (statusline 경유율 헤드라인) | v2.41 계측 위에 "codemap 경유 vs 풀스캔"을 한눈 가시화(사용자 의도: 소스 접근이 codemap 경유였나 풀스캔이었나 수치화). statusline retrieval 세그먼트를 `📡 codemap N% · routed X / full-scan Y · src N`로 재설계: **codemap N%**=경유율(routed/(routed+full-scan), routed=`codemap hit` 선언·full-scan=`miss` 선언, 초록≥70/노랑≥40/빨강<40) 주지표 + **src N**=색인 미경유 직접읽기 볼륨(백스톱, 선언0+src>0=노랑 풀스캔 경고) + **ctx N%**=ctxdb 매칭율(샘플시). raw cmap/ctx 카운트·route% **폐기**(기계 카운터론 read의 경유/풀스캔 구분 불가→선언 기반이 SoT, src가 위조불가 백스톱). hit/miss는 신규 `stop-check` 파싱: 완료 응답의 `📡 Retrieval:` 라인→`.ctxdb/.state/claude-retrieval-stats` 누적(uuid dedupe·`미사용` 제외·형식예시 `{}` 라인 제외·`\|` 고정순서 위치분해). **statusline=UI 렌더라 모델 토큰 0**. 2단계 크로스리뷰(Opus fresh-eyes 서브 + 실제 `codex exec review` gpt-5.4-mini): 🔴 bash greedy-sed 'codemap 경유' 오매칭→cmap 누락·PS banker's vs bash half-up .5 divergence→PS도 half-up·`{}`예시 오계수 수정. 라이브 6훅+setup 6템플릿 byte-match, 기존 설치 `-Upgrade`, 스킬 19 불변. 상세: docs/CHANGELOG_v2.42.md |
+
+# 누적 현황 (현재 v2.42)
 
 | 항목 | 수치 |
 |------|------|
