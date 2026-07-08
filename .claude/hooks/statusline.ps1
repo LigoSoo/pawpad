@@ -66,7 +66,7 @@ if (Test-Path -LiteralPath $statsFile) {
         $routed = $cmapN + $ctxN
         $tcol = if ($routed -gt 0) { $G } else { $Y }
         $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) ${tcol}cmap $cmapN ctx $ctxN src $srcN${Z}"
-        $route = [math]::Round($routed * 100.0 / $tot)
+        $route = [int][math]::Floor($routed * 100.0 / $tot + 0.5)
         $rcol = if ($route -ge 50) { $G } elseif ($route -ge 25) { $Y } else { $R }
         $out += " ${D}route${Z} ${rcol}${route}%${Z}"
     }
@@ -78,8 +78,8 @@ if (Test-Path -LiteralPath $retFile) {
     $ch = @($rs -eq 'cmap:hit').Count; $cm = @($rs -eq 'cmap:miss').Count
     $xh = @($rs -eq 'ctx:hit').Count;  $xm = @($rs -eq 'ctx:miss').Count
     $hitParts = @()
-    if (($ch + $cm) -gt 0) { $r = [math]::Round($ch * 100.0 / ($ch + $cm)); $c = if ($r -ge 70) { $G } elseif ($r -ge 40) { $Y } else { $R }; $hitParts += "c ${c}${r}%${Z}($ch/$($ch + $cm))" }
-    if (($xh + $xm) -gt 0) { $r = [math]::Round($xh * 100.0 / ($xh + $xm)); $c = if ($r -ge 70) { $G } elseif ($r -ge 40) { $Y } else { $R }; $hitParts += "x ${c}${r}%${Z}($xh/$($xh + $xm))" }
+    if (($ch + $cm) -gt 0) { $r = [int][math]::Floor($ch * 100.0 / ($ch + $cm) + 0.5); $c = if ($r -ge 70) { $G } elseif ($r -ge 40) { $Y } else { $R }; $hitParts += "c ${c}${r}%${Z}($ch/$($ch + $cm))" }
+    if (($xh + $xm) -gt 0) { $r = [int][math]::Floor($xh * 100.0 / ($xh + $xm) + 0.5); $c = if ($r -ge 70) { $G } elseif ($r -ge 40) { $Y } else { $R }; $hitParts += "x ${c}${r}%${Z}($xh/$($xh + $xm))" }
     if ($hitParts.Count -gt 0) { $out += " ${D}hit${Z} " + ($hitParts -join " ") }
 }
 Write-Output $out

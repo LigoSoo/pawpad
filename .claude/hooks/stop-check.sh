@@ -19,7 +19,8 @@ if command -v jq >/dev/null 2>&1; then
     uuid="${last%%$'\t'*}"; text="${last#*$'\t'}"
     seenP="$stateDir/claude-retrieval-seen"; seen=""; [ -f "$seenP" ] && seen="$(cat "$seenP" 2>/dev/null)"
     if [ -n "$uuid" ] && [ "$uuid" != "$seen" ] && [ -n "$text" ]; then
-      rline="$(printf '%s' "$text" | grep -m1 'Retrieval:.*codemap' 2>/dev/null)"
+      # 실제 선언 라인만 (형식 예시 '{hit|miss}'는 중괄호 포함 -> grep -v '{'로 예시/인용 오계수 방지).
+      rline="$(printf '%s' "$text" | grep 'Retrieval:.*codemap' 2>/dev/null | grep -v '{' | head -1)"
       if [ -n "$rline" ]; then
         # 고정 순서 codemap | ctxdb | src 로 위치 분해 (greedy sed는 마지막 'codemap'=src의 "(codemap 경유)" 매칭→cmap 누락).
         cseg="$(printf '%s' "$rline" | awk -F'|' '{print $1}')"

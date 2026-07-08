@@ -31,7 +31,8 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
         $seenPath = Join-Path $stateDir "claude-retrieval-seen"
         $seen = if (Test-Path $seenPath) { (Get-Content -LiteralPath $seenPath -Raw -Encoding UTF8).Trim() } else { "" }
         if ($lastUuid -and $lastUuid -ne $seen -and $lastText) {
-            $rl = ($lastText -split "`n") | Where-Object { $_ -match 'Retrieval:' -and $_ -match 'codemap' } | Select-Object -First 1
+            # 실제 선언 라인만 (형식 예시 '{hit|miss}'는 중괄호 포함 -> 제외해 예시/인용 오계수 방지).
+            $rl = ($lastText -split "`n") | Where-Object { $_ -match 'Retrieval:' -and $_ -match 'codemap' -and $_ -notmatch '\{' } | Select-Object -First 1
             if ($rl) {
                 # 고정 순서 codemap | ctxdb | src 로 위치 분해 (키워드 매칭 시 경로 내 'codemap'/'ctxdb' 부분문자열과 충돌).
                 $segs = $rl -split '\|'
