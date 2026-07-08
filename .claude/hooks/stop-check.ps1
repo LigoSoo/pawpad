@@ -33,9 +33,10 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
         if ($lastUuid -and $lastUuid -ne $seen -and $lastText) {
             $rl = ($lastText -split "`n") | Where-Object { $_ -match 'Retrieval:' -and $_ -match 'codemap' } | Select-Object -First 1
             if ($rl) {
+                # 고정 순서 codemap | ctxdb | src 로 위치 분해 (키워드 매칭 시 경로 내 'codemap'/'ctxdb' 부분문자열과 충돌).
                 $segs = $rl -split '\|'
-                $cseg = ($segs | Where-Object { $_ -match 'codemap' } | Select-Object -First 1)
-                $xseg = ($segs | Where-Object { $_ -match 'ctxdb' } | Select-Object -First 1)
+                $cseg = if ($segs.Count -ge 1) { $segs[0] } else { "" }
+                $xseg = if ($segs.Count -ge 2) { $segs[1] } else { "" }
                 $rec = @()
                 if ($cseg) { if ($cseg -match 'hit') { $rec += 'cmap:hit' } elseif ($cseg -match 'miss') { $rec += 'cmap:miss' } }
                 if ($xseg) { if ($xseg -match 'hit') { $rec += 'ctx:hit' } elseif ($xseg -match 'miss') { $rec += 'ctx:miss' } }

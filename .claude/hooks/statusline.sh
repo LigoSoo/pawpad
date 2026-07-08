@@ -51,7 +51,7 @@ if [ -f "$sf" ]; then
     routed=$(( cmapn + ctxn ))
     if [ "$routed" -gt 0 ]; then tcol="$G"; else tcol="$Y"; fi
     out="$out | 📡 ${tcol}cmap ${cmapn} ctx ${ctxn} src ${srcn}${Z}"
-    route=$(( routed * 100 / tot ))
+    route=$(( (routed * 100 + tot / 2) / tot ))
     if [ "$route" -ge 50 ]; then rcol="$G"; elif [ "$route" -ge 25 ]; then rcol="$Y"; else rcol="$R"; fi
     out="$out ${D}route${Z} ${rcol}${route}%${Z}"
   fi
@@ -64,9 +64,9 @@ if [ -f "$rf" ]; then
   for v in ch cm xh xm; do eval "case \"\$$v\" in (''|*[!0-9]*) $v=0 ;; esac"; done
   hit=""
   cden=$(( ch + cm ))
-  if [ "$cden" -gt 0 ]; then r=$(( ch * 100 / cden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; hit="c ${c}${r}%${Z}(${ch}/${cden})"; fi
+  if [ "$cden" -gt 0 ]; then r=$(( (ch * 100 + cden / 2) / cden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; hit="c ${c}${r}%${Z}(${ch}/${cden})"; fi
   xden=$(( xh + xm ))
-  if [ "$xden" -gt 0 ]; then r=$(( xh * 100 / xden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; if [ -n "$hit" ]; then hit="$hit "; fi; hit="${hit}x ${c}${r}%${Z}(${xh}/${xden})"; fi
+  if [ "$xden" -gt 0 ]; then r=$(( (xh * 100 + xden / 2) / xden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; if [ -n "$hit" ]; then hit="$hit "; fi; hit="${hit}x ${c}${r}%${Z}(${xh}/${xden})"; fi
   if [ -n "$hit" ]; then out="$out ${D}hit${Z} $hit"; fi
 fi
 printf '%s' "$out"

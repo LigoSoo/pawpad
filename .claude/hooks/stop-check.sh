@@ -21,8 +21,9 @@ if command -v jq >/dev/null 2>&1; then
     if [ -n "$uuid" ] && [ "$uuid" != "$seen" ] && [ -n "$text" ]; then
       rline="$(printf '%s' "$text" | grep -m1 'Retrieval:.*codemap' 2>/dev/null)"
       if [ -n "$rline" ]; then
-        cseg="$(printf '%s' "$rline" | sed -n 's/.*codemap\([^|]*\).*/\1/p')"
-        xseg="$(printf '%s' "$rline" | sed -n 's/.*ctxdb\([^|]*\).*/\1/p')"
+        # 고정 순서 codemap | ctxdb | src 로 위치 분해 (greedy sed는 마지막 'codemap'=src의 "(codemap 경유)" 매칭→cmap 누락).
+        cseg="$(printf '%s' "$rline" | awk -F'|' '{print $1}')"
+        xseg="$(printf '%s' "$rline" | awk -F'|' '{print $2}')"
         case "$cseg" in *hit*) printf 'cmap:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'cmap:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
         case "$xseg" in *hit*) printf 'ctx:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'ctx:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
       fi

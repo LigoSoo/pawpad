@@ -1526,9 +1526,10 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
         if ($lastUuid -and $lastUuid -ne $seen -and $lastText) {
             $rl = ($lastText -split "`n") | Where-Object { $_ -match 'Retrieval:' -and $_ -match 'codemap' } | Select-Object -First 1
             if ($rl) {
+                # 고정 순서 codemap | ctxdb | src 로 위치 분해 (키워드 매칭 시 경로 내 'codemap'/'ctxdb' 부분문자열과 충돌).
                 $segs = $rl -split '\|'
-                $cseg = ($segs | Where-Object { $_ -match 'codemap' } | Select-Object -First 1)
-                $xseg = ($segs | Where-Object { $_ -match 'ctxdb' } | Select-Object -First 1)
+                $cseg = if ($segs.Count -ge 1) { $segs[0] } else { "" }
+                $xseg = if ($segs.Count -ge 2) { $segs[1] } else { "" }
                 $rec = @()
                 if ($cseg) { if ($cseg -match 'hit') { $rec += 'cmap:hit' } elseif ($cseg -match 'miss') { $rec += 'cmap:miss' } }
                 if ($xseg) { if ($xseg -match 'hit') { $rec += 'ctx:hit' } elseif ($xseg -match 'miss') { $rec += 'ctx:miss' } }
@@ -1936,8 +1937,9 @@ if command -v jq >/dev/null 2>&1; then
     if [ -n "$uuid" ] && [ "$uuid" != "$seen" ] && [ -n "$text" ]; then
       rline="$(printf '%s' "$text" | grep -m1 'Retrieval:.*codemap' 2>/dev/null)"
       if [ -n "$rline" ]; then
-        cseg="$(printf '%s' "$rline" | sed -n 's/.*codemap\([^|]*\).*/\1/p')"
-        xseg="$(printf '%s' "$rline" | sed -n 's/.*ctxdb\([^|]*\).*/\1/p')"
+        # 고정 순서 codemap | ctxdb | src 로 위치 분해 (greedy sed는 마지막 'codemap'=src의 "(codemap 경유)" 매칭→cmap 누락).
+        cseg="$(printf '%s' "$rline" | awk -F'|' '{print $1}')"
+        xseg="$(printf '%s' "$rline" | awk -F'|' '{print $2}')"
         case "$cseg" in *hit*) printf 'cmap:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'cmap:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
         case "$xseg" in *hit*) printf 'ctx:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'ctx:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
       fi
@@ -2171,7 +2173,7 @@ if [ -f "$sf" ]; then
     routed=$(( cmapn + ctxn ))
     if [ "$routed" -gt 0 ]; then tcol="$G"; else tcol="$Y"; fi
     out="$out | 📡 ${tcol}cmap ${cmapn} ctx ${ctxn} src ${srcn}${Z}"
-    route=$(( routed * 100 / tot ))
+    route=$(( (routed * 100 + tot / 2) / tot ))
     if [ "$route" -ge 50 ]; then rcol="$G"; elif [ "$route" -ge 25 ]; then rcol="$Y"; else rcol="$R"; fi
     out="$out ${D}route${Z} ${rcol}${route}%${Z}"
   fi
@@ -2184,9 +2186,9 @@ if [ -f "$rf" ]; then
   for v in ch cm xh xm; do eval "case \"\$$v\" in (''|*[!0-9]*) $v=0 ;; esac"; done
   hit=""
   cden=$(( ch + cm ))
-  if [ "$cden" -gt 0 ]; then r=$(( ch * 100 / cden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; hit="c ${c}${r}%${Z}(${ch}/${cden})"; fi
+  if [ "$cden" -gt 0 ]; then r=$(( (ch * 100 + cden / 2) / cden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; hit="c ${c}${r}%${Z}(${ch}/${cden})"; fi
   xden=$(( xh + xm ))
-  if [ "$xden" -gt 0 ]; then r=$(( xh * 100 / xden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; if [ -n "$hit" ]; then hit="$hit "; fi; hit="${hit}x ${c}${r}%${Z}(${xh}/${xden})"; fi
+  if [ "$xden" -gt 0 ]; then r=$(( (xh * 100 + xden / 2) / xden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; if [ -n "$hit" ]; then hit="$hit "; fi; hit="${hit}x ${c}${r}%${Z}(${xh}/${xden})"; fi
   if [ -n "$hit" ]; then out="$out ${D}hit${Z} $hit"; fi
 fi
 printf '%s' "$out"
