@@ -52,34 +52,38 @@ if ($limit -ge 1000000) {
 }
 $out = "ctx $pct% (${usedK}k/$limitLabel)"
 if ($model) { $out += " | $model" }
-# retrieval 계측 표시 (read-track hook 누적: cmap=.claude/codemap, ctx=.ctxdb, src=그 외. 세션 시작 시 reset)
-# 색상: 라우팅 활성(cmap|ctx>0)=초록, 소스직행(src만)=노랑 경고. route%=(cmap+ctx)/total. hit%=Retrieval 선언 hit/miss율(stop-check 파싱).
+# retrieval routing 표시: codemap 경유율(선언 기반, stop-check 파싱)이 주지표 + src 직접읽기 볼륨(백스톱).
+# codemap N% = routed/(routed+full-scan). routed=codemap hit 선언, full-scan=codemap miss 선언. src=색인 미경유 직접 read 수.
+# 선언 0 + src>0 = 미선언 직접읽기(풀스캔 의심) → src 노랑. ctx N%(ctxdb 매칭율)은 샘플 있을 때만 뒤에 붙임.
 $e = [char]27; $G = "$e[32m"; $Y = "$e[33m"; $R = "$e[31m"; $D = "$e[90m"; $Z = "$e[0m"
-$statsFile = ".ctxdb/.state/claude-read-stats"
-if (Test-Path -LiteralPath $statsFile) {
-    $st = @(Get-Content -LiteralPath $statsFile -ErrorAction SilentlyContinue)
-    $cmapN = @($st -eq 'cmap').Count
-    $ctxN = @($st -eq 'ctx').Count
-    $srcN = @($st -eq 'src').Count
-    $tot = $cmapN + $ctxN + $srcN
-    if ($tot -gt 0) {
-        $routed = $cmapN + $ctxN
-        $tcol = if ($routed -gt 0) { $G } else { $Y }
-        $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) ${tcol}cmap $cmapN ctx $ctxN src $srcN${Z}"
-        $route = [int][math]::Floor($routed * 100.0 / $tot + 0.5)
-        $rcol = if ($route -ge 50) { $G } elseif ($route -ge 25) { $Y } else { $R }
-        $out += " ${D}route${Z} ${rcol}${route}%${Z}"
-    }
-}
-# hit율 (stop-check가 응답 '📡 Retrieval:' 선언의 codemap/ctxdb hit|miss를 누적). 미사용 턴은 분모 제외.
+$ch = 0; $cm = 0; $xh = 0; $xm = 0
 $retFile = ".ctxdb/.state/claude-retrieval-stats"
 if (Test-Path -LiteralPath $retFile) {
     $rs = @(Get-Content -LiteralPath $retFile -ErrorAction SilentlyContinue)
     $ch = @($rs -eq 'cmap:hit').Count; $cm = @($rs -eq 'cmap:miss').Count
     $xh = @($rs -eq 'ctx:hit').Count;  $xm = @($rs -eq 'ctx:miss').Count
-    $hitParts = @()
-    if (($ch + $cm) -gt 0) { $r = [int][math]::Floor($ch * 100.0 / ($ch + $cm) + 0.5); $c = if ($r -ge 70) { $G } elseif ($r -ge 40) { $Y } else { $R }; $hitParts += "c ${c}${r}%${Z}($ch/$($ch + $cm))" }
-    if (($xh + $xm) -gt 0) { $r = [int][math]::Floor($xh * 100.0 / ($xh + $xm) + 0.5); $c = if ($r -ge 70) { $G } elseif ($r -ge 40) { $Y } else { $R }; $hitParts += "x ${c}${r}%${Z}($xh/$($xh + $xm))" }
-    if ($hitParts.Count -gt 0) { $out += " ${D}hit${Z} " + ($hitParts -join " ") }
+}
+$srcN = 0
+$statsFile = ".ctxdb/.state/claude-read-stats"
+if (Test-Path -LiteralPath $statsFile) { $srcN = @((Get-Content -LiteralPath $statsFile -ErrorAction SilentlyContinue) -eq 'src').Count }
+$cdenom = $ch + $cm
+if (($cdenom + $srcN) -gt 0) {
+    if ($cdenom -gt 0) {
+        $rate = [int][math]::Floor($ch * 100.0 / $cdenom + 0.5)
+        $rcol = if ($rate -ge 70) { $G } elseif ($rate -ge 40) { $Y } else { $R }
+        $seg = "${D}codemap${Z} ${rcol}${rate}%${Z} ${D}·${Z} routed $ch / full-scan $cm"
+    } else {
+        $seg = "${D}codemap –${Z}"
+    }
+    if ($srcN -gt 0) {
+        $scol = if ($cdenom -eq 0) { $Y } else { $D }
+        $seg += " ${D}·${Z} ${scol}src $srcN${Z}"
+    }
+    if (($xh + $xm) -gt 0) {
+        $xrate = [int][math]::Floor($xh * 100.0 / ($xh + $xm) + 0.5)
+        $xcol = if ($xrate -ge 70) { $G } elseif ($xrate -ge 40) { $Y } else { $R }
+        $seg += " ${D}· ctx${Z} ${xcol}${xrate}%${Z}"
+    }
+    $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) $seg"
 }
 Write-Output $out

@@ -1,5 +1,5 @@
 ﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.42 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.42. v2.41 기반 + retrieval 계측 시각화 강화 — statusline "📡 cmap N ctx N src N"에 ①색상(라우팅 활성 cmap|ctx>0=초록 / 소스직행 src만=노랑 경고) ②route%=(cmap+ctx)/total ③hit%=codemap·ctxdb 선언 hit·miss율(stop-check가 완료 응답의 "📡 Retrieval:" 라인 파싱→claude-retrieval-stats 누적, uuid dedupe·미사용 턴 분모제외). statusline은 UI 렌더=모델 토큰 0. 스킬 19 불변. 보고서: docs/CHANGELOG_v2.42.md.
+# STATUS: FROZEN (v2.42. v2.41 기반 + retrieval routing 가시화 — statusline에 "📡 codemap N% · routed X / full-scan Y · src N": codemap 경유율(선언 기반 주지표, routed=codemap hit 선언/full-scan=miss 선언, 초록≥70/노랑≥40/빨강<40) + src 직접읽기 볼륨(백스톱, 선언0+src>0=풀스캔 의심 노랑) + ctx N%(ctxdb 매칭율, 샘플시). hit/miss는 stop-check가 완료 응답 "📡 Retrieval:" 라인 파싱→claude-retrieval-stats(uuid dedupe·미사용 제외·형식예시'{}' 제외·고정순서 위치분해). 기계 카운터론 경유/풀스캔 구분 불가라 선언 기반. statusline=UI 렌더=모델 토큰 0. 스킬 19 불변. 보고서: docs/CHANGELOG_v2.42.md.
 #         이전: v2.41 retrieval-source 표시 A+B(선언식 "📡 Retrieval" 라인 + 계측식 read-track hook→statusline "cmap N ctx N src N"). 보고서: docs/CHANGELOG_v2.41.md.
 #         이전: v2.40 codemap trim-router(small-page, cap root2KB·그외4KB, lookup 알고리즘+의미매칭) + 내 보강: analyze hook 2단계 fix(-File 스크립트 통일 + stderr 재전송·exit2/0 정규화 + Unix pipefail). 보고서: docs/CHANGELOG_v2.40.md).
 #         이전: v2.38 codemap ON START 부분읽기 — MAP+HOT(조망)만 read, INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand. 코드세션 ON START codemap read ~7k→~0.5k tok 절감. 보고서: docs/CHANGELOG_v2.38.md).
@@ -2087,35 +2087,39 @@ if ($limit -ge 1000000) {
 }
 $out = "ctx $pct% (${usedK}k/$limitLabel)"
 if ($model) { $out += " | $model" }
-# retrieval 계측 표시 (read-track hook 누적: cmap=.claude/codemap, ctx=.ctxdb, src=그 외. 세션 시작 시 reset)
-# 색상: 라우팅 활성(cmap|ctx>0)=초록, 소스직행(src만)=노랑 경고. route%=(cmap+ctx)/total. hit%=Retrieval 선언 hit/miss율(stop-check 파싱).
+# retrieval routing 표시: codemap 경유율(선언 기반, stop-check 파싱)이 주지표 + src 직접읽기 볼륨(백스톱).
+# codemap N% = routed/(routed+full-scan). routed=codemap hit 선언, full-scan=codemap miss 선언. src=색인 미경유 직접 read 수.
+# 선언 0 + src>0 = 미선언 직접읽기(풀스캔 의심) → src 노랑. ctx N%(ctxdb 매칭율)은 샘플 있을 때만 뒤에 붙임.
 $e = [char]27; $G = "$e[32m"; $Y = "$e[33m"; $R = "$e[31m"; $D = "$e[90m"; $Z = "$e[0m"
-$statsFile = ".ctxdb/.state/claude-read-stats"
-if (Test-Path -LiteralPath $statsFile) {
-    $st = @(Get-Content -LiteralPath $statsFile -ErrorAction SilentlyContinue)
-    $cmapN = @($st -eq 'cmap').Count
-    $ctxN = @($st -eq 'ctx').Count
-    $srcN = @($st -eq 'src').Count
-    $tot = $cmapN + $ctxN + $srcN
-    if ($tot -gt 0) {
-        $routed = $cmapN + $ctxN
-        $tcol = if ($routed -gt 0) { $G } else { $Y }
-        $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) ${tcol}cmap $cmapN ctx $ctxN src $srcN${Z}"
-        $route = [int][math]::Floor($routed * 100.0 / $tot + 0.5)
-        $rcol = if ($route -ge 50) { $G } elseif ($route -ge 25) { $Y } else { $R }
-        $out += " ${D}route${Z} ${rcol}${route}%${Z}"
-    }
-}
-# hit율 (stop-check가 응답 '📡 Retrieval:' 선언의 codemap/ctxdb hit|miss를 누적). 미사용 턴은 분모 제외.
+$ch = 0; $cm = 0; $xh = 0; $xm = 0
 $retFile = ".ctxdb/.state/claude-retrieval-stats"
 if (Test-Path -LiteralPath $retFile) {
     $rs = @(Get-Content -LiteralPath $retFile -ErrorAction SilentlyContinue)
     $ch = @($rs -eq 'cmap:hit').Count; $cm = @($rs -eq 'cmap:miss').Count
     $xh = @($rs -eq 'ctx:hit').Count;  $xm = @($rs -eq 'ctx:miss').Count
-    $hitParts = @()
-    if (($ch + $cm) -gt 0) { $r = [int][math]::Floor($ch * 100.0 / ($ch + $cm) + 0.5); $c = if ($r -ge 70) { $G } elseif ($r -ge 40) { $Y } else { $R }; $hitParts += "c ${c}${r}%${Z}($ch/$($ch + $cm))" }
-    if (($xh + $xm) -gt 0) { $r = [int][math]::Floor($xh * 100.0 / ($xh + $xm) + 0.5); $c = if ($r -ge 70) { $G } elseif ($r -ge 40) { $Y } else { $R }; $hitParts += "x ${c}${r}%${Z}($xh/$($xh + $xm))" }
-    if ($hitParts.Count -gt 0) { $out += " ${D}hit${Z} " + ($hitParts -join " ") }
+}
+$srcN = 0
+$statsFile = ".ctxdb/.state/claude-read-stats"
+if (Test-Path -LiteralPath $statsFile) { $srcN = @((Get-Content -LiteralPath $statsFile -ErrorAction SilentlyContinue) -eq 'src').Count }
+$cdenom = $ch + $cm
+if (($cdenom + $srcN) -gt 0) {
+    if ($cdenom -gt 0) {
+        $rate = [int][math]::Floor($ch * 100.0 / $cdenom + 0.5)
+        $rcol = if ($rate -ge 70) { $G } elseif ($rate -ge 40) { $Y } else { $R }
+        $seg = "${D}codemap${Z} ${rcol}${rate}%${Z} ${D}·${Z} routed $ch / full-scan $cm"
+    } else {
+        $seg = "${D}codemap –${Z}"
+    }
+    if ($srcN -gt 0) {
+        $scol = if ($cdenom -eq 0) { $Y } else { $D }
+        $seg += " ${D}·${Z} ${scol}src $srcN${Z}"
+    }
+    if (($xh + $xm) -gt 0) {
+        $xrate = [int][math]::Floor($xh * 100.0 / ($xh + $xm) + 0.5)
+        $xcol = if ($xrate -ge 70) { $G } elseif ($xrate -ge 40) { $Y } else { $R }
+        $seg += " ${D}· ctx${Z} ${xcol}${xrate}%${Z}"
+    }
+    $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) $seg"
 }
 Write-Output $out
 '@
@@ -2161,37 +2165,39 @@ usedk=$(( used / 1000 ))
 if [ "$limit" -ge 1000000 ]; then limitlabel="$(( limit / 1000000 ))M"; else limitlabel="$(( limit / 1000 ))k"; fi
 out="ctx ${pct}% (${usedk}k/${limitlabel})"
 [ -n "$model" ] && out="$out | $model"
-# retrieval 계측 표시 (read-track hook 누적: cmap/ctx/src. 세션 시작 시 reset)
-# 색상: 라우팅 활성=초록, 소스직행(src만)=노랑. route%=(cmap+ctx)/total. hit%=Retrieval 선언 hit/miss율(stop-check 파싱).
+# retrieval routing 표시: codemap 경유율(선언 기반) 주지표 + src 직접읽기 볼륨(백스톱).
+# codemap N% = routed/(routed+full-scan). 선언 0 + src>0 = 미선언 직접읽기 → src 노랑. ctx N%은 샘플 있을 때만.
 E=$(printf '\033'); G="${E}[32m"; Y="${E}[33m"; R="${E}[31m"; D="${E}[90m"; Z="${E}[0m"
-sf=".ctxdb/.state/claude-read-stats"
-if [ -f "$sf" ]; then
-  cmapn="$(grep -c '^cmap$' "$sf" 2>/dev/null)"; ctxn="$(grep -c '^ctx$' "$sf" 2>/dev/null)"; srcn="$(grep -c '^src$' "$sf" 2>/dev/null)"
-  case "$cmapn" in (''|*[!0-9]*) cmapn=0 ;; esac
-  case "$ctxn" in (''|*[!0-9]*) ctxn=0 ;; esac
-  case "$srcn" in (''|*[!0-9]*) srcn=0 ;; esac
-  tot=$(( cmapn + ctxn + srcn ))
-  if [ "$tot" -gt 0 ]; then
-    routed=$(( cmapn + ctxn ))
-    if [ "$routed" -gt 0 ]; then tcol="$G"; else tcol="$Y"; fi
-    out="$out | 📡 ${tcol}cmap ${cmapn} ctx ${ctxn} src ${srcn}${Z}"
-    route=$(( (routed * 100 + tot / 2) / tot ))
-    if [ "$route" -ge 50 ]; then rcol="$G"; elif [ "$route" -ge 25 ]; then rcol="$Y"; else rcol="$R"; fi
-    out="$out ${D}route${Z} ${rcol}${route}%${Z}"
-  fi
-fi
-# hit율 (stop-check가 응답 '📡 Retrieval:' 선언의 codemap/ctxdb hit|miss 누적). 미사용 턴은 분모 제외.
+ch=0; cm=0; xh=0; xm=0
 rf=".ctxdb/.state/claude-retrieval-stats"
 if [ -f "$rf" ]; then
   ch="$(grep -c '^cmap:hit$' "$rf" 2>/dev/null)"; cm="$(grep -c '^cmap:miss$' "$rf" 2>/dev/null)"
   xh="$(grep -c '^ctx:hit$' "$rf" 2>/dev/null)"; xm="$(grep -c '^ctx:miss$' "$rf" 2>/dev/null)"
-  for v in ch cm xh xm; do eval "case \"\$$v\" in (''|*[!0-9]*) $v=0 ;; esac"; done
-  hit=""
-  cden=$(( ch + cm ))
-  if [ "$cden" -gt 0 ]; then r=$(( (ch * 100 + cden / 2) / cden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; hit="c ${c}${r}%${Z}(${ch}/${cden})"; fi
+fi
+srcn=0
+sf=".ctxdb/.state/claude-read-stats"
+if [ -f "$sf" ]; then srcn="$(grep -c '^src$' "$sf" 2>/dev/null)"; fi
+for v in ch cm xh xm srcn; do eval "case \"\$$v\" in (''|*[!0-9]*) $v=0 ;; esac"; done
+cden=$(( ch + cm ))
+if [ $(( cden + srcn )) -gt 0 ]; then
+  if [ "$cden" -gt 0 ]; then
+    rate=$(( (ch * 100 + cden / 2) / cden ))
+    if [ "$rate" -ge 70 ]; then rcol="$G"; elif [ "$rate" -ge 40 ]; then rcol="$Y"; else rcol="$R"; fi
+    seg="${D}codemap${Z} ${rcol}${rate}%${Z} ${D}·${Z} routed ${ch} / full-scan ${cm}"
+  else
+    seg="${D}codemap –${Z}"
+  fi
+  if [ "$srcn" -gt 0 ]; then
+    if [ "$cden" -eq 0 ]; then scol="$Y"; else scol="$D"; fi
+    seg="$seg ${D}·${Z} ${scol}src ${srcn}${Z}"
+  fi
   xden=$(( xh + xm ))
-  if [ "$xden" -gt 0 ]; then r=$(( (xh * 100 + xden / 2) / xden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; if [ -n "$hit" ]; then hit="$hit "; fi; hit="${hit}x ${c}${r}%${Z}(${xh}/${xden})"; fi
-  if [ -n "$hit" ]; then out="$out ${D}hit${Z} $hit"; fi
+  if [ "$xden" -gt 0 ]; then
+    xrate=$(( (xh * 100 + xden / 2) / xden ))
+    if [ "$xrate" -ge 70 ]; then xcol="$G"; elif [ "$xrate" -ge 40 ]; then xcol="$Y"; else xcol="$R"; fi
+    seg="$seg ${D}· ctx${Z} ${xcol}${xrate}%${Z}"
+  fi
+  out="$out | 📡 $seg"
 fi
 printf '%s' "$out"
 '@
@@ -6040,7 +6046,7 @@ if ($failed -eq 0) {
         Write-Host "  - codemap trim-router: 대규모 codemap을 _root+keywords+features leaf로 분할(cap 2/4KB, 통째읽기 사고 봉쇄, grep 성능 불변)" -ForegroundColor Cyan
         Write-Host "  - analyze hook fix (v2.40 보강): -File 스크립트(analyze.ps1/analyze.sh) 실행 → Git Bash 디스패치 호환 + 진단 결과 stderr 재전송(exit 2/0 정규화)로 agent가 실제 분석 내용 수신" -ForegroundColor Cyan
         Write-Host "  - retrieval 표시 (v2.41): 응답 내 📡 Retrieval 선언(codemap/ctxdb hit·full-scan 사유) + statusline 📡 cmap/ctx/src 실측 카운터(read-track hook) — 전체 소스 스캔 토큰 사고 관측" -ForegroundColor Cyan
-        Write-Host "  - retrieval 시각화 (v2.42): statusline에 색상(라우팅=초록/소스직행=노랑) + route% + hit%(codemap·ctxdb 선언 hit·miss율, stop-check 파싱) — PawPad 코어 동작 가시화, 모델 토큰 0" -ForegroundColor Cyan
+        Write-Host "  - retrieval routing 가시화 (v2.42): statusline 📡 codemap N% (경유율=routed/full-scan, 선언 기반) + src 직접읽기 볼륨(백스톱) — codemap 경유 vs 풀스캔 한눈 관측, 모델 토큰 0" -ForegroundColor Cyan
         Write-Host "  - 상세: docs/CHANGELOG_v2.42.md" -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 19 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
@@ -6049,7 +6055,7 @@ if ($failed -eq 0) {
         Write-Host "  - codemap / codebase-map / .ctxdb context DB / security-check gate (DoD)" -ForegroundColor Cyan
         Write-Host "  - analyze hook now runs via -File script + forwards diagnostics to stderr (exit 2/0 normalized)" -ForegroundColor Cyan
         Write-Host "  - retrieval indicator (v2.41): in-response 📡 Retrieval declaration + statusline 📡 cmap/ctx/src measured counters (read-track hook)" -ForegroundColor Cyan
-        Write-Host "  - retrieval viz (v2.42): statusline color (routed=green/src-only=yellow) + route% + hit% (codemap·ctxdb declared hit·miss rate, parsed by stop-check) — core-behavior visibility, 0 model tokens | details: docs/CHANGELOG_v2.42.md" -ForegroundColor Cyan
+        Write-Host "  - retrieval routing viz (v2.42): statusline 📡 codemap N% (routing rate = routed/full-scan, declaration-based) + src direct-read volume (backstop) — codemap-routed vs full-scan at a glance, 0 model tokens | details: docs/CHANGELOG_v2.42.md" -ForegroundColor Cyan
     }
     Write-Host ""
 } else {

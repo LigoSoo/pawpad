@@ -37,36 +37,38 @@ usedk=$(( used / 1000 ))
 if [ "$limit" -ge 1000000 ]; then limitlabel="$(( limit / 1000000 ))M"; else limitlabel="$(( limit / 1000 ))k"; fi
 out="ctx ${pct}% (${usedk}k/${limitlabel})"
 [ -n "$model" ] && out="$out | $model"
-# retrieval 계측 표시 (read-track hook 누적: cmap/ctx/src. 세션 시작 시 reset)
-# 색상: 라우팅 활성=초록, 소스직행(src만)=노랑. route%=(cmap+ctx)/total. hit%=Retrieval 선언 hit/miss율(stop-check 파싱).
+# retrieval routing 표시: codemap 경유율(선언 기반) 주지표 + src 직접읽기 볼륨(백스톱).
+# codemap N% = routed/(routed+full-scan). 선언 0 + src>0 = 미선언 직접읽기 → src 노랑. ctx N%은 샘플 있을 때만.
 E=$(printf '\033'); G="${E}[32m"; Y="${E}[33m"; R="${E}[31m"; D="${E}[90m"; Z="${E}[0m"
-sf=".ctxdb/.state/claude-read-stats"
-if [ -f "$sf" ]; then
-  cmapn="$(grep -c '^cmap$' "$sf" 2>/dev/null)"; ctxn="$(grep -c '^ctx$' "$sf" 2>/dev/null)"; srcn="$(grep -c '^src$' "$sf" 2>/dev/null)"
-  case "$cmapn" in (''|*[!0-9]*) cmapn=0 ;; esac
-  case "$ctxn" in (''|*[!0-9]*) ctxn=0 ;; esac
-  case "$srcn" in (''|*[!0-9]*) srcn=0 ;; esac
-  tot=$(( cmapn + ctxn + srcn ))
-  if [ "$tot" -gt 0 ]; then
-    routed=$(( cmapn + ctxn ))
-    if [ "$routed" -gt 0 ]; then tcol="$G"; else tcol="$Y"; fi
-    out="$out | 📡 ${tcol}cmap ${cmapn} ctx ${ctxn} src ${srcn}${Z}"
-    route=$(( (routed * 100 + tot / 2) / tot ))
-    if [ "$route" -ge 50 ]; then rcol="$G"; elif [ "$route" -ge 25 ]; then rcol="$Y"; else rcol="$R"; fi
-    out="$out ${D}route${Z} ${rcol}${route}%${Z}"
-  fi
-fi
-# hit율 (stop-check가 응답 '📡 Retrieval:' 선언의 codemap/ctxdb hit|miss 누적). 미사용 턴은 분모 제외.
+ch=0; cm=0; xh=0; xm=0
 rf=".ctxdb/.state/claude-retrieval-stats"
 if [ -f "$rf" ]; then
   ch="$(grep -c '^cmap:hit$' "$rf" 2>/dev/null)"; cm="$(grep -c '^cmap:miss$' "$rf" 2>/dev/null)"
   xh="$(grep -c '^ctx:hit$' "$rf" 2>/dev/null)"; xm="$(grep -c '^ctx:miss$' "$rf" 2>/dev/null)"
-  for v in ch cm xh xm; do eval "case \"\$$v\" in (''|*[!0-9]*) $v=0 ;; esac"; done
-  hit=""
-  cden=$(( ch + cm ))
-  if [ "$cden" -gt 0 ]; then r=$(( (ch * 100 + cden / 2) / cden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; hit="c ${c}${r}%${Z}(${ch}/${cden})"; fi
+fi
+srcn=0
+sf=".ctxdb/.state/claude-read-stats"
+if [ -f "$sf" ]; then srcn="$(grep -c '^src$' "$sf" 2>/dev/null)"; fi
+for v in ch cm xh xm srcn; do eval "case \"\$$v\" in (''|*[!0-9]*) $v=0 ;; esac"; done
+cden=$(( ch + cm ))
+if [ $(( cden + srcn )) -gt 0 ]; then
+  if [ "$cden" -gt 0 ]; then
+    rate=$(( (ch * 100 + cden / 2) / cden ))
+    if [ "$rate" -ge 70 ]; then rcol="$G"; elif [ "$rate" -ge 40 ]; then rcol="$Y"; else rcol="$R"; fi
+    seg="${D}codemap${Z} ${rcol}${rate}%${Z} ${D}·${Z} routed ${ch} / full-scan ${cm}"
+  else
+    seg="${D}codemap –${Z}"
+  fi
+  if [ "$srcn" -gt 0 ]; then
+    if [ "$cden" -eq 0 ]; then scol="$Y"; else scol="$D"; fi
+    seg="$seg ${D}·${Z} ${scol}src ${srcn}${Z}"
+  fi
   xden=$(( xh + xm ))
-  if [ "$xden" -gt 0 ]; then r=$(( (xh * 100 + xden / 2) / xden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; if [ -n "$hit" ]; then hit="$hit "; fi; hit="${hit}x ${c}${r}%${Z}(${xh}/${xden})"; fi
-  if [ -n "$hit" ]; then out="$out ${D}hit${Z} $hit"; fi
+  if [ "$xden" -gt 0 ]; then
+    xrate=$(( (xh * 100 + xden / 2) / xden ))
+    if [ "$xrate" -ge 70 ]; then xcol="$G"; elif [ "$xrate" -ge 40 ]; then xcol="$Y"; else xcol="$R"; fi
+    seg="$seg ${D}· ctx${Z} ${xcol}${xrate}%${Z}"
+  fi
+  out="$out | 📡 $seg"
 fi
 printf '%s' "$out"
