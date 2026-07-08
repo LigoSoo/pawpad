@@ -17,6 +17,8 @@ if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -
 Set-Content -Path (Join-Path $stateDir "turn-count") -Value @("session:$sessionId", "turn:0") -Encoding ascii
 Set-Content -Path (Join-Path $stateDir "claude-loaded") -Value @($sessionId) -Encoding UTF8
 Set-Content -Path (Join-Path $stateDir "claude-read-stats") -Value @() -Encoding ascii
+Set-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value @() -Encoding ascii
+Set-Content -Path (Join-Path $stateDir "claude-retrieval-seen") -Value @() -Encoding ascii
 
 function Test-CodemapInject {
     $cfg = ".claude/pawpad-config.json"

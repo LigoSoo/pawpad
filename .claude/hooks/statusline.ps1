@@ -53,14 +53,33 @@ if ($limit -ge 1000000) {
 $out = "ctx $pct% (${usedK}k/$limitLabel)"
 if ($model) { $out += " | $model" }
 # retrieval 계측 표시 (read-track hook 누적: cmap=.claude/codemap, ctx=.ctxdb, src=그 외. 세션 시작 시 reset)
+# 색상: 라우팅 활성(cmap|ctx>0)=초록, 소스직행(src만)=노랑 경고. route%=(cmap+ctx)/total. hit%=Retrieval 선언 hit/miss율(stop-check 파싱).
+$e = [char]27; $G = "$e[32m"; $Y = "$e[33m"; $R = "$e[31m"; $D = "$e[90m"; $Z = "$e[0m"
 $statsFile = ".ctxdb/.state/claude-read-stats"
 if (Test-Path -LiteralPath $statsFile) {
     $st = @(Get-Content -LiteralPath $statsFile -ErrorAction SilentlyContinue)
     $cmapN = @($st -eq 'cmap').Count
     $ctxN = @($st -eq 'ctx').Count
     $srcN = @($st -eq 'src').Count
-    if (($cmapN + $ctxN + $srcN) -gt 0) {
-        $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) cmap $cmapN ctx $ctxN src $srcN"
+    $tot = $cmapN + $ctxN + $srcN
+    if ($tot -gt 0) {
+        $routed = $cmapN + $ctxN
+        $tcol = if ($routed -gt 0) { $G } else { $Y }
+        $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) ${tcol}cmap $cmapN ctx $ctxN src $srcN${Z}"
+        $route = [math]::Round($routed * 100.0 / $tot)
+        $rcol = if ($route -ge 50) { $G } elseif ($route -ge 25) { $Y } else { $R }
+        $out += " ${D}route${Z} ${rcol}${route}%${Z}"
     }
+}
+# hit율 (stop-check가 응답 '📡 Retrieval:' 선언의 codemap/ctxdb hit|miss를 누적). 미사용 턴은 분모 제외.
+$retFile = ".ctxdb/.state/claude-retrieval-stats"
+if (Test-Path -LiteralPath $retFile) {
+    $rs = @(Get-Content -LiteralPath $retFile -ErrorAction SilentlyContinue)
+    $ch = @($rs -eq 'cmap:hit').Count; $cm = @($rs -eq 'cmap:miss').Count
+    $xh = @($rs -eq 'ctx:hit').Count;  $xm = @($rs -eq 'ctx:miss').Count
+    $hitParts = @()
+    if (($ch + $cm) -gt 0) { $r = [math]::Round($ch * 100.0 / ($ch + $cm)); $c = if ($r -ge 70) { $G } elseif ($r -ge 40) { $Y } else { $R }; $hitParts += "c ${c}${r}%${Z}($ch/$($ch + $cm))" }
+    if (($xh + $xm) -gt 0) { $r = [math]::Round($xh * 100.0 / ($xh + $xm)); $c = if ($r -ge 70) { $G } elseif ($r -ge 40) { $Y } else { $R }; $hitParts += "x ${c}${r}%${Z}($xh/$($xh + $xm))" }
+    if ($hitParts.Count -gt 0) { $out += " ${D}hit${Z} " + ($hitParts -join " ") }
 }
 Write-Output $out

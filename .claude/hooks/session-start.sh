@@ -8,6 +8,8 @@ mkdir -p ".ctxdb/.state"
 printf 'session:%s\nturn:0\n' "$sid" > ".ctxdb/.state/turn-count"
 printf '%s\n' "$sid" > ".ctxdb/.state/claude-loaded"
 : > ".ctxdb/.state/claude-read-stats"
+: > ".ctxdb/.state/claude-retrieval-stats"
+: > ".ctxdb/.state/claude-retrieval-seen"
 
 cm=".claude/codemap/_index.md"
 idx=".ctxdb/INDEX.md"

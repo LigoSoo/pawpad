@@ -12,6 +12,40 @@ $sessionId = if ($event -and $event.session_id) { [string]$event.session_id } el
 
 $stateDir = ".ctxdb/.state"
 if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -Force | Out-Null }
+
+# retrieval hit/miss 계측: 방금 완료된 assistant 응답의 '📡 Retrieval:' 선언을 파싱해 누적 (statusline hit율 SoT).
+# 미사용(선언 없음/미사용)은 기록 안 함 -> hit율 분모에서 제외. uuid dedupe로 동일 응답 재계수 방지.
+$tp = if ($event) { [string]$event.transcript_path } else { "" }
+if ($tp -and (Test-Path -LiteralPath $tp)) {
+    try {
+        $tlines = @(Get-Content -LiteralPath $tp -Tail 40 -Encoding UTF8 -ErrorAction SilentlyContinue)
+        $lastText = ""; $lastUuid = ""
+        for ($i = $tlines.Count - 1; $i -ge 0; $i--) {
+            try { $o = $tlines[$i] | ConvertFrom-Json } catch { continue }
+            if ($o.message.role -eq 'assistant') {
+                $lastUuid = [string]$o.uuid
+                foreach ($c in @($o.message.content)) { if ($c.type -eq 'text') { $lastText += [string]$c.text + "`n" } }
+                break
+            }
+        }
+        $seenPath = Join-Path $stateDir "claude-retrieval-seen"
+        $seen = if (Test-Path $seenPath) { (Get-Content -LiteralPath $seenPath -Raw -Encoding UTF8).Trim() } else { "" }
+        if ($lastUuid -and $lastUuid -ne $seen -and $lastText) {
+            $rl = ($lastText -split "`n") | Where-Object { $_ -match 'Retrieval:' -and $_ -match 'codemap' } | Select-Object -First 1
+            if ($rl) {
+                $segs = $rl -split '\|'
+                $cseg = ($segs | Where-Object { $_ -match 'codemap' } | Select-Object -First 1)
+                $xseg = ($segs | Where-Object { $_ -match 'ctxdb' } | Select-Object -First 1)
+                $rec = @()
+                if ($cseg) { if ($cseg -match 'hit') { $rec += 'cmap:hit' } elseif ($cseg -match 'miss') { $rec += 'cmap:miss' } }
+                if ($xseg) { if ($xseg -match 'hit') { $rec += 'ctx:hit' } elseif ($xseg -match 'miss') { $rec += 'ctx:miss' } }
+                if ($rec.Count -gt 0) { Add-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value $rec -Encoding ascii }
+            }
+            Set-Content -Path $seenPath -Value $lastUuid -Encoding ascii
+        }
+    } catch {}
+}
+
 $tcPath = Join-Path $stateDir "turn-count"
 
 $turn = 0

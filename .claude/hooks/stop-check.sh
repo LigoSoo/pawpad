@@ -9,6 +9,28 @@ sid="$(printf '%s' "$raw" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\(
 
 stateDir=".ctxdb/.state"
 mkdir -p "$stateDir"
+
+# retrieval hit/miss 계측 (stop-check.ps1 파리티): 방금 완료된 assistant 응답의 '📡 Retrieval:' 선언 파싱.
+# 미사용 턴은 미기록(hit율 분모 제외). uuid dedupe로 재계수 방지. jq 없으면 graceful skip.
+if command -v jq >/dev/null 2>&1; then
+  tp="$(printf '%s' "$raw" | jq -r '.transcript_path // empty' 2>/dev/null)"
+  if [ -n "$tp" ] && [ -f "$tp" ]; then
+    last="$(tail -n 40 "$tp" 2>/dev/null | jq -rs '[ .[] | select(.message.role=="assistant") ] | last | if . then ((.uuid // "") + "\t" + ([ .message.content[]? | select(.type=="text") | .text ] | join(" "))) else "" end' 2>/dev/null)"
+    uuid="${last%%$'\t'*}"; text="${last#*$'\t'}"
+    seenP="$stateDir/claude-retrieval-seen"; seen=""; [ -f "$seenP" ] && seen="$(cat "$seenP" 2>/dev/null)"
+    if [ -n "$uuid" ] && [ "$uuid" != "$seen" ] && [ -n "$text" ]; then
+      rline="$(printf '%s' "$text" | grep -m1 'Retrieval:.*codemap' 2>/dev/null)"
+      if [ -n "$rline" ]; then
+        cseg="$(printf '%s' "$rline" | sed -n 's/.*codemap\([^|]*\).*/\1/p')"
+        xseg="$(printf '%s' "$rline" | sed -n 's/.*ctxdb\([^|]*\).*/\1/p')"
+        case "$cseg" in *hit*) printf 'cmap:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'cmap:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
+        case "$xseg" in *hit*) printf 'ctx:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'ctx:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
+      fi
+      printf '%s' "$uuid" > "$seenP"
+    fi
+  fi
+fi
+
 tcPath="$stateDir/turn-count"
 turn=0
 if [ -f "$tcPath" ]; then

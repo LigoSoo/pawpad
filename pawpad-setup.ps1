@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.41 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.41. v2.40 기반 + retrieval-source 표시 A+B: ①선언식 — CLAUDE/AGENTS Response Style에 "📡 Retrieval" 라인(탐색 응답만, codemap/ctxdb hit·miss·full-scan 사유 선언, codemap-first 행동 유도). ②계측식(Claude 전용) — PostToolUse(Read|Grep|Glob) read-track hook이 read 경로를 cmap/ctx/src 분류해 세션 카운터 누적 → statusline "📡 cmap N ctx N src N" 실측 표시(전체 소스 스캔=src 폭증 즉시 관측). 스킬 19 불변. 보고서: docs/CHANGELOG_v2.41.md.
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.42 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.42. v2.41 기반 + retrieval 계측 시각화 강화 — statusline "📡 cmap N ctx N src N"에 ①색상(라우팅 활성 cmap|ctx>0=초록 / 소스직행 src만=노랑 경고) ②route%=(cmap+ctx)/total ③hit%=codemap·ctxdb 선언 hit·miss율(stop-check가 완료 응답의 "📡 Retrieval:" 라인 파싱→claude-retrieval-stats 누적, uuid dedupe·미사용 턴 분모제외). statusline은 UI 렌더=모델 토큰 0. 스킬 19 불변. 보고서: docs/CHANGELOG_v2.42.md.
+#         이전: v2.41 retrieval-source 표시 A+B(선언식 "📡 Retrieval" 라인 + 계측식 read-track hook→statusline "cmap N ctx N src N"). 보고서: docs/CHANGELOG_v2.41.md.
 #         이전: v2.40 codemap trim-router(small-page, cap root2KB·그외4KB, lookup 알고리즘+의미매칭) + 내 보강: analyze hook 2단계 fix(-File 스크립트 통일 + stderr 재전송·exit2/0 정규화 + Unix pipefail). 보고서: docs/CHANGELOG_v2.40.md).
 #         이전: v2.38 codemap ON START 부분읽기 — MAP+HOT(조망)만 read, INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand. 코드세션 ON START codemap read ~7k→~0.5k tok 절감. 보고서: docs/CHANGELOG_v2.38.md).
 #         이전: v2.36 통합 기획 뷰어(데이터-구동, no-backend) — 범용 spec-viewer.html(File System Access API)가 고정명 외부 JSON(src/viewer/{prd,fts,userflow,wire}.json)을 폴더 1회 선택 후 자동 로드·편집·제자리 저장·재로드. 신규 스킬 viewer-apply(19→20) + mockup viewer 모드. 보고서: docs/CHANGELOG_v2.36.md).
@@ -54,7 +55,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.41"
+$ver = "2.42"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -1438,6 +1439,8 @@ if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -
 Set-Content -Path (Join-Path $stateDir "turn-count") -Value @("session:$sessionId", "turn:0") -Encoding ascii
 Set-Content -Path (Join-Path $stateDir "claude-loaded") -Value @($sessionId) -Encoding UTF8
 Set-Content -Path (Join-Path $stateDir "claude-read-stats") -Value @() -Encoding ascii
+Set-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value @() -Encoding ascii
+Set-Content -Path (Join-Path $stateDir "claude-retrieval-seen") -Value @() -Encoding ascii
 
 function Test-CodemapInject {
     $cfg = ".claude/pawpad-config.json"
@@ -1502,6 +1505,40 @@ $sessionId = if ($event -and $event.session_id) { [string]$event.session_id } el
 
 $stateDir = ".ctxdb/.state"
 if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -Force | Out-Null }
+
+# retrieval hit/miss 계측: 방금 완료된 assistant 응답의 '📡 Retrieval:' 선언을 파싱해 누적 (statusline hit율 SoT).
+# 미사용(선언 없음/미사용)은 기록 안 함 -> hit율 분모에서 제외. uuid dedupe로 동일 응답 재계수 방지.
+$tp = if ($event) { [string]$event.transcript_path } else { "" }
+if ($tp -and (Test-Path -LiteralPath $tp)) {
+    try {
+        $tlines = @(Get-Content -LiteralPath $tp -Tail 40 -Encoding UTF8 -ErrorAction SilentlyContinue)
+        $lastText = ""; $lastUuid = ""
+        for ($i = $tlines.Count - 1; $i -ge 0; $i--) {
+            try { $o = $tlines[$i] | ConvertFrom-Json } catch { continue }
+            if ($o.message.role -eq 'assistant') {
+                $lastUuid = [string]$o.uuid
+                foreach ($c in @($o.message.content)) { if ($c.type -eq 'text') { $lastText += [string]$c.text + "`n" } }
+                break
+            }
+        }
+        $seenPath = Join-Path $stateDir "claude-retrieval-seen"
+        $seen = if (Test-Path $seenPath) { (Get-Content -LiteralPath $seenPath -Raw -Encoding UTF8).Trim() } else { "" }
+        if ($lastUuid -and $lastUuid -ne $seen -and $lastText) {
+            $rl = ($lastText -split "`n") | Where-Object { $_ -match 'Retrieval:' -and $_ -match 'codemap' } | Select-Object -First 1
+            if ($rl) {
+                $segs = $rl -split '\|'
+                $cseg = ($segs | Where-Object { $_ -match 'codemap' } | Select-Object -First 1)
+                $xseg = ($segs | Where-Object { $_ -match 'ctxdb' } | Select-Object -First 1)
+                $rec = @()
+                if ($cseg) { if ($cseg -match 'hit') { $rec += 'cmap:hit' } elseif ($cseg -match 'miss') { $rec += 'cmap:miss' } }
+                if ($xseg) { if ($xseg -match 'hit') { $rec += 'ctx:hit' } elseif ($xseg -match 'miss') { $rec += 'ctx:miss' } }
+                if ($rec.Count -gt 0) { Add-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value $rec -Encoding ascii }
+            }
+            Set-Content -Path $seenPath -Value $lastUuid -Encoding ascii
+        }
+    } catch {}
+}
+
 $tcPath = Join-Path $stateDir "turn-count"
 
 $turn = 0
@@ -1830,6 +1867,8 @@ mkdir -p ".ctxdb/.state"
 printf 'session:%s\nturn:0\n' "$sid" > ".ctxdb/.state/turn-count"
 printf '%s\n' "$sid" > ".ctxdb/.state/claude-loaded"
 : > ".ctxdb/.state/claude-read-stats"
+: > ".ctxdb/.state/claude-retrieval-stats"
+: > ".ctxdb/.state/claude-retrieval-seen"
 
 cm=".claude/codemap/_index.md"
 idx=".ctxdb/INDEX.md"
@@ -1885,6 +1924,28 @@ sid="$(printf '%s' "$raw" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\(
 
 stateDir=".ctxdb/.state"
 mkdir -p "$stateDir"
+
+# retrieval hit/miss 계측 (stop-check.ps1 파리티): 방금 완료된 assistant 응답의 '📡 Retrieval:' 선언 파싱.
+# 미사용 턴은 미기록(hit율 분모 제외). uuid dedupe로 재계수 방지. jq 없으면 graceful skip.
+if command -v jq >/dev/null 2>&1; then
+  tp="$(printf '%s' "$raw" | jq -r '.transcript_path // empty' 2>/dev/null)"
+  if [ -n "$tp" ] && [ -f "$tp" ]; then
+    last="$(tail -n 40 "$tp" 2>/dev/null | jq -rs '[ .[] | select(.message.role=="assistant") ] | last | if . then ((.uuid // "") + "\t" + ([ .message.content[]? | select(.type=="text") | .text ] | join(" "))) else "" end' 2>/dev/null)"
+    uuid="${last%%$'\t'*}"; text="${last#*$'\t'}"
+    seenP="$stateDir/claude-retrieval-seen"; seen=""; [ -f "$seenP" ] && seen="$(cat "$seenP" 2>/dev/null)"
+    if [ -n "$uuid" ] && [ "$uuid" != "$seen" ] && [ -n "$text" ]; then
+      rline="$(printf '%s' "$text" | grep -m1 'Retrieval:.*codemap' 2>/dev/null)"
+      if [ -n "$rline" ]; then
+        cseg="$(printf '%s' "$rline" | sed -n 's/.*codemap\([^|]*\).*/\1/p')"
+        xseg="$(printf '%s' "$rline" | sed -n 's/.*ctxdb\([^|]*\).*/\1/p')"
+        case "$cseg" in *hit*) printf 'cmap:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'cmap:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
+        case "$xseg" in *hit*) printf 'ctx:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'ctx:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
+      fi
+      printf '%s' "$uuid" > "$seenP"
+    fi
+  fi
+fi
+
 tcPath="$stateDir/turn-count"
 turn=0
 if [ -f "$tcPath" ]; then
@@ -2023,15 +2084,34 @@ if ($limit -ge 1000000) {
 $out = "ctx $pct% (${usedK}k/$limitLabel)"
 if ($model) { $out += " | $model" }
 # retrieval 계측 표시 (read-track hook 누적: cmap=.claude/codemap, ctx=.ctxdb, src=그 외. 세션 시작 시 reset)
+# 색상: 라우팅 활성(cmap|ctx>0)=초록, 소스직행(src만)=노랑 경고. route%=(cmap+ctx)/total. hit%=Retrieval 선언 hit/miss율(stop-check 파싱).
+$e = [char]27; $G = "$e[32m"; $Y = "$e[33m"; $R = "$e[31m"; $D = "$e[90m"; $Z = "$e[0m"
 $statsFile = ".ctxdb/.state/claude-read-stats"
 if (Test-Path -LiteralPath $statsFile) {
     $st = @(Get-Content -LiteralPath $statsFile -ErrorAction SilentlyContinue)
     $cmapN = @($st -eq 'cmap').Count
     $ctxN = @($st -eq 'ctx').Count
     $srcN = @($st -eq 'src').Count
-    if (($cmapN + $ctxN + $srcN) -gt 0) {
-        $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) cmap $cmapN ctx $ctxN src $srcN"
+    $tot = $cmapN + $ctxN + $srcN
+    if ($tot -gt 0) {
+        $routed = $cmapN + $ctxN
+        $tcol = if ($routed -gt 0) { $G } else { $Y }
+        $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) ${tcol}cmap $cmapN ctx $ctxN src $srcN${Z}"
+        $route = [math]::Round($routed * 100.0 / $tot)
+        $rcol = if ($route -ge 50) { $G } elseif ($route -ge 25) { $Y } else { $R }
+        $out += " ${D}route${Z} ${rcol}${route}%${Z}"
     }
+}
+# hit율 (stop-check가 응답 '📡 Retrieval:' 선언의 codemap/ctxdb hit|miss를 누적). 미사용 턴은 분모 제외.
+$retFile = ".ctxdb/.state/claude-retrieval-stats"
+if (Test-Path -LiteralPath $retFile) {
+    $rs = @(Get-Content -LiteralPath $retFile -ErrorAction SilentlyContinue)
+    $ch = @($rs -eq 'cmap:hit').Count; $cm = @($rs -eq 'cmap:miss').Count
+    $xh = @($rs -eq 'ctx:hit').Count;  $xm = @($rs -eq 'ctx:miss').Count
+    $hitParts = @()
+    if (($ch + $cm) -gt 0) { $r = [math]::Round($ch * 100.0 / ($ch + $cm)); $c = if ($r -ge 70) { $G } elseif ($r -ge 40) { $Y } else { $R }; $hitParts += "c ${c}${r}%${Z}($ch/$($ch + $cm))" }
+    if (($xh + $xm) -gt 0) { $r = [math]::Round($xh * 100.0 / ($xh + $xm)); $c = if ($r -ge 70) { $G } elseif ($r -ge 40) { $Y } else { $R }; $hitParts += "x ${c}${r}%${Z}($xh/$($xh + $xm))" }
+    if ($hitParts.Count -gt 0) { $out += " ${D}hit${Z} " + ($hitParts -join " ") }
 }
 Write-Output $out
 '@
@@ -2078,13 +2158,36 @@ if [ "$limit" -ge 1000000 ]; then limitlabel="$(( limit / 1000000 ))M"; else lim
 out="ctx ${pct}% (${usedk}k/${limitlabel})"
 [ -n "$model" ] && out="$out | $model"
 # retrieval 계측 표시 (read-track hook 누적: cmap/ctx/src. 세션 시작 시 reset)
+# 색상: 라우팅 활성=초록, 소스직행(src만)=노랑. route%=(cmap+ctx)/total. hit%=Retrieval 선언 hit/miss율(stop-check 파싱).
+E=$(printf '\033'); G="${E}[32m"; Y="${E}[33m"; R="${E}[31m"; D="${E}[90m"; Z="${E}[0m"
 sf=".ctxdb/.state/claude-read-stats"
 if [ -f "$sf" ]; then
   cmapn="$(grep -c '^cmap$' "$sf" 2>/dev/null)"; ctxn="$(grep -c '^ctx$' "$sf" 2>/dev/null)"; srcn="$(grep -c '^src$' "$sf" 2>/dev/null)"
   case "$cmapn" in (''|*[!0-9]*) cmapn=0 ;; esac
   case "$ctxn" in (''|*[!0-9]*) ctxn=0 ;; esac
   case "$srcn" in (''|*[!0-9]*) srcn=0 ;; esac
-  if [ $(( cmapn + ctxn + srcn )) -gt 0 ]; then out="$out | 📡 cmap ${cmapn} ctx ${ctxn} src ${srcn}"; fi
+  tot=$(( cmapn + ctxn + srcn ))
+  if [ "$tot" -gt 0 ]; then
+    routed=$(( cmapn + ctxn ))
+    if [ "$routed" -gt 0 ]; then tcol="$G"; else tcol="$Y"; fi
+    out="$out | 📡 ${tcol}cmap ${cmapn} ctx ${ctxn} src ${srcn}${Z}"
+    route=$(( routed * 100 / tot ))
+    if [ "$route" -ge 50 ]; then rcol="$G"; elif [ "$route" -ge 25 ]; then rcol="$Y"; else rcol="$R"; fi
+    out="$out ${D}route${Z} ${rcol}${route}%${Z}"
+  fi
+fi
+# hit율 (stop-check가 응답 '📡 Retrieval:' 선언의 codemap/ctxdb hit|miss 누적). 미사용 턴은 분모 제외.
+rf=".ctxdb/.state/claude-retrieval-stats"
+if [ -f "$rf" ]; then
+  ch="$(grep -c '^cmap:hit$' "$rf" 2>/dev/null)"; cm="$(grep -c '^cmap:miss$' "$rf" 2>/dev/null)"
+  xh="$(grep -c '^ctx:hit$' "$rf" 2>/dev/null)"; xm="$(grep -c '^ctx:miss$' "$rf" 2>/dev/null)"
+  for v in ch cm xh xm; do eval "case \"\$$v\" in (''|*[!0-9]*) $v=0 ;; esac"; done
+  hit=""
+  cden=$(( ch + cm ))
+  if [ "$cden" -gt 0 ]; then r=$(( ch * 100 / cden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; hit="c ${c}${r}%${Z}(${ch}/${cden})"; fi
+  xden=$(( xh + xm ))
+  if [ "$xden" -gt 0 ]; then r=$(( xh * 100 / xden )); if [ "$r" -ge 70 ]; then c="$G"; elif [ "$r" -ge 40 ]; then c="$Y"; else c="$R"; fi; if [ -n "$hit" ]; then hit="$hit "; fi; hit="${hit}x ${c}${r}%${Z}(${xh}/${xden})"; fi
+  if [ -n "$hit" ]; then out="$out ${D}hit${Z} $hit"; fi
 fi
 printf '%s' "$out"
 '@
@@ -5933,14 +6036,16 @@ if ($failed -eq 0) {
         Write-Host "  - codemap trim-router: 대규모 codemap을 _root+keywords+features leaf로 분할(cap 2/4KB, 통째읽기 사고 봉쇄, grep 성능 불변)" -ForegroundColor Cyan
         Write-Host "  - analyze hook fix (v2.40 보강): -File 스크립트(analyze.ps1/analyze.sh) 실행 → Git Bash 디스패치 호환 + 진단 결과 stderr 재전송(exit 2/0 정규화)로 agent가 실제 분석 내용 수신" -ForegroundColor Cyan
         Write-Host "  - retrieval 표시 (v2.41): 응답 내 📡 Retrieval 선언(codemap/ctxdb hit·full-scan 사유) + statusline 📡 cmap/ctx/src 실측 카운터(read-track hook) — 전체 소스 스캔 토큰 사고 관측" -ForegroundColor Cyan
-        Write-Host "  - 상세: docs/CHANGELOG_v2.41.md" -ForegroundColor Cyan
+        Write-Host "  - retrieval 시각화 (v2.42): statusline에 색상(라우팅=초록/소스직행=노랑) + route% + hit%(codemap·ctxdb 선언 hit·miss율, stop-check 파싱) — PawPad 코어 동작 가시화, 모델 토큰 0" -ForegroundColor Cyan
+        Write-Host "  - 상세: docs/CHANGELOG_v2.42.md" -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 19 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review" -ForegroundColor Cyan
         Write-Host "  - cross-platform hooks (.ps1/.sh), statusLine, Codex adapter, -Upgrade (preserves user data)" -ForegroundColor Cyan
         Write-Host "  - codemap / codebase-map / .ctxdb context DB / security-check gate (DoD)" -ForegroundColor Cyan
         Write-Host "  - analyze hook now runs via -File script + forwards diagnostics to stderr (exit 2/0 normalized)" -ForegroundColor Cyan
-        Write-Host "  - retrieval indicator (v2.41): in-response 📡 Retrieval declaration + statusline 📡 cmap/ctx/src measured counters (read-track hook) | details: docs/CHANGELOG_v2.41.md" -ForegroundColor Cyan
+        Write-Host "  - retrieval indicator (v2.41): in-response 📡 Retrieval declaration + statusline 📡 cmap/ctx/src measured counters (read-track hook)" -ForegroundColor Cyan
+        Write-Host "  - retrieval viz (v2.42): statusline color (routed=green/src-only=yellow) + route% + hit% (codemap·ctxdb declared hit·miss rate, parsed by stop-check) — core-behavior visibility, 0 model tokens | details: docs/CHANGELOG_v2.42.md" -ForegroundColor Cyan
     }
     Write-Host ""
 } else {
