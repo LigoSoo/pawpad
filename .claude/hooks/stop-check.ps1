@@ -18,32 +18,31 @@ if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -
 $tp = if ($event) { [string]$event.transcript_path } else { "" }
 if ($tp -and (Test-Path -LiteralPath $tp)) {
     try {
-        $tlines = @(Get-Content -LiteralPath $tp -Tail 40 -Encoding UTF8 -ErrorAction SilentlyContinue)
-        $lastText = ""; $lastUuid = ""
+        $tlines = @(Get-Content -LiteralPath $tp -Tail 60 -Encoding UTF8 -ErrorAction SilentlyContinue)
+        # transcript는 한 응답을 text/thinking/tool_use 각각 별개 엔트리로 기록 -> 첫 assistant 엔트리에서 break 시
+        # thinking/tool_use라 text 놓침. 최근 window에서 유효 Retrieval 선언(중괄호 예시 제외)을 담은 가장 최근 text 엔트리를 찾음.
+        $rl = ""; $rlUuid = ""
         for ($i = $tlines.Count - 1; $i -ge 0; $i--) {
             try { $o = $tlines[$i] | ConvertFrom-Json } catch { continue }
-            if ($o.message.role -eq 'assistant') {
-                $lastUuid = [string]$o.uuid
-                foreach ($c in @($o.message.content)) { if ($c.type -eq 'text') { $lastText += [string]$c.text + "`n" } }
-                break
-            }
+            if ($o.message.role -ne 'assistant') { continue }
+            $txt = ""
+            foreach ($c in @($o.message.content)) { if ($c.type -eq 'text') { $txt += [string]$c.text + "`n" } }
+            if (-not $txt) { continue }
+            $cand = ($txt -split "`n") | Where-Object { $_ -match 'Retrieval:' -and $_ -match 'codemap' -and $_ -notmatch '\{' } | Select-Object -First 1
+            if ($cand) { $rl = $cand; $rlUuid = [string]$o.uuid; break }
         }
         $seenPath = Join-Path $stateDir "claude-retrieval-seen"
         $seen = if (Test-Path $seenPath) { (Get-Content -LiteralPath $seenPath -Raw -Encoding UTF8).Trim() } else { "" }
-        if ($lastUuid -and $lastUuid -ne $seen -and $lastText) {
-            # 실제 선언 라인만 (형식 예시 '{hit|miss}'는 중괄호 포함 -> 제외해 예시/인용 오계수 방지).
-            $rl = ($lastText -split "`n") | Where-Object { $_ -match 'Retrieval:' -and $_ -match 'codemap' -and $_ -notmatch '\{' } | Select-Object -First 1
-            if ($rl) {
-                # 고정 순서 codemap | ctxdb | src 로 위치 분해 (키워드 매칭 시 경로 내 'codemap'/'ctxdb' 부분문자열과 충돌).
-                $segs = $rl -split '\|'
-                $cseg = if ($segs.Count -ge 1) { $segs[0] } else { "" }
-                $xseg = if ($segs.Count -ge 2) { $segs[1] } else { "" }
-                $rec = @()
-                if ($cseg) { if ($cseg -match 'hit') { $rec += 'cmap:hit' } elseif ($cseg -match 'miss') { $rec += 'cmap:miss' } }
-                if ($xseg) { if ($xseg -match 'hit') { $rec += 'ctx:hit' } elseif ($xseg -match 'miss') { $rec += 'ctx:miss' } }
-                if ($rec.Count -gt 0) { Add-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value $rec -Encoding ascii }
-            }
-            Set-Content -Path $seenPath -Value $lastUuid -Encoding ascii
+        if ($rl -and $rlUuid -and $rlUuid -ne $seen) {
+            # 고정 순서 codemap | ctxdb | src 로 위치 분해 (키워드 매칭 시 경로 내 'codemap'/'ctxdb' 부분문자열과 충돌).
+            $segs = $rl -split '\|'
+            $cseg = if ($segs.Count -ge 1) { $segs[0] } else { "" }
+            $xseg = if ($segs.Count -ge 2) { $segs[1] } else { "" }
+            $rec = @()
+            if ($cseg) { if ($cseg -match 'hit') { $rec += 'cmap:hit' } elseif ($cseg -match 'miss') { $rec += 'cmap:miss' } }
+            if ($xseg) { if ($xseg -match 'hit') { $rec += 'ctx:hit' } elseif ($xseg -match 'miss') { $rec += 'ctx:miss' } }
+            if ($rec.Count -gt 0) { Add-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value $rec -Encoding ascii }
+            Set-Content -Path $seenPath -Value $rlUuid -Encoding ascii
         }
     } catch {}
 }

@@ -1511,32 +1511,31 @@ if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -
 $tp = if ($event) { [string]$event.transcript_path } else { "" }
 if ($tp -and (Test-Path -LiteralPath $tp)) {
     try {
-        $tlines = @(Get-Content -LiteralPath $tp -Tail 40 -Encoding UTF8 -ErrorAction SilentlyContinue)
-        $lastText = ""; $lastUuid = ""
+        $tlines = @(Get-Content -LiteralPath $tp -Tail 60 -Encoding UTF8 -ErrorAction SilentlyContinue)
+        # transcript는 한 응답을 text/thinking/tool_use 각각 별개 엔트리로 기록 -> 첫 assistant 엔트리에서 break 시
+        # thinking/tool_use라 text 놓침. 최근 window에서 유효 Retrieval 선언(중괄호 예시 제외)을 담은 가장 최근 text 엔트리를 찾음.
+        $rl = ""; $rlUuid = ""
         for ($i = $tlines.Count - 1; $i -ge 0; $i--) {
             try { $o = $tlines[$i] | ConvertFrom-Json } catch { continue }
-            if ($o.message.role -eq 'assistant') {
-                $lastUuid = [string]$o.uuid
-                foreach ($c in @($o.message.content)) { if ($c.type -eq 'text') { $lastText += [string]$c.text + "`n" } }
-                break
-            }
+            if ($o.message.role -ne 'assistant') { continue }
+            $txt = ""
+            foreach ($c in @($o.message.content)) { if ($c.type -eq 'text') { $txt += [string]$c.text + "`n" } }
+            if (-not $txt) { continue }
+            $cand = ($txt -split "`n") | Where-Object { $_ -match 'Retrieval:' -and $_ -match 'codemap' -and $_ -notmatch '\{' } | Select-Object -First 1
+            if ($cand) { $rl = $cand; $rlUuid = [string]$o.uuid; break }
         }
         $seenPath = Join-Path $stateDir "claude-retrieval-seen"
         $seen = if (Test-Path $seenPath) { (Get-Content -LiteralPath $seenPath -Raw -Encoding UTF8).Trim() } else { "" }
-        if ($lastUuid -and $lastUuid -ne $seen -and $lastText) {
-            # 실제 선언 라인만 (형식 예시 '{hit|miss}'는 중괄호 포함 -> 제외해 예시/인용 오계수 방지).
-            $rl = ($lastText -split "`n") | Where-Object { $_ -match 'Retrieval:' -and $_ -match 'codemap' -and $_ -notmatch '\{' } | Select-Object -First 1
-            if ($rl) {
-                # 고정 순서 codemap | ctxdb | src 로 위치 분해 (키워드 매칭 시 경로 내 'codemap'/'ctxdb' 부분문자열과 충돌).
-                $segs = $rl -split '\|'
-                $cseg = if ($segs.Count -ge 1) { $segs[0] } else { "" }
-                $xseg = if ($segs.Count -ge 2) { $segs[1] } else { "" }
-                $rec = @()
-                if ($cseg) { if ($cseg -match 'hit') { $rec += 'cmap:hit' } elseif ($cseg -match 'miss') { $rec += 'cmap:miss' } }
-                if ($xseg) { if ($xseg -match 'hit') { $rec += 'ctx:hit' } elseif ($xseg -match 'miss') { $rec += 'ctx:miss' } }
-                if ($rec.Count -gt 0) { Add-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value $rec -Encoding ascii }
-            }
-            Set-Content -Path $seenPath -Value $lastUuid -Encoding ascii
+        if ($rl -and $rlUuid -and $rlUuid -ne $seen) {
+            # 고정 순서 codemap | ctxdb | src 로 위치 분해 (키워드 매칭 시 경로 내 'codemap'/'ctxdb' 부분문자열과 충돌).
+            $segs = $rl -split '\|'
+            $cseg = if ($segs.Count -ge 1) { $segs[0] } else { "" }
+            $xseg = if ($segs.Count -ge 2) { $segs[1] } else { "" }
+            $rec = @()
+            if ($cseg) { if ($cseg -match 'hit') { $rec += 'cmap:hit' } elseif ($cseg -match 'miss') { $rec += 'cmap:miss' } }
+            if ($xseg) { if ($xseg -match 'hit') { $rec += 'ctx:hit' } elseif ($xseg -match 'miss') { $rec += 'ctx:miss' } }
+            if ($rec.Count -gt 0) { Add-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value $rec -Encoding ascii }
+            Set-Content -Path $seenPath -Value $rlUuid -Encoding ascii
         }
     } catch {}
 }
@@ -1932,19 +1931,22 @@ mkdir -p "$stateDir"
 if command -v jq >/dev/null 2>&1; then
   tp="$(printf '%s' "$raw" | jq -r '.transcript_path // empty' 2>/dev/null)"
   if [ -n "$tp" ] && [ -f "$tp" ]; then
-    last="$(tail -n 40 "$tp" 2>/dev/null | jq -rs '[ .[] | select(.message.role=="assistant") ] | last | if . then ((.uuid // "") + "\t" + ([ .message.content[]? | select(.type=="text") | .text ] | join(" "))) else "" end' 2>/dev/null)"
-    uuid="${last%%$'\t'*}"; text="${last#*$'\t'}"
+    # transcript는 응답을 text/thinking/tool_use 별개 엔트리로 기록 -> 마지막 assistant가 tool_use/thinking면 text 없음.
+    # 유효 Retrieval 선언('{}' 예시 제외)을 담은 가장 최근 assistant text 엔트리를 찾음(마지막 엔트리만 보면 놓침).
+    res="$(tail -n 60 "$tp" 2>/dev/null | jq -rs '
+      [ .[] | select(.message.role=="assistant")
+        | { uuid, line: ([ .message.content[]? | select(.type=="text") | .text ] | join("\n")
+              | split("\n")[] | select(test("Retrieval:") and test("codemap") and (test("[{]")|not))) }
+        | select(.line != null) ]
+      | last | if . == null then "" else (.uuid + "\t" + .line) end' 2>/dev/null)"
+    uuid="${res%%$'\t'*}"; rline="${res#*$'\t'}"
     seenP="$stateDir/claude-retrieval-seen"; seen=""; [ -f "$seenP" ] && seen="$(cat "$seenP" 2>/dev/null)"
-    if [ -n "$uuid" ] && [ "$uuid" != "$seen" ] && [ -n "$text" ]; then
-      # 실제 선언 라인만 (형식 예시 '{hit|miss}'는 중괄호 포함 -> grep -v '{'로 예시/인용 오계수 방지).
-      rline="$(printf '%s' "$text" | grep 'Retrieval:.*codemap' 2>/dev/null | grep -v '{' | head -1)"
-      if [ -n "$rline" ]; then
-        # 고정 순서 codemap | ctxdb | src 로 위치 분해 (greedy sed는 마지막 'codemap'=src의 "(codemap 경유)" 매칭→cmap 누락).
-        cseg="$(printf '%s' "$rline" | awk -F'|' '{print $1}')"
-        xseg="$(printf '%s' "$rline" | awk -F'|' '{print $2}')"
-        case "$cseg" in *hit*) printf 'cmap:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'cmap:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
-        case "$xseg" in *hit*) printf 'ctx:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'ctx:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
-      fi
+    if [ -n "$uuid" ] && [ "$uuid" != "$seen" ] && [ -n "$rline" ]; then
+      # 고정 순서 codemap | ctxdb | src 로 위치 분해 (greedy sed는 마지막 'codemap'=src의 "(codemap 경유)" 매칭→cmap 누락).
+      cseg="$(printf '%s' "$rline" | awk -F'|' '{print $1}')"
+      xseg="$(printf '%s' "$rline" | awk -F'|' '{print $2}')"
+      case "$cseg" in *hit*) printf 'cmap:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'cmap:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
+      case "$xseg" in *hit*) printf 'ctx:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'ctx:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
       printf '%s' "$uuid" > "$seenP"
     fi
   fi

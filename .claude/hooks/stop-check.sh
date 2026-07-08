@@ -15,19 +15,22 @@ mkdir -p "$stateDir"
 if command -v jq >/dev/null 2>&1; then
   tp="$(printf '%s' "$raw" | jq -r '.transcript_path // empty' 2>/dev/null)"
   if [ -n "$tp" ] && [ -f "$tp" ]; then
-    last="$(tail -n 40 "$tp" 2>/dev/null | jq -rs '[ .[] | select(.message.role=="assistant") ] | last | if . then ((.uuid // "") + "\t" + ([ .message.content[]? | select(.type=="text") | .text ] | join(" "))) else "" end' 2>/dev/null)"
-    uuid="${last%%$'\t'*}"; text="${last#*$'\t'}"
+    # transcript는 응답을 text/thinking/tool_use 별개 엔트리로 기록 -> 마지막 assistant가 tool_use/thinking면 text 없음.
+    # 유효 Retrieval 선언('{}' 예시 제외)을 담은 가장 최근 assistant text 엔트리를 찾음(마지막 엔트리만 보면 놓침).
+    res="$(tail -n 60 "$tp" 2>/dev/null | jq -rs '
+      [ .[] | select(.message.role=="assistant")
+        | { uuid, line: ([ .message.content[]? | select(.type=="text") | .text ] | join("\n")
+              | split("\n")[] | select(test("Retrieval:") and test("codemap") and (test("[{]")|not))) }
+        | select(.line != null) ]
+      | last | if . == null then "" else (.uuid + "\t" + .line) end' 2>/dev/null)"
+    uuid="${res%%$'\t'*}"; rline="${res#*$'\t'}"
     seenP="$stateDir/claude-retrieval-seen"; seen=""; [ -f "$seenP" ] && seen="$(cat "$seenP" 2>/dev/null)"
-    if [ -n "$uuid" ] && [ "$uuid" != "$seen" ] && [ -n "$text" ]; then
-      # 실제 선언 라인만 (형식 예시 '{hit|miss}'는 중괄호 포함 -> grep -v '{'로 예시/인용 오계수 방지).
-      rline="$(printf '%s' "$text" | grep 'Retrieval:.*codemap' 2>/dev/null | grep -v '{' | head -1)"
-      if [ -n "$rline" ]; then
-        # 고정 순서 codemap | ctxdb | src 로 위치 분해 (greedy sed는 마지막 'codemap'=src의 "(codemap 경유)" 매칭→cmap 누락).
-        cseg="$(printf '%s' "$rline" | awk -F'|' '{print $1}')"
-        xseg="$(printf '%s' "$rline" | awk -F'|' '{print $2}')"
-        case "$cseg" in *hit*) printf 'cmap:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'cmap:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
-        case "$xseg" in *hit*) printf 'ctx:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'ctx:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
-      fi
+    if [ -n "$uuid" ] && [ "$uuid" != "$seen" ] && [ -n "$rline" ]; then
+      # 고정 순서 codemap | ctxdb | src 로 위치 분해 (greedy sed는 마지막 'codemap'=src의 "(codemap 경유)" 매칭→cmap 누락).
+      cseg="$(printf '%s' "$rline" | awk -F'|' '{print $1}')"
+      xseg="$(printf '%s' "$rline" | awk -F'|' '{print $2}')"
+      case "$cseg" in *hit*) printf 'cmap:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'cmap:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
+      case "$xseg" in *hit*) printf 'ctx:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'ctx:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
       printf '%s' "$uuid" > "$seenP"
     fi
   fi
