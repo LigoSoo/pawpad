@@ -61,7 +61,7 @@
 - fix: `codemap`을 **hit/miss로 선언한 경우에만** 백스톱 면제. `미사용` 선언은 선언 누락과 동일 취급 → B2 조건에 걸린다.
 - fix(문서): CLAUDE.md·AGENTS.md(+setup 임베드 2종) 문구를 실제 강제 수단(앵커·구조·백스톱)으로 교체. AGENTS.md엔 해당 줄 자체가 없어 신규 추가.
 
-**B4 — read-track 분류 정확도**(경미, 미수정): `path` 없는 Grep/Glob은 전부 `src`로 계수. 전역 grep은 결과적으로 맞지만 `.claude/**` 겨냥 검색도 src로 오계수. 백스톱 임계가 `src ≥2`라 오탐 방향이나, 실측 병기를 도입하기 전까진 영향 경미 → 보류.
+**B4 — read-track 분류 정확도**(경미, → 사후수정#2에서 해소): `path` 없는 Grep/Glob은 전부 `src`로 계수. 전역 grep은 결과적으로 맞지만 `.claude/**` 겨냥 검색도 src로 오계수. 백스톱 임계가 `src ≥2`라 오탐 방향이나, 실측 병기(B2 watermark)를 도입한 뒤로는 분모를 직접 오염 → 해소.
 
 - 리팩터: "가장 최근 assistant text 엔트리" 스캔을 lane-close 내부에서 **hoist** → lane-close/retrieval 백스톱 공용(중복 스캔 제거).
 - 신규 state 파일: `.ctxdb/.state/claude-read-mark`, `claude-retrieval-warned`(런타임)
@@ -74,3 +74,24 @@
 - B의 완료 선언 감지는 휴리스틱 — 선언 없는 완료(무언 종료)는 미포착(C가 다음 세션서 회수). 오탐은 1회 리마인더+무시 가능으로 수용.
 - B는 이 머신처럼 org 정책이 hooks 차단이면 무효 — A(스킬)·C(resume 규율)는 훅 무관 동작.
 - C의 ③단 신호는 모델 판단 의존(spot-check 규율) — 강제는 A·B가 담당, C는 회수망.
+
+## 사후수정 #2 (버전 불변, 2026-07-09) — 다운스트림 리포트 2건
+
+발단: 다운스트림 프로젝트(todayquest)에서 `pawpad-setup.ps1 -Upgrade` 후 git이 `.sh` 훅 + 스킬 문서 24개에 "LF → CRLF 변환" 경고를 냈다는 리포트. 함께 B4 미반영도 지적.
+
+**E1 — `.gitattributes` 미배포** 🔴 (배포 경로 결함)
+v2.43 본작업에서 toolkit **자기 레포에만** `.gitattributes`(`*.sh text eol=lf`)를 추가하고, **setup이 다운스트림에 생성하도록 만들지 않았다.** 즉 결함의 원인(autocrlf=true 클론이 bash 훅을 CRLF로 체크아웃 → `\r`이 jq 인자/heredoc 종료자/shebang에 섞여 조용히 깨짐)을 진단만 해두고 배포본에는 방어를 안 넣은 상태. Windows에선 증상이 없어 다운스트림이 Mac/Linux로 클론될 때 터진다.
+- fix: `Update-Gitattributes` 신규(`pawpad-setup.ps1`, `Update-Gitignore` 옆). 비파괴 append — 파일 없으면 생성, 있으면 `*.sh … eol=lf` 또는 전역 `* text=auto … eol=lf`로 이미 강제된 경우 SKIP, 아니면 헤더 주석 1줄 + 규칙 1줄만 append(기존 항목 보존, trailing-newline 없어도 안전). git repo 아니면 SKIP.
+- 설치 단계 `stepTotal` 28→29(`.gitattributes` 단계 추가).
+
+**E2 — B4 해소**: `path` 없는 Grep/Glob의 경로형 필드 폴백.
+`read-track.{ps1,sh}`가 `file_path` → `path`까지만 보고 없으면 무조건 `src`. 그래서 `Grep(glob=".claude/**")`, `Glob(".claude/hooks/*.sh")`, `Glob(".claude/codemap/**")`가 전부 src로 계수됐다 — B2 watermark 백스톱이 이 카운트를 분모로 쓰므로 오탐 유발 경로.
+- fix: tool별 경로형 필드로 폴백 — **Glob은 `pattern`**(경로 glob), **Grep은 `glob`**(경로 필터). **Grep의 `pattern`은 내용 regex이지 경로가 아니므로 제외**(`.claude/codemap`을 검색어로 쓴 Grep이 cmap으로 오분류되는 역오탐 차단).
+- 폴백조차 없는 무범위 Grep/Glob은 실제로 전역 탐색이므로 `src` 유지 — 백스톱 의도와 일치.
+
+- 표면: `pawpad-setup.ps1`(`Update-Gitattributes` + 호출 + stepTotal + read-track 임베드 2종), `.claude/hooks/read-track.{ps1,sh}`
+- 검증: PSParser 0(setup). **read-track 회귀 14/14 ps1·sh 동일**(Read cmap/src/ctx/.claude제외, Grep path=cmap/src, B4 4종: glob=`.claude/**`→미집계·Glob `.claude/hooks/*.sh`→미집계·Glob `.claude/codemap/**`→cmap·Glob `**/.claude/**`→미집계, 무범위 Grep→src, `Grep(pattern=".claude/codemap")`→src(역오탐 차단)). **pre-fix 베이스라인(HEAD)으로 동일 스위트 실행 → B4 4건 정확히 FAIL 재현**(10/14). emitted==live 2/2. **`Update-Gitattributes` AST 추출 실행 6/6**(생성·비파괴 append·중복 SKIP·전역 text=auto SKIP·non-git SKIP·2회 실행 멱등).
+
+### 한계
+- `Set-Content -Encoding UTF8`(PS 5.1)은 BOM을 붙인다. `.gitattributes` 첫 줄이 주석이라 git 파싱에 무해하나, 사용자가 첫 줄에 패턴을 추가하며 BOM 위치를 바꾸면 이론상 취약(`.gitignore` 경로와 동일 관행).
+- 무범위 Grep(예: `Grep "sym"` repo-wide)은 여전히 src 1건 — 실제 탐색 규모와 무관하게 1로 계수.

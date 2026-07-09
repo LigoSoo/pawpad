@@ -138,7 +138,7 @@ function Show-PawBanner {
 }
 
 # 진행 단계: Step-Begin 호출 수와 $stepTotal 일치 유지 (불일치 시 % 표시만 어긋남, 동작 무관)
-$script:stepTotal = 28
+$script:stepTotal = 29
 $script:stepIndex = 0
 $script:stepResults = @()
 $script:currentStep = $null
@@ -845,6 +845,51 @@ function Update-Gitignore {
     }
 }
 
+function Update-Gitattributes {
+    # .sh 훅(stop-check/statusline/read-track/session-start)은 bash가 실행한다.
+    # core.autocrlf=true 환경에서 클론하면 CRLF로 체크아웃되고, bash는 줄 끝 \r을 명령/변수의
+    # 일부로 읽어 조용히 깨진다(jq 인자, heredoc 종료자, shebang). 개인 git 설정에 의존하지 않도록
+    # 레포에 eol=lf를 못박는다. 비파괴: 기존 .gitattributes는 보존하고 항목이 없을 때만 append.
+    if (-not (Test-Path ".git")) {
+        Write-InstallLog "  SKIP    .gitattributes (git repo 아님)" DarkGray
+        $script:skipped++
+        return
+    }
+    $gaPath = ".gitattributes"
+    $shRule = "*.sh text eol=lf"
+    $header = "# PawPad: hook 스크립트는 bash가 실행 - CRLF 체크아웃 시 \r이 명령에 섞여 깨진다."
+    if (Test-Path $gaPath) {
+        $existing = Get-Content $gaPath -Raw -ErrorAction SilentlyContinue
+        if (-not $existing) { $existing = "" }
+        # 이미 *.sh 또는 전역 text=auto 로 eol=lf가 강제되어 있으면 중복 추가 금지
+        $covered = ($existing -match '(?m)^\s*\*\.sh\b.*\beol=lf\b') -or
+                   ($existing -match '(?m)^\s*\*\s+text\s*=\s*auto\b.*\beol=lf\b')
+        if ($covered) {
+            Write-InstallLog "  SKIP    .gitattributes (*.sh eol=lf already enforced)" DarkGray
+            $script:skipped++
+            return
+        }
+        $prefix = if ($existing.EndsWith("`n")) { "" } else { "`n" }
+        try {
+            Add-Content -Path $gaPath -Value ($prefix + "`n$header`n$shRule`n") -Encoding UTF8 -NoNewline -ErrorAction Stop
+            Write-InstallLog "  UPDATED .gitattributes (*.sh eol=lf appended)" Yellow
+            $script:created++
+        } catch {
+            Write-InstallLog "  FAILED  .gitattributes ($($_.Exception.Message))" Red -Always
+            $script:failed++
+        }
+    } else {
+        try {
+            Set-Content -Path $gaPath -Value "$header`n$shRule" -Encoding UTF8 -ErrorAction Stop
+            Write-InstallLog "  CREATED .gitattributes" Green
+            $script:created++
+        } catch {
+            Write-InstallLog "  FAILED  .gitattributes ($($_.Exception.Message))" Red -Always
+            $script:failed++
+        }
+    }
+}
+
 Write-Host ""
 Write-Host "Hybrid Harness (Claude Code <-> Codex)" -ForegroundColor Yellow
 Write-Host "Project: $projectName" -ForegroundColor Yellow
@@ -1376,6 +1421,8 @@ exit 0
 #       statusline이 "📡 cmap N ctx N src N"으로 실측 표시 → codemap을 안 타고 전체 소스를 뒤지는
 #       행동(src 폭증)을 자기보고가 아닌 계측으로 관측. 관측 전용: 항상 exit 0, agent 피드백 없음(exit 2 금지).
 # ctx는 agent 직접 read 기준(UserPromptSubmit hook 자동주입 로드는 미포함). toolkit 내부(.claude/.agents/.codex) read는 잡음 → 미집계.
+# v2.43 B4: path 없는 Grep/Glob도 경로형 필드(Glob.pattern / Grep.glob)로 분류 — `.claude/**` 겨냥 검색이 src로 오계수되던 경로 차단.
+# 폴백조차 없는 무범위 Grep/Glob은 실제로 전역 탐색이므로 src 유지(백스톱 의도와 일치).
 Write-FileContent ".claude\hooks\read-track.ps1" @'
 # PostToolUse(Read|Grep|Glob) - retrieval 계측. 분류: cmap / ctx / src. 관측 전용(항상 exit 0).
 $ErrorActionPreference = 'SilentlyContinue'
@@ -1384,10 +1431,15 @@ try {
     if (-not $raw.Trim()) { exit 0 }
     $ev = $raw | ConvertFrom-Json
     $ti = $ev.tool_input
+    $tn = if ($ev.tool_name) { [string]$ev.tool_name } else { '' }
     $target = ''
     if ($ti) {
         if ($ti.file_path) { $target = [string]$ti.file_path }
         elseif ($ti.path) { $target = [string]$ti.path }
+        # path 없는 검색은 tool별 경로형 필드로 폴백 (v2.43 B4): Glob의 pattern은 경로 glob,
+        # Grep의 glob은 경로 필터. Grep의 pattern은 내용 regex라 경로가 아니므로 제외.
+        elseif ($tn -eq 'Glob' -and $ti.pattern) { $target = [string]$ti.pattern }
+        elseif ($tn -eq 'Grep' -and $ti.glob) { $target = [string]$ti.glob }
     }
     $target = $target -replace '\\', '/'
     $kind = 'src'
@@ -1405,8 +1457,17 @@ Write-FileContent ".claude\hooks\read-track.sh" -Unix @'
 #!/bin/bash
 # PostToolUse(Read|Grep|Glob) - retrieval 계측 (read-track.ps1 bash 포트). 관측 전용(항상 exit 0).
 raw="$(cat)"
+tool="$(printf '%s' "$raw" | sed -n 's/.*"tool_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
 target="$(printf '%s' "$raw" | sed -n 's/.*"file_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
 [ -z "$target" ] && target="$(printf '%s' "$raw" | sed -n 's/.*"path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+# path 없는 검색은 tool별 경로형 필드로 폴백 (v2.43 B4): Glob의 pattern은 경로 glob,
+# Grep의 glob은 경로 필터. Grep의 pattern은 내용 regex라 경로가 아니므로 제외.
+if [ -z "$target" ] && [ "$tool" = "Glob" ]; then
+  target="$(printf '%s' "$raw" | sed -n 's/.*"pattern"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+fi
+if [ -z "$target" ] && [ "$tool" = "Grep" ]; then
+  target="$(printf '%s' "$raw" | sed -n 's/.*"glob"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+fi
 # 경계 정규화: 앞뒤 / 부착 → 디렉토리 자체 경로(트레일링 / 없음)·유사 이름(myproject.claude) 오분류 방지
 target="/$target/"
 case "$target" in
@@ -6191,6 +6252,10 @@ if ($Upgrade -and $mergePending.Count -gt 0) {
 # ── .gitignore 자동 갱신 ──────────────────────────────────────────────────────
 Step-Begin ".gitignore"
 Update-Gitignore
+
+# ── .gitattributes 자동 갱신 (.sh 훅 LF 고정) ─────────────────────────────────
+Step-Begin ".gitattributes"
+Update-Gitattributes
 
 # ── Bundle prune (선택 번들 외 제거 + 정합, v2.39) ───────────────────────────────
 # 전체 설치 후 미선택 번들 정리(가산적). docs/config/manifest dangling 0 유지.
