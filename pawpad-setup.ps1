@@ -1,5 +1,5 @@
 ﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.43 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.43. v2.42 기반 + task-done 종결 게이트 3종(A+B+C) — ON TASK DONE 미실행→stale lane→resume이 완료 작업 재제안하는 사고 계층 방어. A: 신규 task-done 스킬(19→20, Core): ON TASK DONE 체크리스트 강제 실행("작업/이슈 종료" 자연어 라우팅, lane→done 이관+_wip 제거+_meta+tasklog+codemap+commit 전항). B: stop-check lane-close 백스톱: 완료 선언 감지+Active Lanes 잔존 시 decision:block 1회(uuid dedupe, 'task-done' 언급 제거 후 매칭). C: resume Lane 신뢰성 게이트: ON START 3단 신호(_meta DONE+lane 잔존=확정 누락 / next steps 전항 체크=완료 의심 / stale+실코드 대조=사용자 확인), 다음 작업 제안 전 실상태 1회 대조. 보고서: docs/CHANGELOG_v2.43.md.
+# STATUS: FROZEN (v2.43. v2.42 기반 + task-done 종결 게이트 3종(A+B+C) — ON TASK DONE 미실행→stale lane→resume이 완료 작업 재제안하는 사고 계층 방어. A: 신규 task-done 스킬(19→20, Core): ON TASK DONE 체크리스트 강제 실행("작업/이슈 종료" 자연어 라우팅, lane→done 이관+_wip 제거+_meta+tasklog+codemap+commit 전항). B: stop-check lane-close 백스톱: 완료 선언 감지+Active Lanes 잔존 시 decision:block 1회(uuid dedupe, 'task-done' 언급 제거 후 매칭). C: resume Lane 신뢰성 게이트: ON START 3단 신호(_meta DONE+lane 잔존=확정 누락 / next steps 전항 체크=완료 의심 / stale+실코드 대조=사용자 확인), 다음 작업 제안 전 실상태 1회 대조. D(추가): retrieval 계측 결함 4종 — ①선언 파서 앵커+3세그먼트 구조 검증(훅 논하는 산문이 cmap:hit로 오탐돼 지표가 거짓이 되던 경로 차단) ②read-track 실측 watermark 대조로 "cmap 0 + src>=2 + hit/miss 선언 없음"=미선언 full-scan 시 decision:block 1회(uuid dedupe) + statusline 분모0+src>0 시 "codemap 미선언" 라벨 ③'미사용' 허위 선언도 누락과 동일 취급 ④stop_hook_active는 판정만 생략하고 계측은 수행(교정 응답 선언 파싱 보장). 보고서: docs/CHANGELOG_v2.43.md.
 #         이전: v2.42 retrieval routing 가시화 — statusline "📡 codemap N% · routed/full-scan · src N"(선언 기반 경유율+백스톱), stop-check가 완료 응답 "📡 Retrieval:" 라인 파싱→claude-retrieval-stats(uuid dedupe·미사용 제외·'{}' 예시 제외·고정순서 위치분해). 보고서: docs/CHANGELOG_v2.42.md.
 #         이전: v2.41 retrieval-source 표시 A+B(선언식 "📡 Retrieval" 라인 + 계측식 read-track hook→statusline "cmap N ctx N src N"). 보고서: docs/CHANGELOG_v2.41.md.
 #         이전: v2.40 codemap trim-router(small-page, cap root2KB·그외4KB, lookup 알고리즘+의미매칭) + 내 보강: analyze hook 2단계 fix(-File 스크립트 통일 + stderr 재전송·exit2/0 정규화 + Unix pipefail). 보고서: docs/CHANGELOG_v2.40.md).
@@ -1042,7 +1042,7 @@ caveman 항상 포함. off 시 라인에 ``normal mode (caveman 압축 off)``로
 형식: ``📡 Retrieval: codemap {hit(경로)|miss|미사용} | ctxdb {hit(파일)|miss|미사용} | src {read N (codemap 경유)|full-scan N (사유)}``
 - 소스 탐색 전 codemap lookup 의무. miss여도 곧장 full-scan 금지 — keywords/INDEX 의미매칭 재시도 후에도 miss면 **사유와 함께 full-scan 선언**.
 - 코드/컨텍스트 탐색이 없는 응답(순수 문답·이미 아는 파일 재편집)은 라인 생략.
-- 허위 선언 금지: statusline ``📡 cmap/ctx/src`` 실측 카운터(PostToolUse read-track hook)와 대조된다.
+- 허위 선언·누락 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. ``codemap lookup 0 + src 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')``이면 Stop hook이 decision:block으로 선언을 1회 요구(retrieval 백스톱). 선언 라인은 **라인 선두 앵커 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. statusline ``📡 codemap N% · routed/full-scan · src N``의 경유율은 이 선언 집계 기반 — 선언을 빼먹으면 분모가 비어 ``codemap 미선언``(src를 읽은 경우) 또는 ``codemap –``로 렌더된다.
 "@
 Write-FileContent "CLAUDE.md" $tmplClaudeMd
 
@@ -1184,6 +1184,7 @@ ACTIVE EVERY RESPONSE.
 형식: ``📡 Retrieval: codemap {hit(경로)|miss|미사용} | ctxdb {hit(파일)|miss|미사용} | src {read N (codemap 경유)|full-scan N (사유)}``
 - 소스 탐색 전 codemap lookup 의무. miss여도 곧장 full-scan 금지 — keywords/INDEX 의미매칭 재시도 후에도 miss면 **사유와 함께 full-scan 선언**.
 - 코드/컨텍스트 탐색이 없는 응답(순수 문답·이미 아는 파일 재편집)은 라인 생략.
+- 허위 선언·누락 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. ``codemap lookup 0 + src 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')``이면 Stop hook이 decision:block으로 선언을 1회 요구(retrieval 백스톱). 선언 라인은 **라인 선두 앵커 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. statusline ``📡 codemap N% · routed/full-scan · src N``의 경유율은 이 선언 집계 기반 — 선언을 빼먹으면 분모가 비어 ``codemap 미선언``(src를 읽은 경우) 또는 ``codemap –``로 렌더된다.
 
 ## Checkpoint (매 응답 종료 전 확인 - hooks 대체)
 자세한 운영은 .claude/HYBRID.md 참조.
@@ -1500,12 +1501,31 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 $raw = (New-Object System.IO.StreamReader([Console]::OpenStandardInput(), (New-Object System.Text.UTF8Encoding $false))).ReadToEnd()
 $event = $null
 try { $event = $raw | ConvertFrom-Json } catch {}
-if ($event.stop_hook_active -eq $true) { exit 0 }   # block 재진입 -> 루프 방지
+# block 재진입 가드. exit 0 즉시반환 아님 — 교정 응답의 Retrieval 선언을 파싱/계측은 해야 하므로
+# (여기서 끊으면 백스톱이 요구한 선언이 영영 stats에 안 들어감), 판정(block)과 turn 증가만 생략한다.
+$hookActive = ($event.stop_hook_active -eq $true)
 
 $sessionId = if ($event -and $event.session_id) { [string]$event.session_id } else { "manual" }
 
 $stateDir = ".ctxdb/.state"
 if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -Force | Out-Null }
+
+# read-track(PostToolUse) 실측 델타: 직전 stop 이후 이번 턴에 쌓인 kind만 집계 (watermark 방식).
+# session-start가 read-stats를 비우므로 mark에 session을 묶어 stale mark를 0으로 처리.
+$rsPath = Join-Path $stateDir "claude-read-stats"
+$mkPath = Join-Path $stateDir "claude-read-mark"
+$rsAll = @()
+if (Test-Path $rsPath) { $rsAll = @(Get-Content -LiteralPath $rsPath -Encoding UTF8 -ErrorAction SilentlyContinue) }
+$mark = 0
+if (Test-Path $mkPath) {
+    $mk = @(Get-Content -LiteralPath $mkPath -Encoding UTF8 -ErrorAction SilentlyContinue)
+    if ($mk.Count -ge 2 -and $mk[0] -eq "session:$sessionId" -and $mk[1] -match "^read:(\d+)$") { $mark = [int]$Matches[1] }
+}
+if ($mark -gt $rsAll.Count) { $mark = 0 }   # 외부 truncate 방어
+$delta = if ($rsAll.Count -gt $mark) { @($rsAll[$mark..($rsAll.Count - 1)]) } else { @() }
+$srcDelta = @($delta -eq 'src').Count
+$cmapDelta = @($delta -eq 'cmap').Count
+Set-Content -Path $mkPath -Value @("session:$sessionId", "read:$($rsAll.Count)") -Encoding ascii
 
 # retrieval hit/miss 계측: 방금 완료된 assistant 응답의 '📡 Retrieval:' 선언을 파싱해 누적 (statusline hit율 SoT).
 # 미사용(선언 없음/미사용)은 기록 안 함 -> hit율 분모에서 제외. uuid dedupe로 동일 응답 재계수 방지.
@@ -1522,7 +1542,10 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
             $txt = ""
             foreach ($c in @($o.message.content)) { if ($c.type -eq 'text') { $txt += [string]$c.text + "`n" } }
             if (-not $txt) { continue }
-            $cand = ($txt -split "`n") | Where-Object { $_ -match 'Retrieval:' -and $_ -match 'codemap' -and $_ -notmatch '\{' } | Select-Object -First 1
+            # 앵커 필수: 'Retrieval:'/'codemap'을 라인 어디서나 찾으면 훅 자신을 논하는 산문("stop-check이 Retrieval: 라인에서 codemap hit을 파싱")이
+            # 선언으로 오탐돼 지표가 거짓이 된다(훅 디버깅 세션마다 재발). 선두 앵커 + 백틱/중괄호 라인(인용·예시) 배제.
+            # 이모지는 \uXXXX 서로게이트 이스케이프(.NET regex) — 무-BOM 재기록 시 리터럴 깨짐 방어
+            $cand = ($txt -split "`n") | Where-Object { $_ -match '^\s*(?:\uD83D\uDCE1\s*)?Retrieval:\s*codemap\s' -and $_ -notmatch '[`{]' } | Select-Object -First 1
             if ($cand) { $rl = $cand; $rlUuid = [string]$o.uuid; break }
         }
         $seenPath = Join-Path $stateDir "claude-retrieval-seen"
@@ -1530,50 +1553,77 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
         $seen = if (Test-Path $seenPath) { "$(Get-Content -LiteralPath $seenPath -Raw -Encoding UTF8)".Trim() } else { "" }
         if ($rl -and $rlUuid -and $rlUuid -ne $seen) {
             # 고정 순서 codemap | ctxdb | src 로 위치 분해 (키워드 매칭 시 경로 내 'codemap'/'ctxdb' 부분문자열과 충돌).
+            # 구조 검증(3세그먼트 + 각 세그먼트 키워드)까지 통과해야 선언으로 인정 — 앵커만으론 부분 인용이 샌다.
             $segs = $rl -split '\|'
-            $cseg = if ($segs.Count -ge 1) { $segs[0] } else { "" }
-            $xseg = if ($segs.Count -ge 2) { $segs[1] } else { "" }
-            $rec = @()
-            if ($cseg) { if ($cseg -match 'hit') { $rec += 'cmap:hit' } elseif ($cseg -match 'miss') { $rec += 'cmap:miss' } }
-            if ($xseg) { if ($xseg -match 'hit') { $rec += 'ctx:hit' } elseif ($xseg -match 'miss') { $rec += 'ctx:miss' } }
-            if ($rec.Count -gt 0) { Add-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value $rec -Encoding ascii }
-            Set-Content -Path $seenPath -Value $rlUuid -Encoding ascii
-        }
-    } catch {}
-    # lane-close 백스톱 (v2.43): 마지막 assistant 응답이 작업 완료/종료를 선언했는데 _wip Active Lanes가 잔존하면
-    # task-done 실행 리마인더 1회 (uuid dedupe). ON TASK DONE 미실행 -> stale lane -> resume 재제안 사고 방지.
-    try {
-        $wipP = ".claude/pawpad/_wip.md"
-        if (Test-Path $wipP) {
-            $wipRaw = "$(Get-Content -LiteralPath $wipP -Raw -Encoding UTF8)"
-            $al = [regex]::Match($wipRaw, '(?sm)^## Active Lanes\s*(.*?)(?=^## |\z)')
-            # stock _wip.md는 Active Lanes 섹션 안에 예시 블록('- feature-a:' 등)을 둔다 -> 예시 이후 절단 후 판정 (오탐 감쇄)
-            $alBody = if ($al.Success) { ([regex]::Split($al.Groups[1].Value, '(?m)^\s*(?:예시|[Ee]xample)'))[0] } else { "" }
-            if ($al.Success -and ($alBody -match '(?m)^\s*-\s+\S')) {
-                # retrieval 탐색과 별개로 "가장 최근 assistant text 엔트리"를 찾음 (thinking/tool_use skip)
-                $dTxt = ""; $dUuid = ""
-                for ($i = $tlines.Count - 1; $i -ge 0; $i--) {
-                    try { $o2 = $tlines[$i] | ConvertFrom-Json } catch { continue }
-                    if ($o2.message.role -ne 'assistant') { continue }
-                    $t2 = ""
-                    foreach ($c2 in @($o2.message.content)) { if ($c2.type -eq 'text') { $t2 += [string]$c2.text + "`n" } }
-                    if ($t2) { $dTxt = $t2; $dUuid = [string]$o2.uuid; break }
-                }
-                # 스킬명 'task-done' 언급 자체는 완료 선언 아님 -> 제거 후 매칭 (오탐 감쇄)
-                # 한글은 \uXXXX 이스케이프 (무-BOM .ps1을 PS5.1이 cp949로 읽어 한글 리터럴 깨짐): 작업|이슈|태스크 ... 완료|종료|마무리
-                $dTxt = $dTxt -replace 'task-done', ''
-                if ($dUuid -and $dTxt -match ('(\' + 'uC791\' + 'uC5C5|\' + 'uC774\' + 'uC288|\' + 'uD0DC\' + 'uC2A4\' + 'uD06C|task|lane)[^\r\n]{0,10}(\' + 'uC644\' + 'uB8CC|\' + 'uC885\' + 'uB8CC|\' + 'uB9C8\' + 'uBB34\' + 'uB9AC|done)')) {
-                    $tdP = Join-Path $stateDir "claude-taskdone-warned"
-                    $tdSeen = if (Test-Path $tdP) { "$(Get-Content -LiteralPath $tdP -Raw -Encoding UTF8)".Trim() } else { "" }
-                    if ($dUuid -ne $tdSeen) {
-                        Set-Content -Path $tdP -Value $dUuid -Encoding ascii
-                        $script:laneClose = $true
-                    }
-                }
+            if ($segs.Count -ge 3 -and $segs[1] -match 'ctxdb' -and $segs[2] -match 'src') {
+                $cseg = $segs[0]
+                $xseg = $segs[1]
+                $rec = @()
+                if ($cseg -match 'hit') { $rec += 'cmap:hit' } elseif ($cseg -match 'miss') { $rec += 'cmap:miss' }
+                if ($xseg -match 'hit') { $rec += 'ctx:hit' } elseif ($xseg -match 'miss') { $rec += 'ctx:miss' }
+                if ($rec.Count -gt 0) { Add-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value $rec -Encoding ascii }
+                Set-Content -Path $seenPath -Value $rlUuid -Encoding ascii
+                # codemap을 hit/miss로 선언한 경우에만 백스톱 면제. '미사용' 선언은 면제 아님 ->
+                # src를 여러 개 읽고 '미사용'이라 적는 허위 선언이 조용히 통과하던 구멍(분모 제외)을 막는다.
+                if ($cseg -match 'hit' -or $cseg -match 'miss') { $script:freshDecl = $true }
             }
         }
     } catch {}
+    # 가장 최근 assistant text 엔트리 (thinking/tool_use skip). lane-close + retrieval 백스톱 공용.
+    $dTxt = ""; $dUuid = ""
+    try {
+        for ($i = $tlines.Count - 1; $i -ge 0; $i--) {
+            try { $o2 = $tlines[$i] | ConvertFrom-Json } catch { continue }
+            if ($o2.message.role -ne 'assistant') { continue }
+            $t2 = ""
+            foreach ($c2 in @($o2.message.content)) { if ($c2.type -eq 'text') { $t2 += [string]$c2.text + "`n" } }
+            if ($t2) { $dTxt = $t2; $dUuid = [string]$o2.uuid; break }
+        }
+    } catch {}
+
+    if (-not $hookActive) {
+        # lane-close 백스톱 (v2.43): 마지막 assistant 응답이 작업 완료/종료를 선언했는데 _wip Active Lanes가 잔존하면
+        # task-done 실행 리마인더 1회 (uuid dedupe). ON TASK DONE 미실행 -> stale lane -> resume 재제안 사고 방지.
+        try {
+            $wipP = ".claude/pawpad/_wip.md"
+            if (Test-Path $wipP) {
+                $wipRaw = "$(Get-Content -LiteralPath $wipP -Raw -Encoding UTF8)"
+                $al = [regex]::Match($wipRaw, '(?sm)^## Active Lanes\s*(.*?)(?=^## |\z)')
+                # stock _wip.md는 Active Lanes 섹션 안에 예시 블록('- feature-a:' 등)을 둔다 -> 예시 이후 절단 후 판정 (오탐 감쇄)
+                $alBody = if ($al.Success) { ([regex]::Split($al.Groups[1].Value, '(?m)^\s*(?:예시|[Ee]xample)'))[0] } else { "" }
+                if ($al.Success -and ($alBody -match '(?m)^\s*-\s+\S')) {
+                    # 스킬명 'task-done' 언급 자체는 완료 선언 아님 -> 제거 후 매칭 (오탐 감쇄)
+                    # 한글은 \uXXXX 이스케이프 (무-BOM .ps1을 PS5.1이 cp949로 읽어 한글 리터럴 깨짐): 작업|이슈|태스크 ... 완료|종료|마무리
+                    $dTxtLC = $dTxt -replace 'task-done', ''
+                    if ($dUuid -and $dTxtLC -match ('(\' + 'uC791\' + 'uC5C5|\' + 'uC774\' + 'uC288|\' + 'uD0DC\' + 'uC2A4\' + 'uD06C|task|lane)[^\r\n]{0,10}(\' + 'uC644\' + 'uB8CC|\' + 'uC885\' + 'uB8CC|\' + 'uB9C8\' + 'uBB34\' + 'uB9AC|done)')) {
+                        $tdP = Join-Path $stateDir "claude-taskdone-warned"
+                        $tdSeen = if (Test-Path $tdP) { "$(Get-Content -LiteralPath $tdP -Raw -Encoding UTF8)".Trim() } else { "" }
+                        if ($dUuid -ne $tdSeen) {
+                            Set-Content -Path $tdP -Value $dUuid -Encoding ascii
+                            $script:laneClose = $true
+                        }
+                    }
+                }
+            }
+        } catch {}
+
+        # retrieval 백스톱 (v2.43): hit율은 선언 기반이라 선언을 빼먹으면 조용히 0이 된다. read-track 실측과 대조해
+        # "codemap lookup 0 + src 직접읽기 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')" = 미선언 full-scan으로
+        # 보고 리마인더 1회 (uuid dedupe). src 1건은 면제 (이미 아는 파일 재편집 — CLAUDE.md가 라인 생략을 허용하는 케이스).
+        try {
+            if (-not $script:freshDecl -and $srcDelta -ge 2 -and $cmapDelta -eq 0 -and $dUuid) {
+                $rwP = Join-Path $stateDir "claude-retrieval-warned"
+                $rwSeen = if (Test-Path $rwP) { "$(Get-Content -LiteralPath $rwP -Raw -Encoding UTF8)".Trim() } else { "" }
+                if ($dUuid -ne $rwSeen) {
+                    Set-Content -Path $rwP -Value $dUuid -Encoding ascii
+                    $script:retrMiss = $srcDelta
+                }
+            }
+        } catch {}
+    }
 }
+
+if ($hookActive) { exit 0 }   # 재진입: 계측/watermark는 위에서 끝냈고, block 재발행과 turn 증가는 생략 -> 루프 방지
 
 $tcPath = Join-Path $stateDir "turn-count"
 
@@ -1628,9 +1678,14 @@ if ($needsSplit) {
 if ($script:laneClose) {
     $parts += "[lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + git commit). If not done, ignore this and continue."
 }
+if ($script:retrMiss) {
+    $parts += ("[retrieval] read-track measured " + $script:retrMiss + " source reads this turn with zero .claude/codemap lookup and no codemap hit/miss declaration (line missing, or declared '미사용'). codemap lookup must precede source search. Grep .claude/codemap/_index.md for the symbol; if it is genuinely a miss, emit the Retrieval line declaring full-scan with the reason.")
+}
 if ($parts.Count -eq 0) { exit 0 }
 
-$tail = if ($script:laneClose) { " If closing, execute task-done fully before stopping; otherwise report one line, then stop." } else { " Report one line, then stop." }
+$tail = if ($script:laneClose) { " If closing, execute task-done fully before stopping; otherwise report one line, then stop." }
+        elseif ($script:retrMiss) { " Emit the missing Retrieval line (one line, honest hit/miss), then stop." }
+        else { " Report one line, then stop." }
 $reason = ($parts -join " ") + $tail
 @{ decision = "block"; reason = $reason } | ConvertTo-Json -Compress | Write-Output
 exit 0
@@ -1956,8 +2011,10 @@ Write-FileContent ".claude\hooks\stop-check.sh" -Unix @'
 #!/usr/bin/env bash
 # Stop hook - 루프가드 후 8턴 정기저장 / L2 분할규칙 / lane-close 백스톱 시 decision:block (stop-check.ps1 bash 포트).
 raw="$(cat)"
+# block 재진입 가드. 즉시 exit 아님 — 교정 응답의 Retrieval 선언 파싱/계측은 수행하고 판정·turn 증가만 생략.
+hookActive=0
 case "$raw" in
-  *'"stop_hook_active": true'*|*'"stop_hook_active":true'*) exit 0 ;;
+  *'"stop_hook_active": true'*|*'"stop_hook_active":true'*) hookActive=1 ;;
 esac
 sid="$(printf '%s' "$raw" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
 [ -z "$sid" ] && sid="manual"
@@ -1965,60 +2022,111 @@ sid="$(printf '%s' "$raw" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\(
 stateDir=".ctxdb/.state"
 mkdir -p "$stateDir"
 
+# read-track(PostToolUse) 실측 델타: 직전 stop 이후 이번 턴에 쌓인 kind만 집계 (watermark 방식).
+# session-start가 read-stats를 비우므로 mark에 session을 묶어 stale mark를 0으로 처리.
+rsPath="$stateDir/claude-read-stats"
+mkPath="$stateDir/claude-read-mark"
+total=0
+if [ -f "$rsPath" ]; then total="$(wc -l < "$rsPath" 2>/dev/null | tr -d ' ')"; fi
+[ -z "$total" ] && total=0
+mark=0
+if [ -f "$mkPath" ]; then
+  ms="$(sed -n 's/^session:\(.*\)$/\1/p' "$mkPath" | head -1)"
+  mr="$(sed -n 's/^read:\([0-9]*\)$/\1/p' "$mkPath" | head -1)"
+  if [ "$ms" = "$sid" ] && [ -n "$mr" ]; then mark="$mr"; fi
+fi
+[ "$mark" -gt "$total" ] && mark=0   # 외부 truncate 방어
+srcDelta=0; cmapDelta=0
+if [ "$total" -gt "$mark" ] && [ -f "$rsPath" ]; then
+  d="$(tail -n +$((mark + 1)) "$rsPath" 2>/dev/null)"
+  srcDelta="$(printf '%s\n' "$d" | grep -c '^src$' || true)"
+  cmapDelta="$(printf '%s\n' "$d" | grep -c '^cmap$' || true)"
+fi
+printf 'session:%s\nread:%s\n' "$sid" "$total" > "$mkPath"
+
 # retrieval hit/miss 계측 (stop-check.ps1 파리티): 방금 완료된 assistant 응답의 '📡 Retrieval:' 선언 파싱.
 # 미사용 턴은 미기록(hit율 분모 제외). uuid dedupe로 재계수 방지. jq 없으면 graceful skip.
 if command -v jq >/dev/null 2>&1; then
   tp="$(printf '%s' "$raw" | jq -r '.transcript_path // empty' 2>/dev/null)"
   if [ -n "$tp" ] && [ -f "$tp" ]; then
     # transcript는 응답을 text/thinking/tool_use 별개 엔트리로 기록 -> 마지막 assistant가 tool_use/thinking면 text 없음.
-    # 유효 Retrieval 선언('{}' 예시 제외)을 담은 가장 최근 assistant text 엔트리를 찾음(마지막 엔트리만 보면 놓침).
+    # 유효 Retrieval 선언을 담은 가장 최근 assistant text 엔트리를 찾음(마지막 엔트리만 보면 놓침).
+    # 앵커 필수: 'Retrieval:'/'codemap'을 라인 어디서나 찾으면 훅 자신을 논하는 산문이 선언으로 오탐돼 지표가 거짓이 된다.
+    # 선두 앵커(선택적 📡) + 백틱/중괄호 라인(인용·예시) 배제.
     # -rs(엄격 slurp)는 window에 깨진 JSON 한 줄만 있어도 전체 실패(동시 append 중 tail이 미완성 줄 잡는 케이스) -> 라인 관용 fromjson?로 해당 줄만 skip.
     res="$(tail -n 60 "$tp" 2>/dev/null | jq -rRn '
       [ inputs | fromjson? // empty
         | select(.message.role=="assistant")
         | { uuid, line: ([ .message.content[]? | select(.type=="text") | .text ] | join("\n")
-              | split("\n")[] | select(test("Retrieval:") and test("codemap") and (test("[{]")|not))) }
+              | split("\n")[] | select(test("^\\s*(📡\\s*)?Retrieval:\\s*codemap\\s") and (test("[{`]")|not))) }
         | select(.line != null) ]
       | last | if . == null then "" else (.uuid + "\t" + .line) end' 2>/dev/null)"
     uuid="${res%%$'\t'*}"; rline="${res#*$'\t'}"
     seenP="$stateDir/claude-retrieval-seen"; seen=""; [ -f "$seenP" ] && seen="$(cat "$seenP" 2>/dev/null)"
     if [ -n "$uuid" ] && [ "$uuid" != "$seen" ] && [ -n "$rline" ]; then
       # 고정 순서 codemap | ctxdb | src 로 위치 분해 (greedy sed는 마지막 'codemap'=src의 "(codemap 경유)" 매칭→cmap 누락).
+      # 구조 검증(3세그먼트 + 각 세그먼트 키워드)까지 통과해야 선언으로 인정 — 앵커만으론 부분 인용이 샌다.
+      nseg="$(printf '%s' "$rline" | awk -F'|' '{print NF}')"
       cseg="$(printf '%s' "$rline" | awk -F'|' '{print $1}')"
       xseg="$(printf '%s' "$rline" | awk -F'|' '{print $2}')"
-      case "$cseg" in *hit*) printf 'cmap:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'cmap:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
-      case "$xseg" in *hit*) printf 'ctx:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'ctx:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
-      printf '%s' "$uuid" > "$seenP"
+      sseg="$(printf '%s' "$rline" | awk -F'|' '{print $3}')"
+      case "$xseg" in *ctxdb*) okx=1 ;; *) okx=0 ;; esac
+      case "$sseg" in *src*) oks=1 ;; *) oks=0 ;; esac
+      if [ "${nseg:-0}" -ge 3 ] && [ "$okx" -eq 1 ] && [ "$oks" -eq 1 ]; then
+        case "$cseg" in *hit*) printf 'cmap:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'cmap:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
+        case "$xseg" in *hit*) printf 'ctx:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'ctx:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
+        printf '%s' "$uuid" > "$seenP"
+        # codemap을 hit/miss로 선언한 경우에만 백스톱 면제. '미사용' 선언은 면제 아님 ->
+        # src를 여러 개 읽고 '미사용'이라 적는 허위 선언이 조용히 통과하던 구멍(분모 제외)을 막는다.
+        case "$cseg" in *hit*|*miss*) freshDecl=1 ;; esac
+      fi
     fi
-    # lane-close 백스톱 (v2.43): 마지막 assistant 응답이 완료/종료 선언인데 _wip Active Lanes 잔존 -> task-done 리마인더 1회 (uuid dedupe).
+    # 가장 최근 assistant text 엔트리 (thinking/tool_use skip). lane-close + retrieval 백스톱 공용.
+    res2="$(tail -n 60 "$tp" 2>/dev/null | jq -rRn '
+      [ inputs | fromjson? // empty
+        | select(.message.role=="assistant")
+        | { uuid, txt: ([ .message.content[]? | select(.type=="text") | .text ] | join(" ")) }
+        | select(.txt != "") ]
+      | last | if . == null then "" else (.uuid + "\t" + (.txt | gsub("[\t\n]";" "))) end' 2>/dev/null)"
+    u2="${res2%%$'\t'*}"; t2="${res2#*$'\t'}"
+
     laneClose=0
-    wip=".claude/pawpad/_wip.md"
-    if [ -f "$wip" ]; then
-      # 오탐 감쇄 2종: ①헤더 앵커($) — '## Active Lanes 필드 명세' 섹션이 f를 재점화하지 않도록
-      #                ②stock _wip.md는 Active Lanes 섹션 안에 예시 블록('- feature-a:' 등)을 둔다 -> 예시 라인에서 절단
-      lanes="$(awk '/^## Active Lanes[[:space:]]*$/{f=1;next} /^## /{f=0} /^[[:space:]]*(예시|[Ee]xample)/{f=0} f' "$wip" | grep -c '^[[:space:]]*- ' 2>/dev/null || true)"
-      if [ "${lanes:-0}" -gt 0 ]; then
-        # 가장 최근 assistant text 엔트리 (thinking/tool_use skip). 스킬명 'task-done' 언급은 제거 후 매칭(오탐 감쇄).
-        res2="$(tail -n 60 "$tp" 2>/dev/null | jq -rRn '
-          [ inputs | fromjson? // empty
-            | select(.message.role=="assistant")
-            | { uuid, txt: ([ .message.content[]? | select(.type=="text") | .text ] | join(" ")) }
-            | select(.txt != "") ]
-          | last | if . == null then "" else (.uuid + "\t" + (.txt | gsub("[\t\n]";" "))) end' 2>/dev/null)"
-        u2="${res2%%$'\t'*}"; t2="${res2#*$'\t'}"
-        t2s="$(printf '%s' "$t2" | sed 's/task-done//g')"
-        if [ -n "$u2" ] && printf '%s' "$t2s" | grep -qE '(작업|이슈|태스크|task|lane).{0,30}(완료|종료|마무리|done)'; then
-          tdP="$stateDir/claude-taskdone-warned"; tdSeen=""
-          [ -f "$tdP" ] && tdSeen="$(cat "$tdP" 2>/dev/null)"
-          if [ "$u2" != "$tdSeen" ]; then
-            printf '%s' "$u2" > "$tdP"
-            laneClose=1
+    if [ "$hookActive" -eq 0 ]; then
+      # lane-close 백스톱 (v2.43): 마지막 assistant 응답이 완료/종료 선언인데 _wip Active Lanes 잔존 -> task-done 리마인더 1회 (uuid dedupe).
+      wip=".claude/pawpad/_wip.md"
+      if [ -f "$wip" ]; then
+        # 오탐 감쇄 2종: ①헤더 앵커($) — '## Active Lanes 필드 명세' 섹션이 f를 재점화하지 않도록
+        #                ②stock _wip.md는 Active Lanes 섹션 안에 예시 블록('- feature-a:' 등)을 둔다 -> 예시 라인에서 절단
+        lanes="$(awk '/^## Active Lanes[[:space:]]*$/{f=1;next} /^## /{f=0} /^[[:space:]]*(예시|[Ee]xample)/{f=0} f' "$wip" | grep -c '^[[:space:]]*- ' 2>/dev/null || true)"
+        if [ "${lanes:-0}" -gt 0 ]; then
+          # 스킬명 'task-done' 언급 자체는 완료 선언 아님 -> 제거 후 매칭 (오탐 감쇄).
+          t2s="$(printf '%s' "$t2" | sed 's/task-done//g')"
+          if [ -n "$u2" ] && printf '%s' "$t2s" | grep -qE '(작업|이슈|태스크|task|lane).{0,30}(완료|종료|마무리|done)'; then
+            tdP="$stateDir/claude-taskdone-warned"; tdSeen=""
+            [ -f "$tdP" ] && tdSeen="$(cat "$tdP" 2>/dev/null)"
+            if [ "$u2" != "$tdSeen" ]; then
+              printf '%s' "$u2" > "$tdP"
+              laneClose=1
+            fi
           fi
+        fi
+      fi
+      # retrieval 백스톱 (v2.43): hit율은 선언 기반이라 선언을 빼먹으면 조용히 0이 된다. read-track 실측과 대조해
+      # "codemap lookup 0 + src 직접읽기 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')" = 미선언 full-scan으로
+      # 보고 리마인더 1회 (uuid dedupe). src 1건은 면제 (이미 아는 파일 재편집 — CLAUDE.md가 라인 생략을 허용하는 케이스).
+      if [ "${freshDecl:-0}" -eq 0 ] && [ "${srcDelta:-0}" -ge 2 ] && [ "${cmapDelta:-0}" -eq 0 ] && [ -n "$u2" ]; then
+        rwP="$stateDir/claude-retrieval-warned"; rwSeen=""
+        [ -f "$rwP" ] && rwSeen="$(cat "$rwP" 2>/dev/null)"
+        if [ "$u2" != "$rwSeen" ]; then
+          printf '%s' "$u2" > "$rwP"
+          retrMiss="$srcDelta"
         fi
       fi
     fi
   fi
 fi
+
+[ "$hookActive" -eq 1 ] && exit 0   # 재진입: 계측/watermark는 위에서 끝냈고, block 재발행과 turn 증가는 생략 -> 루프 방지
 
 tcPath="$stateDir/turn-count"
 turn=0
@@ -2075,11 +2183,16 @@ fi
 if [ "${laneClose:-0}" -eq 1 ]; then
   parts="$parts [lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + git commit). If not done, ignore this and continue."
 fi
+if [ -n "${retrMiss:-}" ]; then
+  parts="$parts [retrieval] read-track measured $retrMiss source reads this turn with zero .claude/codemap lookup and no codemap hit/miss declaration (line missing, or declared '미사용'). codemap lookup must precede source search. Grep .claude/codemap/_index.md for the symbol; if it is genuinely a miss, emit the Retrieval line declaring full-scan with the reason."
+fi
 if [ -z "$parts" ]; then
   exit 0
 fi
 if [ "${laneClose:-0}" -eq 1 ]; then
   reason="$parts If closing, execute task-done fully before stopping; otherwise report one line, then stop."
+elif [ -n "${retrMiss:-}" ]; then
+  reason="$parts Emit the missing Retrieval line (one line, honest hit/miss), then stop."
 else
   reason="$parts Report one line, then stop."
 fi
@@ -2185,7 +2298,8 @@ if (($cdenom + $srcN) -gt 0) {
         $rcol = if ($rate -ge 70) { $G } elseif ($rate -ge 40) { $Y } else { $R }
         $seg = "${D}codemap${Z} ${rcol}${rate}%${Z} ${D}·${Z} routed $ch / full-scan $cm"
     } else {
-        $seg = "${D}codemap –${Z}"
+        # 분모 0 = 선언이 하나도 없었다는 뜻. src를 읽었는데도 분모가 비면 원인(선언 누락)이 보이도록 라벨링.
+        $seg = if ($srcN -gt 0) { "${Y}codemap 미선언${Z}" } else { "${D}codemap –${Z}" }
     }
     if ($srcN -gt 0) {
         $scol = if ($cdenom -eq 0) { $Y } else { $D }
@@ -2262,7 +2376,8 @@ if [ $(( cden + srcn )) -gt 0 ]; then
     if [ "$rate" -ge 70 ]; then rcol="$G"; elif [ "$rate" -ge 40 ]; then rcol="$Y"; else rcol="$R"; fi
     seg="${D}codemap${Z} ${rcol}${rate}%${Z} ${D}·${Z} routed ${ch} / full-scan ${cm}"
   else
-    seg="${D}codemap –${Z}"
+    # 분모 0 = 선언이 하나도 없었다는 뜻. src를 읽었는데도 분모가 비면 원인(선언 누락)이 보이도록 라벨링.
+    if [ "$srcn" -gt 0 ]; then seg="${Y}codemap 미선언${Z}"; else seg="${D}codemap –${Z}"; fi
   fi
   if [ "$srcn" -gt 0 ]; then
     if [ "$cden" -eq 0 ]; then scol="$Y"; else scol="$D"; fi

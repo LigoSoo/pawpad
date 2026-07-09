@@ -57,7 +57,8 @@ if [ $(( cden + srcn )) -gt 0 ]; then
     if [ "$rate" -ge 70 ]; then rcol="$G"; elif [ "$rate" -ge 40 ]; then rcol="$Y"; else rcol="$R"; fi
     seg="${D}codemap${Z} ${rcol}${rate}%${Z} ${D}·${Z} routed ${ch} / full-scan ${cm}"
   else
-    seg="${D}codemap –${Z}"
+    # 분모 0 = 선언이 하나도 없었다는 뜻. src를 읽었는데도 분모가 비면 원인(선언 누락)이 보이도록 라벨링.
+    if [ "$srcn" -gt 0 ]; then seg="${Y}codemap 미선언${Z}"; else seg="${D}codemap –${Z}"; fi
   fi
   if [ "$srcn" -gt 0 ]; then
     if [ "$cden" -eq 0 ]; then scol="$Y"; else scol="$D"; fi

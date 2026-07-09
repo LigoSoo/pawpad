@@ -73,7 +73,8 @@ if (($cdenom + $srcN) -gt 0) {
         $rcol = if ($rate -ge 70) { $G } elseif ($rate -ge 40) { $Y } else { $R }
         $seg = "${D}codemap${Z} ${rcol}${rate}%${Z} ${D}·${Z} routed $ch / full-scan $cm"
     } else {
-        $seg = "${D}codemap –${Z}"
+        # 분모 0 = 선언이 하나도 없었다는 뜻. src를 읽었는데도 분모가 비면 원인(선언 누락)이 보이도록 라벨링.
+        $seg = if ($srcN -gt 0) { "${Y}codemap 미선언${Z}" } else { "${D}codemap –${Z}" }
     }
     if ($srcN -gt 0) {
         $scol = if ($cdenom -eq 0) { $Y } else { $D }

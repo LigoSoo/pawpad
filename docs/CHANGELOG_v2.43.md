@@ -29,7 +29,7 @@
 - live: resume SKILL(게이트 섹션+타이밍 표), stop-check.ps1/.sh, CLAUDE.md(4)·AGENTS.md(2), SKILLS_MANIFEST(카운트+행+호출), .codex/config.json skills
 - `pawpad-setup.ps1`: $ver 2.43 / line1·STATUS(+v2.42 강등) / task-done 임베드 신규(literal) / resume·stop-check×2·$tmplClaudeMd·$tmplAgentsMd 임베드 동기 / manifest·config 임베드 / $bpCore 11→12 / TR bundleOpts ko·en(12/17/20) / 완료요약 ko·en
 - docs: README(8)·GUIDE(10, **v2.42 변경이력 bullet 누락 발견→v2.42+v2.43 동시 추가**)·USAGE(3)·PAWPAD_VERSIONS(제목+행+누적 20)·본 보고서 / codemap
-- 신규 state 파일: `.ctxdb/.state/claude-taskdone-warned`(런타임)
+- 신규 state 파일: `.ctxdb/.state/claude-taskdone-warned`(런타임). 추가 D에서 `claude-read-mark`·`claude-retrieval-warned` 추가.
 
 ## 검증 (2026-07-09)
 - PSParser 0 errors (setup + live stop-check.ps1), bash -n OK (stop-check.sh)
@@ -46,7 +46,31 @@
 - 검증: ps1 실호출 E2E(stock 무발화 / real lane 발화 / uuid dedupe 무발화), awk 단독(stock 0 / real >0 / CRLF fixture 1), PSParser 0(setup+live), `bash -n` OK, `-Upgrade` 후 emitted live 재-E2E 통과. sh 전체 E2E는 jq 부재로 미실행(변경부는 awk, jq 경로 무변경).
 - 감쇄 3종(선언측: 'task-done' 제거·uuid dedupe·"무시 가능" 문구)은 전부 **완료 선언** 판정만 다뤄 lane 잔존 판정 오탐을 못 막았다.
 
+## 추가 D — retrieval 계측 결함 4종 (2026-07-09, v2.43 내 흡수, 버전 불변)
+발단: 다운스트림 프로젝트에서 "최신 pawpad 적용 후에도 statusline에 codemap hit이 안 뜬다" 리포트. 1차 진단은 "훅 정상, agent 지침 미준수"였고 그 자체는 맞았다. 그러나 **그 세션이 별도 작성한 결함 리포트**(B1~B4)를 대조하니 훅에도 실결함이 있었다. 지표가 (a) 조용히 비거나 (b) 조용히 거짓이 되는 두 경로가 모두 열려 있었다.
+
+**B1 — 선언 파서 앵커 부재 (지표 오염, 심각).** 매처가 `Retrieval:` + `codemap`을 **라인 어디서든** 찾았다. 따라서 훅 자신을 설명하는 산문("stop-check이 `📡 Retrieval:` 라인에서 codemap hit을 파싱한다")이 선언으로 오탐돼 `cmap:hit`이 기록되고, uuid dedupe로 굳는다. **훅을 디버깅·문서화하는 세션마다 자기 지표를 오염**시켰다(실제 발생: uuid `98c34512`, 그 턴 codemap lookup 0회인데 statusline `codemap 100%`).
+- fix: 라인 선두 앵커 `^\s*(📡\s*)?Retrieval:\s*codemap\s` + **백틱/중괄호 라인 배제**(인용·형식 예시) + **3세그먼트 구조 검증**(`segs[1]`에 `ctxdb`, `segs[2]`에 `src`). 앵커만으론 부분 인용이 새므로 구조 검증을 함께 건다.
+
+**B2 — 선언 누락 시 완전 무관측.** hit율은 100% 자기신고인데 `read-track`이 이미 기계적으로 수집하는 cmap/src 실측이 판정에 전혀 안 쓰였다(수집만 하고 사용처 없음). 선언을 빼먹으면 기록도 경고도 없고 statusline은 `codemap –` — 사용자는 "표시가 안 된다"만 본다.
+- fix(훅): **read-track watermark 대조**. `claude-read-mark`(session 바인딩)로 직전 stop 이후 델타만 집계 → `cmap 0 + src ≥2 + 이번 턴 codemap hit/miss 선언 없음` = 미선언 full-scan으로 보고 `decision:block` 1회(`claude-retrieval-warned` uuid dedupe). src 1건은 면제(이미 아는 파일 재편집 = 라인 생략 허용 케이스), cmap lookup이 1건이라도 있으면 면제.
+- fix(statusline ps1+sh): 분모 0인데 src>0이면 `codemap –` 대신 **`codemap 미선언`(노랑)** — 원인이 보이는 라벨.
+- fix(구조): `stop_hook_active` 가드를 **최상단 즉시 exit → 판정만 생략**으로 변경. 기존 구조에선 block으로 선언을 요구해도 그 교정 응답의 Stop이 재진입 가드에 걸려 선언 파싱조차 안 됐다(백스톱이 무의미해지는 자기모순). 이제 계측/watermark는 항상 수행, block 재발행·turn 증가만 생략 → 루프가드 유지.
+
+**B3 — `미사용` 허위 선언 무검출.** `미사용`은 분모에서 제외(설계상 의도)되므로 소스를 3개 읽고도 `codemap 미사용`이라 적으면 조용히 통과했다. CLAUDE.md:116이 약속한 "실측 카운터와 대조된다"는 **대조 로직이 코드에 없었고**, 근거로 든 statusline raw `cmap/ctx` 카운터는 v2.42가 이미 폐기(경유율 표시로 대체)했다 — 존재하지 않는 감시를 인용한 문구 = 억지력 0.
+- fix: `codemap`을 **hit/miss로 선언한 경우에만** 백스톱 면제. `미사용` 선언은 선언 누락과 동일 취급 → B2 조건에 걸린다.
+- fix(문서): CLAUDE.md·AGENTS.md(+setup 임베드 2종) 문구를 실제 강제 수단(앵커·구조·백스톱)으로 교체. AGENTS.md엔 해당 줄 자체가 없어 신규 추가.
+
+**B4 — read-track 분류 정확도**(경미, 미수정): `path` 없는 Grep/Glob은 전부 `src`로 계수. 전역 grep은 결과적으로 맞지만 `.claude/**` 겨냥 검색도 src로 오계수. 백스톱 임계가 `src ≥2`라 오탐 방향이나, 실측 병기를 도입하기 전까진 영향 경미 → 보류.
+
+- 리팩터: "가장 최근 assistant text 엔트리" 스캔을 lane-close 내부에서 **hoist** → lane-close/retrieval 백스톱 공용(중복 스캔 제거).
+- 신규 state 파일: `.ctxdb/.state/claude-read-mark`, `claude-retrieval-warned`(런타임)
+- 표면: `stop-check.{ps1,sh}`, `statusline.{ps1,sh}`, CLAUDE.md·AGENTS.md, `pawpad-setup.ps1`(훅 임베드 4종 + CLAUDE/AGENTS 템플릿 2종 + STATUS 줄)
+- 검증: PSParser 0(setup + live stop-check/statusline), `bash -n` OK. 백스톱 매트릭스 **6/6 ps1·sh 동일**(①src2+cmap0+선언無→block ②선언有→무발화+`cmap:hit` ③src1→무발화 ④cmap1+src2→무발화 ⑤**재진입+선언有→무발화하되 stats 기록**(구조 fix 입증) ⑥재진입+선언無→무발화), dedupe 무발화·watermark 2→4 전진, block reason JSON 유효. 파서 매트릭스 **6/6 ps1**(리포트 재현 절차 그대로: 산문/백틱 없는 산문/인용된 형식/2세그먼트 → 전부 stats 빈 채 block, 정상 선언만 `cmap:hit`, `미사용`+src3 → block). sh는 jq 하류(구조 게이트·미사용 판정) 4/4 스텁 검증. 샌드박스 신규 설치(`0 failed`) 후 emitted==live 4/4 + emitted 훅으로 B1·B3 재-E2E 통과, statusline 렌더 `📡 codemap 미선언 · src 3`(노랑) 확인.
+
 ## 한계 (명시)
+- D의 백스톱은 `src ≥2` 임계 — codemap 미경유 단일 파일 읽기는 통과(오탐 회피 대가). 선언의 hit/miss **내용 진위**는 여전히 검증 불가(경로 실재 여부 미대조). `hit` 선언 + 실측 `cmap 0` 대조는 codemap 주입(session-start inject) 시 정상 hit을 오탐하므로 미도입.
+- D의 sh 앵커 정규식(jq `test()`)은 이 머신 jq 부재로 미실행 — ps1 동등 로직만 실측. jq 필터 자체는 리터럴 이식.
 - B의 완료 선언 감지는 휴리스틱 — 선언 없는 완료(무언 종료)는 미포착(C가 다음 세션서 회수). 오탐은 1회 리마인더+무시 가능으로 수용.
 - B는 이 머신처럼 org 정책이 hooks 차단이면 무효 — A(스킬)·C(resume 규율)는 훅 무관 동작.
 - C의 ③단 신호는 모델 판단 의존(spot-check 규율) — 강제는 A·B가 담당, C는 회수망.
