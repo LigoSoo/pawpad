@@ -80,6 +80,7 @@
                   },
     "skills":  [
                    "resume",
+                   "task-done",
                    "codemap",
                    "codebase-map",
                    "caveman",

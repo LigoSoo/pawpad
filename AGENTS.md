@@ -78,13 +78,13 @@ ON START (agent가 순차 실행):
      (첫 응답 최상단에 검증 1줄: 📂 ctxdb: {project} | {last-date} | {loaded L2} | {status})
   1. read .claude/pawpad/_wip.md (active lane router)
   2. Active Lanes 있으면 read .claude/HYBRID.md (협업 프로토콜). 없으면 skip -> 신규 lane 생성/핸드오프/인수 시점에 read
-  3. assigned lane 있으면 read .claude/pawpad/wip/{lane}.md
+  3. assigned lane 있으면 read .claude/pawpad/wip/{lane}.md + stale 게이트(다음 작업 제안 전 완료 흔적·실상태 1회 대조 -> 종결/확인 제안. 규칙: resume SKILL Lane 신뢰성 게이트)
   4. _wip.md Active Lanes에 state=HANDOFF_TO_* 발견 시 -> handoff 필드 경로 read
   5. state=SPEC_READY 또는 spec 있으면 read .claude/pawpad/specs/{feature}.md
   6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT; RECENT 완료이력은 하단·재개 불요 -> 생략, history 시 on-demand)
   7. .claude/codemap/_index.md는 코드 수정 작업 시작 시점에 read — MAP+HOT(조망)만 부분읽기(상단), INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand (질문/분석 전용 세션은 skip)
 ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
-ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함)
+ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함) — 실행은 task-done 스킬 체크리스트로(부분 실행/누락 방지; "작업/이슈 종료" 자연어 요청 = task-done 발동)
 ON STOP:         agent가 lane 파일 (state + reason) 갱신
 ON 8턴/60% CONTEXT:
   - Claude Code: Stop hook이 8턴마다 checkpoint block -> context-saver(.ctxdb/L2 저장) + codemap 갱신.

@@ -24,11 +24,25 @@ description: Hybrid session resume protocol. Use at session start (ON START) to 
    -> Active Lanes 비어있음: 새 작업 시작 (이후 HYBRID 등 skip)
    -> Active Lanes 존재: assigned lane 읽기
 2. Active Lanes 있으면 read .claude/HYBRID.md (협업 프로토콜). 없으면 skip -> 신규 lane 생성/핸드오프/인수 시점에 read
-3. lane 파일 있으면: read .claude/pawpad/wip/{feature}.md
+3. lane 파일 있으면: read .claude/pawpad/wip/{feature}.md + Lane 신뢰성 게이트 적용 (아래 섹션 — 다음 작업 제안 전 필수)
 4. lane state=HANDOFF_TO_* : _wip.md의 handoff 필드 경로로 snapshot read
 5. lane state=SPEC_READY 또는 spec 있으면: read .claude/pawpad/specs/{feature}.md
 6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT). RECENT(완료 이력)는 파일 하단·재개 불요 -> 생략, history 필요 시 on-demand
 7. read .claude/codemap/_index.md (코드 수정 작업 시점만; 질문/분석 세션 skip)
+
+## Lane 신뢰성 게이트 (ON START - stale lane 감지, 다음 작업 제안 전 필수)
+lane은 계획의 SoT지만, ON TASK DONE 누락으로 종결 안 된 lane이 남으면 이미 완료된 작업을 다음 작업으로 재제안하는 사고가 난다.
+lane read 직후 신뢰도 순 3단 신호로 대조하고, 통과 후에만 next steps를 제안한다:
+
+| 신호 | 판정 | 행동 |
+|------|------|------|
+| _meta.md RECENT에 해당 feature-id의 DONE 기록 존재 + lane이 Active Lanes 잔존 | 확정 누락 (기록-이관 불일치) | 사용자 통지 후 task-done 스킬로 즉시 종결 |
+| lane next steps(다음 단계) 전항 체크 완료 또는 본문에 완료 선언 | 완료 의심 | task-done 종결 제안 (사용자 확인 후 실행) |
+| lane updated가 오래됨 + next steps 첫 항목의 실코드 spot-check 결과 이미 반영됨 | stale 의심 | 작업 재개 전 사용자 확인 - "lane과 실상태 불일치, 이미 완료된 것 아닌가" |
+
+- 규율: 다음 작업을 제안하기 전 next steps 첫 항목의 실상태(대상 파일/심볼 존재, 내용)를 1회 대조한다. 문서와 현실이 어긋나면 문서를 믿지 말고 어긋남을 보고한다.
+- 확정 누락 신호 외에는 자동 이관 금지 - 게이트는 제안/확인까지. 실제 종결은 task-done 스킬 체크리스트로 실행.
+- 이 게이트는 _meta 상단 부분읽기와 호환: RECENT 대조는 Active Lanes의 feature-id를 _meta 하단에서 Grep(on-demand)으로 수행 (통째 read 불요).
 
 ## _wip.md (Router) 포맷
 # WIP ROUTER
@@ -86,9 +100,10 @@ WIP | SPEC_READY | HANDOFF_TO_* | BLOCKED
 | spec 작성 완료      | state=SPEC_READY, _wip.md 갱신                       |
 | 핸드오프 발생       | state=HANDOFF_TO_*, handoff 필드 추가                |
 | 인수 시            | state=WIP, owner=받는 agent로 변경                   |
-| 전체 태스크 완료     | lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 |
+| 전체 태스크 완료     | task-done 스킬 실행 (아래 완료 lane 처리 전항 - 부분 실행 방지)   |
 
 ## 완료 lane 처리 (audit 보존, timestamp 명명)
+- 실행은 task-done 스킬 체크리스트로 (아래 항목 일부만 수행하는 누락 방지 - "작업/이슈 종료" 자연어 요청 포함)
 - 작업 완료 시: .claude/pawpad/wip/{feature-id}.md -> .claude/pawpad/wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md
   - timestamp는 완료 시각
   - 같은 feature 재작업 시 이전 done 파일 보존 (덮어쓰기 방지)

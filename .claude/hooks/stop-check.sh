@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stop hook - 루프가드 후 8턴 정기저장 또는 L2 분할규칙 위반 시 decision:block (stop-check.ps1 bash 포트).
+# Stop hook - 루프가드 후 8턴 정기저장 / L2 분할규칙 / lane-close 백스톱 시 decision:block (stop-check.ps1 bash 포트).
 raw="$(cat)"
 case "$raw" in
   *'"stop_hook_active": true'*|*'"stop_hook_active":true'*) exit 0 ;;
@@ -34,6 +34,31 @@ if command -v jq >/dev/null 2>&1; then
       case "$cseg" in *hit*) printf 'cmap:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'cmap:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
       case "$xseg" in *hit*) printf 'ctx:hit\n' >> "$stateDir/claude-retrieval-stats" ;; *miss*) printf 'ctx:miss\n' >> "$stateDir/claude-retrieval-stats" ;; esac
       printf '%s' "$uuid" > "$seenP"
+    fi
+    # lane-close 백스톱 (v2.43): 마지막 assistant 응답이 완료/종료 선언인데 _wip Active Lanes 잔존 -> task-done 리마인더 1회 (uuid dedupe).
+    laneClose=0
+    wip=".claude/pawpad/_wip.md"
+    if [ -f "$wip" ]; then
+      lanes="$(awk '/^## Active Lanes/{f=1;next} /^## /{f=0} f' "$wip" | grep -c '^[[:space:]]*- ' 2>/dev/null || true)"
+      if [ "${lanes:-0}" -gt 0 ]; then
+        # 가장 최근 assistant text 엔트리 (thinking/tool_use skip). 스킬명 'task-done' 언급은 제거 후 매칭(오탐 감쇄).
+        res2="$(tail -n 60 "$tp" 2>/dev/null | jq -rRn '
+          [ inputs | fromjson? // empty
+            | select(.message.role=="assistant")
+            | { uuid, txt: ([ .message.content[]? | select(.type=="text") | .text ] | join(" ")) }
+            | select(.txt != "") ]
+          | last | if . == null then "" else (.uuid + "\t" + (.txt | gsub("[\t\n]";" "))) end' 2>/dev/null)"
+        u2="${res2%%$'\t'*}"; t2="${res2#*$'\t'}"
+        t2s="$(printf '%s' "$t2" | sed 's/task-done//g')"
+        if [ -n "$u2" ] && printf '%s' "$t2s" | grep -qE '(작업|이슈|태스크|task|lane).{0,30}(완료|종료|마무리|done)'; then
+          tdP="$stateDir/claude-taskdone-warned"; tdSeen=""
+          [ -f "$tdP" ] && tdSeen="$(cat "$tdP" 2>/dev/null)"
+          if [ "$u2" != "$tdSeen" ]; then
+            printf '%s' "$u2" > "$tdP"
+            laneClose=1
+          fi
+        fi
+      fi
     fi
   fi
 fi
@@ -90,9 +115,16 @@ fi
 if [ "$needSplit" -eq 1 ]; then
   parts="$parts [L2 split needed]$oversized : exceeds 150 lines / 2000 tokens -> keyword load still pulls the whole file, defeating token savings. Split old entries into .ctxdb/L3/{name}-YYYY-MM.md or split by domain, then update INDEX/L1 pointers."
 fi
+if [ "${laneClose:-0}" -eq 1 ]; then
+  parts="$parts [lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + git commit). If not done, ignore this and continue."
+fi
 if [ -z "$parts" ]; then
   exit 0
 fi
-reason="$parts Report one line, then stop."
+if [ "${laneClose:-0}" -eq 1 ]; then
+  reason="$parts If closing, execute task-done fully before stopping; otherwise report one line, then stop."
+else
+  reason="$parts Report one line, then stop."
+fi
 printf '{"decision": "block", "reason": "%s"}\n' "$reason"
 exit 0

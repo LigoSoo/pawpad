@@ -1,4 +1,4 @@
-﻿# Stop hook - 루프가드 후 8턴 정기저장 또는 L2 분할규칙 위반 시 decision:block.
+﻿# Stop hook - 루프가드 후 8턴 정기저장 / L2 분할규칙 위반 / lane-close 백스톱 시 decision:block.
 # session-aware turn-count. PreCompact가 최근 8턴 내 저장 유도했으면 checkpoint 중복 생략.
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
@@ -44,6 +44,37 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
             if ($xseg) { if ($xseg -match 'hit') { $rec += 'ctx:hit' } elseif ($xseg -match 'miss') { $rec += 'ctx:miss' } }
             if ($rec.Count -gt 0) { Add-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value $rec -Encoding ascii }
             Set-Content -Path $seenPath -Value $rlUuid -Encoding ascii
+        }
+    } catch {}
+    # lane-close 백스톱 (v2.43): 마지막 assistant 응답이 작업 완료/종료를 선언했는데 _wip Active Lanes가 잔존하면
+    # task-done 실행 리마인더 1회 (uuid dedupe). ON TASK DONE 미실행 -> stale lane -> resume 재제안 사고 방지.
+    try {
+        $wipP = ".claude/pawpad/_wip.md"
+        if (Test-Path $wipP) {
+            $wipRaw = "$(Get-Content -LiteralPath $wipP -Raw -Encoding UTF8)"
+            $al = [regex]::Match($wipRaw, '(?sm)^## Active Lanes\s*(.*?)(?=^## |\z)')
+            if ($al.Success -and ($al.Groups[1].Value -match '(?m)^\s*-\s+\S')) {
+                # retrieval 탐색과 별개로 "가장 최근 assistant text 엔트리"를 찾음 (thinking/tool_use skip)
+                $dTxt = ""; $dUuid = ""
+                for ($i = $tlines.Count - 1; $i -ge 0; $i--) {
+                    try { $o2 = $tlines[$i] | ConvertFrom-Json } catch { continue }
+                    if ($o2.message.role -ne 'assistant') { continue }
+                    $t2 = ""
+                    foreach ($c2 in @($o2.message.content)) { if ($c2.type -eq 'text') { $t2 += [string]$c2.text + "`n" } }
+                    if ($t2) { $dTxt = $t2; $dUuid = [string]$o2.uuid; break }
+                }
+                # 스킬명 'task-done' 언급 자체는 완료 선언 아님 -> 제거 후 매칭 (오탐 감쇄)
+                # 한글은 \uXXXX 이스케이프 (무-BOM .ps1을 PS5.1이 cp949로 읽어 한글 리터럴 깨짐): 작업|이슈|태스크 ... 완료|종료|마무리
+                $dTxt = $dTxt -replace 'task-done', ''
+                if ($dUuid -and $dTxt -match ('(\' + 'uC791\' + 'uC5C5|\' + 'uC774\' + 'uC288|\' + 'uD0DC\' + 'uC2A4\' + 'uD06C|task|lane)[^\r\n]{0,10}(\' + 'uC644\' + 'uB8CC|\' + 'uC885\' + 'uB8CC|\' + 'uB9C8\' + 'uBB34\' + 'uB9AC|done)')) {
+                    $tdP = Join-Path $stateDir "claude-taskdone-warned"
+                    $tdSeen = if (Test-Path $tdP) { "$(Get-Content -LiteralPath $tdP -Raw -Encoding UTF8)".Trim() } else { "" }
+                    if ($dUuid -ne $tdSeen) {
+                        Set-Content -Path $tdP -Value $dUuid -Encoding ascii
+                        $script:laneClose = $true
+                    }
+                }
+            }
         }
     } catch {}
 }
@@ -98,8 +129,12 @@ if ($needsCheckpoint) {
 if ($needsSplit) {
     $parts += ("[L2 split needed] " + ($oversized -join ", ") + " : exceeds 150 lines / 2000 tokens -> keyword load still pulls the whole file, defeating token savings. Split old entries into .ctxdb/L3/{name}-YYYY-MM.md or split by domain, then update INDEX/L1 pointers.")
 }
+if ($script:laneClose) {
+    $parts += "[lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + git commit). If not done, ignore this and continue."
+}
 if ($parts.Count -eq 0) { exit 0 }
 
-$reason = ($parts -join " ") + " Report one line, then stop."
+$tail = if ($script:laneClose) { " If closing, execute task-done fully before stopping; otherwise report one line, then stop." } else { " Report one line, then stop." }
+$reason = ($parts -join " ") + $tail
 @{ decision = "block"; reason = $reason } | ConvertTo-Json -Compress | Write-Output
 exit 0
