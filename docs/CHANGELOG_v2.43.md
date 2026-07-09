@@ -37,6 +37,15 @@
 - `-Upgrade` 실행: exit 0·0 failed, 미러 재생성 source=20 mirror=20, emitted==live(설치 후 live 불변 = embed==live)
 - 카운트 grep: "19개/19 스킬/19 skills" 활성 잔재 0 (역사 기록 제외)
 
+## 사후수정#1 — B 백스톱 lane 잔존 판정 오탐 (2026-07-09, v2.43 내 덮어쓰기)
+실사용 첫 발화가 오탐이었다. lane 0건(_wip Active Lanes = "(없음)")인데 완료 선언 응답마다 `[lane-close]` block. 원인 2종:
+1. **예시 블록 오독 (ps1+sh 공통)**: stock `_wip.md`는 `## Active Lanes` 섹션 **안에** 예시(`- feature-a:` 등 13줄)를 둔다 → `^\s*- ` 판정이 이를 실 lane으로 셈. 갓 설치한 모든 프로젝트에서 상시 발화.
+2. **헤더 접두 매치 (sh 전용)**: awk `/^## Active Lanes/`가 하단 `## Active Lanes 필드 명세` 헤더까지 매치 → `f` 재점화, 명세 표의 `- owner:` 등 5줄 추가 오계수(18줄).
+- fix: ps1 = Active Lanes 본문을 `(?m)^\s*(?:예시|[Ee]xample)`로 split 후 [0]만 판정. sh = awk 헤더 앵커 `/^## Active Lanes[[:space:]]*$/` + 예시 라인 `f=0` 절단.
+- ps1 헤더 앵커는 **미적용**: `_wip.md`가 CRLF일 때 .NET `$`가 `\r` 앞에서 실패해 real lane을 놓친다(적용 시 real=0 회귀 확인). 기존 lazy 매치가 이미 첫 섹션에서 정지하므로 불요.
+- 검증: ps1 실호출 E2E(stock 무발화 / real lane 발화 / uuid dedupe 무발화), awk 단독(stock 0 / real >0 / CRLF fixture 1), PSParser 0(setup+live), `bash -n` OK, `-Upgrade` 후 emitted live 재-E2E 통과. sh 전체 E2E는 jq 부재로 미실행(변경부는 awk, jq 경로 무변경).
+- 감쇄 3종(선언측: 'task-done' 제거·uuid dedupe·"무시 가능" 문구)은 전부 **완료 선언** 판정만 다뤄 lane 잔존 판정 오탐을 못 막았다.
+
 ## 한계 (명시)
 - B의 완료 선언 감지는 휴리스틱 — 선언 없는 완료(무언 종료)는 미포착(C가 다음 세션서 회수). 오탐은 1회 리마인더+무시 가능으로 수용.
 - B는 이 머신처럼 org 정책이 hooks 차단이면 무효 — A(스킬)·C(resume 규율)는 훅 무관 동작.

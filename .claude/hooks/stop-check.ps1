@@ -53,7 +53,9 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
         if (Test-Path $wipP) {
             $wipRaw = "$(Get-Content -LiteralPath $wipP -Raw -Encoding UTF8)"
             $al = [regex]::Match($wipRaw, '(?sm)^## Active Lanes\s*(.*?)(?=^## |\z)')
-            if ($al.Success -and ($al.Groups[1].Value -match '(?m)^\s*-\s+\S')) {
+            # stock _wip.md는 Active Lanes 섹션 안에 예시 블록('- feature-a:' 등)을 둔다 -> 예시 이후 절단 후 판정 (오탐 감쇄)
+            $alBody = if ($al.Success) { ([regex]::Split($al.Groups[1].Value, '(?m)^\s*(?:예시|[Ee]xample)'))[0] } else { "" }
+            if ($al.Success -and ($alBody -match '(?m)^\s*-\s+\S')) {
                 # retrieval 탐색과 별개로 "가장 최근 assistant text 엔트리"를 찾음 (thinking/tool_use skip)
                 $dTxt = ""; $dUuid = ""
                 for ($i = $tlines.Count - 1; $i -ge 0; $i--) {

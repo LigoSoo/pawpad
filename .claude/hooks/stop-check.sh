@@ -39,7 +39,9 @@ if command -v jq >/dev/null 2>&1; then
     laneClose=0
     wip=".claude/pawpad/_wip.md"
     if [ -f "$wip" ]; then
-      lanes="$(awk '/^## Active Lanes/{f=1;next} /^## /{f=0} f' "$wip" | grep -c '^[[:space:]]*- ' 2>/dev/null || true)"
+      # 오탐 감쇄 2종: ①헤더 앵커($) — '## Active Lanes 필드 명세' 섹션이 f를 재점화하지 않도록
+      #                ②stock _wip.md는 Active Lanes 섹션 안에 예시 블록('- feature-a:' 등)을 둔다 -> 예시 라인에서 절단
+      lanes="$(awk '/^## Active Lanes[[:space:]]*$/{f=1;next} /^## /{f=0} /^[[:space:]]*(예시|[Ee]xample)/{f=0} f' "$wip" | grep -c '^[[:space:]]*- ' 2>/dev/null || true)"
       if [ "${lanes:-0}" -gt 0 ]; then
         # 가장 최근 assistant text 엔트리 (thinking/tool_use skip). 스킬명 'task-done' 언급은 제거 후 매칭(오탐 감쇄).
         res2="$(tail -n 60 "$tp" 2>/dev/null | jq -rRn '
