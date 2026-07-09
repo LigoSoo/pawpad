@@ -32,7 +32,8 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
             if ($cand) { $rl = $cand; $rlUuid = [string]$o.uuid; break }
         }
         $seenPath = Join-Path $stateDir "claude-retrieval-seen"
-        $seen = if (Test-Path $seenPath) { (Get-Content -LiteralPath $seenPath -Raw -Encoding UTF8).Trim() } else { "" }
+        # 0-byte seen(session-start reset 직후)은 -Raw가 $null -> .Trim() NPE가 outer catch에 삼켜져 stats 미기록. "$()"로 null->"" 정규화.
+        $seen = if (Test-Path $seenPath) { "$(Get-Content -LiteralPath $seenPath -Raw -Encoding UTF8)".Trim() } else { "" }
         if ($rl -and $rlUuid -and $rlUuid -ne $seen) {
             # 고정 순서 codemap | ctxdb | src 로 위치 분해 (키워드 매칭 시 경로 내 'codemap'/'ctxdb' 부분문자열과 충돌).
             $segs = $rl -split '\|'
