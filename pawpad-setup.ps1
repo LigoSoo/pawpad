@@ -1934,8 +1934,10 @@ if command -v jq >/dev/null 2>&1; then
   if [ -n "$tp" ] && [ -f "$tp" ]; then
     # transcript는 응답을 text/thinking/tool_use 별개 엔트리로 기록 -> 마지막 assistant가 tool_use/thinking면 text 없음.
     # 유효 Retrieval 선언('{}' 예시 제외)을 담은 가장 최근 assistant text 엔트리를 찾음(마지막 엔트리만 보면 놓침).
-    res="$(tail -n 60 "$tp" 2>/dev/null | jq -rs '
-      [ .[] | select(.message.role=="assistant")
+    # -rs(엄격 slurp)는 window에 깨진 JSON 한 줄만 있어도 전체 실패(동시 append 중 tail이 미완성 줄 잡는 케이스) -> 라인 관용 fromjson?로 해당 줄만 skip.
+    res="$(tail -n 60 "$tp" 2>/dev/null | jq -rRn '
+      [ inputs | fromjson? // empty
+        | select(.message.role=="assistant")
         | { uuid, line: ([ .message.content[]? | select(.type=="text") | .text ] | join("\n")
               | split("\n")[] | select(test("Retrieval:") and test("codemap") and (test("[{]")|not))) }
         | select(.line != null) ]
