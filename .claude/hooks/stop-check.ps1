@@ -3,6 +3,33 @@
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
+function Get-TailLines {
+    # PS 5.1 `Get-Content -Tail`은 -Encoding 지정 시 역방향 탐색이 초선형으로 붕괴한다.
+    # 실측(401줄 x 40KB, 16MB transcript): -Tail 80 = 0.19s / -Tail 80 -Encoding UTF8 = 26.79s.
+    # 그런데 -Encoding UTF8을 빼면 PS 5.1이 ANSI로 읽어 이모지/한글(Retrieval 선언)이 깨진다 -> 앵커 실패.
+    # 정답은 둘 다: StreamReader(UTF-8) 정방향 1패스 + 링버퍼 = 0.13s.
+    # FileShare.ReadWrite: Claude Code가 append 중인 transcript를 잠금 충돌 없이 읽기 위함.
+    param([string]$Path, [int]$Count)
+    if ($Count -le 0) { return @() }
+    $ring = New-Object string[] $Count
+    $n = 0
+    $fs = $null; $sr = $null
+    try {
+        $fs = New-Object System.IO.FileStream($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $sr = New-Object System.IO.StreamReader($fs, (New-Object System.Text.UTF8Encoding $false), $true)
+        while ($null -ne ($ln = $sr.ReadLine())) { $ring[$n % $Count] = $ln; $n++ }
+    } catch { return @() } finally {
+        if ($sr) { $sr.Dispose() } elseif ($fs) { $fs.Dispose() }
+    }
+    if ($n -eq 0) { return @() }
+    $c = [Math]::Min($n, $Count)
+    $out = New-Object string[] $c
+    for ($i = 0; $i -lt $c; $i++) { $out[$i] = $ring[(($n - $c + $i) % $Count)] }
+    # `,$out`(배열 감싸기) 금지 - 호출부가 @()로 재수집하면 "배열 1개를 담은 배열"이 되어
+    # 줄 단위 파싱이 통째로 무력화된다. 언롤 반환 + 호출부 @()가 정답.
+    return $out
+}
+
 $raw = (New-Object System.IO.StreamReader([Console]::OpenStandardInput(), (New-Object System.Text.UTF8Encoding $false))).ReadToEnd()
 $event = $null
 try { $event = $raw | ConvertFrom-Json } catch {}
@@ -37,7 +64,7 @@ Set-Content -Path $mkPath -Value @("session:$sessionId", "read:$($rsAll.Count)")
 $tp = if ($event) { [string]$event.transcript_path } else { "" }
 if ($tp -and (Test-Path -LiteralPath $tp)) {
     try {
-        $tlines = @(Get-Content -LiteralPath $tp -Tail 60 -Encoding UTF8 -ErrorAction SilentlyContinue)
+        $tlines = @(Get-TailLines $tp 60)
         # transcript는 한 응답을 text/thinking/tool_use 각각 별개 엔트리로 기록 -> 첫 assistant 엔트리에서 break 시
         # thinking/tool_use라 text 놓침. 최근 window에서 유효 Retrieval 선언(중괄호 예시 제외)을 담은 가장 최근 text 엔트리를 찾음.
         $rl = ""; $rlUuid = ""
@@ -117,10 +144,21 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
         # 보고 리마인더 1회 (uuid dedupe). src 1건은 면제 (이미 아는 파일 재편집 — CLAUDE.md가 라인 생략을 허용하는 케이스).
         try {
             if (-not $script:freshDecl -and $srcDelta -ge 2 -and $cmapDelta -eq 0 -and $dUuid) {
+                # 세션당 최대 2회 하드캡. uuid dedupe는 "같은 응답 재경고"만 막을 뿐, 매 턴 새 uuid로
+                # block이 재발행되는 교착(선언이 계속 거부되는 경우)은 못 막는다. block 1회 = 전체 응답 재생성이라
+                # 무한 루프는 사용자에게 수십 분의 정지로 나타난다. 원인 불문 상한을 둔다.
                 $rwP = Join-Path $stateDir "claude-retrieval-warned"
-                $rwSeen = if (Test-Path $rwP) { "$(Get-Content -LiteralPath $rwP -Raw -Encoding UTF8)".Trim() } else { "" }
-                if ($dUuid -ne $rwSeen) {
-                    Set-Content -Path $rwP -Value $dUuid -Encoding ascii
+                $rwSession = ""; $rwSeen = ""; $rwCount = 0
+                if (Test-Path $rwP) {
+                    $rw = @(Get-Content -LiteralPath $rwP -Encoding UTF8 -ErrorAction SilentlyContinue)
+                    if ($rw.Count -ge 3) {
+                        $rwSession = "$($rw[0])".Trim(); $rwSeen = "$($rw[1])".Trim()
+                        $parsed = 0; if ([int]::TryParse("$($rw[2])".Trim(), [ref]$parsed)) { $rwCount = $parsed }
+                    } elseif ($rw.Count -ge 1) { $rwSeen = "$($rw[0])".Trim() }   # legacy 1줄 포맷
+                }
+                if ($rwSession -ne $sessionId) { $rwCount = 0 }
+                if ($dUuid -ne $rwSeen -and $rwCount -lt 2) {
+                    Set-Content -Path $rwP -Value @($sessionId, $dUuid, ($rwCount + 1)) -Encoding ascii
                     $script:retrMiss = $srcDelta
                 }
             }

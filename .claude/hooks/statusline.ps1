@@ -3,6 +3,29 @@
 # 2순위(구버전 폴백): transcript JSONL 마지막 usage + model.id 기반 한도 테이블.
 $ErrorActionPreference = 'SilentlyContinue'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+function Get-TailLines {
+    # stop-check.ps1과 동일 구현. PS 5.1 `Get-Content -Tail`은 -Encoding 지정 시 초선형 붕괴(16MB에서 26.79s),
+    # -Encoding을 빼면 ANSI로 읽혀 비-ASCII가 깨진다. StreamReader(UTF-8) 1패스 + 링버퍼로 둘 다 회피(0.13s).
+    param([string]$Path, [int]$Count)
+    if ($Count -le 0) { return @() }
+    $ring = New-Object string[] $Count
+    $n = 0
+    $fs = $null; $sr = $null
+    try {
+        $fs = New-Object System.IO.FileStream($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $sr = New-Object System.IO.StreamReader($fs, (New-Object System.Text.UTF8Encoding $false), $true)
+        while ($null -ne ($ln = $sr.ReadLine())) { $ring[$n % $Count] = $ln; $n++ }
+    } catch { return @() } finally {
+        if ($sr) { $sr.Dispose() } elseif ($fs) { $fs.Dispose() }
+    }
+    if ($n -eq 0) { return @() }
+    $c = [Math]::Min($n, $Count)
+    $out = New-Object string[] $c
+    for ($i = 0; $i -lt $c; $i++) { $out[$i] = $ring[(($n - $c + $i) % $Count)] }
+    return $out   # `,$out` 금지 (호출부 @()가 배열을 1요소로 감싸 파싱 무력화)
+}
+
 # stdin은 UTF-8. 콘솔 코드페이지(CP949 등)에 의존하는 [Console]::In 대신 raw 바이트를 UTF-8로 디코딩
 # (Korean username 등 non-ASCII transcript_path가 깨져 JSON 파싱 실패하던 버그 방지).
 $raw = (New-Object System.IO.StreamReader([Console]::OpenStandardInput(), (New-Object System.Text.UTF8Encoding $false))).ReadToEnd()
@@ -25,7 +48,7 @@ if ($cw -and [long]$cw.context_window_size -gt 0) {
     # 구버전 Claude Code 폴백: transcript 마지막 usage
     $tp = $j.transcript_path
     if ($tp -and (Test-Path -LiteralPath $tp)) {
-        $lines = @(Get-Content -LiteralPath $tp -Tail 80 -ErrorAction SilentlyContinue)
+        $lines = @(Get-TailLines $tp 80)
         for ($i = $lines.Count - 1; $i -ge 0; $i--) {
             try { $o = $lines[$i] | ConvertFrom-Json } catch { continue }
             $u = $o.message.usage

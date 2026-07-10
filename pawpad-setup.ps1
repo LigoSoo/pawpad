@@ -1446,6 +1446,23 @@ try {
     if ($target -match '(^|/)\.claude/codemap(/|$)') { $kind = 'cmap' }
     elseif ($target -match '(^|/)\.ctxdb(/|$)') { $kind = 'ctx' }
     elseif ($target -match '(^|/)(\.claude|\.agents|\.codex)(/|$)') { exit 0 }
+    else {
+        # src = "이 repo의 소스 파일". 아래는 소스가 아니므로 미집계 —
+        # 계수하면 백스톱이 "codemap 없이 소스를 뒤졌다"고 오판하고, 정직한 '미사용' 선언은 B3가 막아
+        # 에이전트가 빠져나갈 수 없는 block 교착에 빠진다(실사례: 스크린샷 4장 read -> 매 턴 block).
+        # (1) 자산/바이너리: 스크린샷·아이콘·미디어는 codemap lookup 대상이 아니다.
+        $assetExt = @('.png','.jpg','.jpeg','.gif','.webp','.bmp','.ico','.svg','.pdf','.zip','.gz',
+                      '.mp4','.mov','.mp3','.wav','.ttf','.otf','.woff','.woff2','.exe','.dll','.so','.dylib','.bin')
+        $ext = ''
+        try { $ext = [System.IO.Path]::GetExtension($target).ToLowerInvariant() } catch {}
+        if ($ext -and $assetExt -contains $ext) { exit 0 }
+        # (2) repo 밖: scratchpad/temp/타 repo 절대경로. 상대경로는 repo 내부로 간주.
+        $cwd = if ($ev.cwd) { ([string]$ev.cwd) -replace '\\', '/' } else { '' }
+        if ($cwd -and [System.IO.Path]::IsPathRooted($target)) {
+            $root = $cwd.TrimEnd('/') + '/'
+            if (-not $target.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) { exit 0 }
+        }
+    }
     $stateDir = ".ctxdb/.state"
     if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -Force | Out-Null }
     Add-Content -Path (Join-Path $stateDir "claude-read-stats") -Value $kind -Encoding ascii
@@ -1468,6 +1485,7 @@ fi
 if [ -z "$target" ] && [ "$tool" = "Grep" ]; then
   target="$(printf '%s' "$raw" | sed -n 's/.*"glob"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
 fi
+raw_target="$target"
 # 경계 정규화: 앞뒤 / 부착 → 디렉토리 자체 경로(트레일링 / 없음)·유사 이름(myproject.claude) 오분류 방지
 target="/$target/"
 case "$target" in
@@ -1476,6 +1494,22 @@ case "$target" in
   *"/.claude/"*|*"/.agents/"*|*"/.codex/"*) exit 0 ;;
   *) kind=src ;;
 esac
+if [ "$kind" = src ]; then
+  # src = "이 repo의 소스 파일". 자산/바이너리와 repo 밖 경로는 미집계 — 계수하면 백스톱이
+  # "codemap 없이 소스를 뒤졌다"고 오판하고, 정직한 '미사용' 선언은 B3가 막아 block 교착이 된다.
+  ext="$(printf '%s' "${raw_target##*.}" | tr 'A-Z' 'a-z')"
+  case "$ext" in
+    png|jpg|jpeg|gif|webp|bmp|ico|svg|pdf|zip|gz|mp4|mov|mp3|wav|ttf|otf|woff|woff2|exe|dll|so|dylib|bin) exit 0 ;;
+  esac
+  cwd="$(printf '%s' "$raw" | sed -n 's/.*"cwd"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+  case "$raw_target" in
+    /*|[A-Za-z]:/*)   # 절대경로만 검사 (상대경로는 repo 내부로 간주)
+      if [ -n "$cwd" ]; then
+        root="${cwd%/}/"
+        case "$raw_target" in "$root"*) : ;; *) exit 0 ;; esac
+      fi ;;
+  esac
+fi
 mkdir -p ".ctxdb/.state"
 echo "$kind" >> ".ctxdb/.state/claude-read-stats"
 exit 0
@@ -1559,6 +1593,33 @@ Write-FileContent ".claude\hooks\stop-check.ps1" @'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
+function Get-TailLines {
+    # PS 5.1 `Get-Content -Tail`은 -Encoding 지정 시 역방향 탐색이 초선형으로 붕괴한다.
+    # 실측(401줄 x 40KB, 16MB transcript): -Tail 80 = 0.19s / -Tail 80 -Encoding UTF8 = 26.79s.
+    # 그런데 -Encoding UTF8을 빼면 PS 5.1이 ANSI로 읽어 이모지/한글(Retrieval 선언)이 깨진다 -> 앵커 실패.
+    # 정답은 둘 다: StreamReader(UTF-8) 정방향 1패스 + 링버퍼 = 0.13s.
+    # FileShare.ReadWrite: Claude Code가 append 중인 transcript를 잠금 충돌 없이 읽기 위함.
+    param([string]$Path, [int]$Count)
+    if ($Count -le 0) { return @() }
+    $ring = New-Object string[] $Count
+    $n = 0
+    $fs = $null; $sr = $null
+    try {
+        $fs = New-Object System.IO.FileStream($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $sr = New-Object System.IO.StreamReader($fs, (New-Object System.Text.UTF8Encoding $false), $true)
+        while ($null -ne ($ln = $sr.ReadLine())) { $ring[$n % $Count] = $ln; $n++ }
+    } catch { return @() } finally {
+        if ($sr) { $sr.Dispose() } elseif ($fs) { $fs.Dispose() }
+    }
+    if ($n -eq 0) { return @() }
+    $c = [Math]::Min($n, $Count)
+    $out = New-Object string[] $c
+    for ($i = 0; $i -lt $c; $i++) { $out[$i] = $ring[(($n - $c + $i) % $Count)] }
+    # `,$out`(배열 감싸기) 금지 - 호출부가 @()로 재수집하면 "배열 1개를 담은 배열"이 되어
+    # 줄 단위 파싱이 통째로 무력화된다. 언롤 반환 + 호출부 @()가 정답.
+    return $out
+}
+
 $raw = (New-Object System.IO.StreamReader([Console]::OpenStandardInput(), (New-Object System.Text.UTF8Encoding $false))).ReadToEnd()
 $event = $null
 try { $event = $raw | ConvertFrom-Json } catch {}
@@ -1593,7 +1654,7 @@ Set-Content -Path $mkPath -Value @("session:$sessionId", "read:$($rsAll.Count)")
 $tp = if ($event) { [string]$event.transcript_path } else { "" }
 if ($tp -and (Test-Path -LiteralPath $tp)) {
     try {
-        $tlines = @(Get-Content -LiteralPath $tp -Tail 60 -Encoding UTF8 -ErrorAction SilentlyContinue)
+        $tlines = @(Get-TailLines $tp 60)
         # transcript는 한 응답을 text/thinking/tool_use 각각 별개 엔트리로 기록 -> 첫 assistant 엔트리에서 break 시
         # thinking/tool_use라 text 놓침. 최근 window에서 유효 Retrieval 선언(중괄호 예시 제외)을 담은 가장 최근 text 엔트리를 찾음.
         $rl = ""; $rlUuid = ""
@@ -1673,10 +1734,21 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
         # 보고 리마인더 1회 (uuid dedupe). src 1건은 면제 (이미 아는 파일 재편집 — CLAUDE.md가 라인 생략을 허용하는 케이스).
         try {
             if (-not $script:freshDecl -and $srcDelta -ge 2 -and $cmapDelta -eq 0 -and $dUuid) {
+                # 세션당 최대 2회 하드캡. uuid dedupe는 "같은 응답 재경고"만 막을 뿐, 매 턴 새 uuid로
+                # block이 재발행되는 교착(선언이 계속 거부되는 경우)은 못 막는다. block 1회 = 전체 응답 재생성이라
+                # 무한 루프는 사용자에게 수십 분의 정지로 나타난다. 원인 불문 상한을 둔다.
                 $rwP = Join-Path $stateDir "claude-retrieval-warned"
-                $rwSeen = if (Test-Path $rwP) { "$(Get-Content -LiteralPath $rwP -Raw -Encoding UTF8)".Trim() } else { "" }
-                if ($dUuid -ne $rwSeen) {
-                    Set-Content -Path $rwP -Value $dUuid -Encoding ascii
+                $rwSession = ""; $rwSeen = ""; $rwCount = 0
+                if (Test-Path $rwP) {
+                    $rw = @(Get-Content -LiteralPath $rwP -Encoding UTF8 -ErrorAction SilentlyContinue)
+                    if ($rw.Count -ge 3) {
+                        $rwSession = "$($rw[0])".Trim(); $rwSeen = "$($rw[1])".Trim()
+                        $parsed = 0; if ([int]::TryParse("$($rw[2])".Trim(), [ref]$parsed)) { $rwCount = $parsed }
+                    } elseif ($rw.Count -ge 1) { $rwSeen = "$($rw[0])".Trim() }   # legacy 1줄 포맷
+                }
+                if ($rwSession -ne $sessionId) { $rwCount = 0 }
+                if ($dUuid -ne $rwSeen -and $rwCount -lt 2) {
+                    Set-Content -Path $rwP -Value @($sessionId, $dUuid, ($rwCount + 1)) -Encoding ascii
                     $script:retrMiss = $srcDelta
                 }
             }
@@ -2176,10 +2248,20 @@ if command -v jq >/dev/null 2>&1; then
       # "codemap lookup 0 + src 직접읽기 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')" = 미선언 full-scan으로
       # 보고 리마인더 1회 (uuid dedupe). src 1건은 면제 (이미 아는 파일 재편집 — CLAUDE.md가 라인 생략을 허용하는 케이스).
       if [ "${freshDecl:-0}" -eq 0 ] && [ "${srcDelta:-0}" -ge 2 ] && [ "${cmapDelta:-0}" -eq 0 ] && [ -n "$u2" ]; then
-        rwP="$stateDir/claude-retrieval-warned"; rwSeen=""
-        [ -f "$rwP" ] && rwSeen="$(cat "$rwP" 2>/dev/null)"
-        if [ "$u2" != "$rwSeen" ]; then
-          printf '%s' "$u2" > "$rwP"
+        # 세션당 최대 2회 하드캡. uuid dedupe는 "같은 응답 재경고"만 막고, 매 턴 새 uuid로 block이
+        # 재발행되는 교착은 못 막는다 (block 1회 = 전체 응답 재생성 -> 수십 분 정지로 나타남).
+        rwP="$stateDir/claude-retrieval-warned"; rwSession=""; rwSeen=""; rwCount=0
+        if [ -f "$rwP" ]; then
+          rwSession="$(sed -n '1p' "$rwP" 2>/dev/null)"
+          rwSeen="$(sed -n '2p' "$rwP" 2>/dev/null)"
+          rwCount="$(sed -n '3p' "$rwP" 2>/dev/null)"
+          case "$rwCount" in ''|*[!0-9]*) rwCount=0 ;; esac
+          # legacy 1줄 포맷(uuid만): 1행을 uuid로 해석
+          if [ -z "$rwSeen" ]; then rwSeen="$rwSession"; rwSession=""; fi
+        fi
+        [ "$rwSession" != "$sessionId" ] && rwCount=0
+        if [ "$u2" != "$rwSeen" ] && [ "$rwCount" -lt 2 ]; then
+          printf '%s\n%s\n%s\n' "$sessionId" "$u2" "$((rwCount + 1))" > "$rwP"
           retrMiss="$srcDelta"
         fi
       fi
@@ -2289,6 +2371,29 @@ Write-FileContent ".claude\hooks\statusline.ps1" @'
 # 2순위(구버전 폴백): transcript JSONL 마지막 usage + model.id 기반 한도 테이블.
 $ErrorActionPreference = 'SilentlyContinue'
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+function Get-TailLines {
+    # stop-check.ps1과 동일 구현. PS 5.1 `Get-Content -Tail`은 -Encoding 지정 시 초선형 붕괴(16MB에서 26.79s),
+    # -Encoding을 빼면 ANSI로 읽혀 비-ASCII가 깨진다. StreamReader(UTF-8) 1패스 + 링버퍼로 둘 다 회피(0.13s).
+    param([string]$Path, [int]$Count)
+    if ($Count -le 0) { return @() }
+    $ring = New-Object string[] $Count
+    $n = 0
+    $fs = $null; $sr = $null
+    try {
+        $fs = New-Object System.IO.FileStream($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $sr = New-Object System.IO.StreamReader($fs, (New-Object System.Text.UTF8Encoding $false), $true)
+        while ($null -ne ($ln = $sr.ReadLine())) { $ring[$n % $Count] = $ln; $n++ }
+    } catch { return @() } finally {
+        if ($sr) { $sr.Dispose() } elseif ($fs) { $fs.Dispose() }
+    }
+    if ($n -eq 0) { return @() }
+    $c = [Math]::Min($n, $Count)
+    $out = New-Object string[] $c
+    for ($i = 0; $i -lt $c; $i++) { $out[$i] = $ring[(($n - $c + $i) % $Count)] }
+    return $out   # `,$out` 금지 (호출부 @()가 배열을 1요소로 감싸 파싱 무력화)
+}
+
 # stdin은 UTF-8. 콘솔 코드페이지(CP949 등)에 의존하는 [Console]::In 대신 raw 바이트를 UTF-8로 디코딩
 # (Korean username 등 non-ASCII transcript_path가 깨져 JSON 파싱 실패하던 버그 방지).
 $raw = (New-Object System.IO.StreamReader([Console]::OpenStandardInput(), (New-Object System.Text.UTF8Encoding $false))).ReadToEnd()
@@ -2311,7 +2416,7 @@ if ($cw -and [long]$cw.context_window_size -gt 0) {
     # 구버전 Claude Code 폴백: transcript 마지막 usage
     $tp = $j.transcript_path
     if ($tp -and (Test-Path -LiteralPath $tp)) {
-        $lines = @(Get-Content -LiteralPath $tp -Tail 80 -ErrorAction SilentlyContinue)
+        $lines = @(Get-TailLines $tp 80)
         for ($i = $lines.Count - 1; $i -ge 0; $i--) {
             try { $o = $lines[$i] | ConvertFrom-Json } catch { continue }
             $u = $o.message.usage

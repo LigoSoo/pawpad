@@ -105,10 +105,20 @@ if command -v jq >/dev/null 2>&1; then
       # "codemap lookup 0 + src 직접읽기 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')" = 미선언 full-scan으로
       # 보고 리마인더 1회 (uuid dedupe). src 1건은 면제 (이미 아는 파일 재편집 — CLAUDE.md가 라인 생략을 허용하는 케이스).
       if [ "${freshDecl:-0}" -eq 0 ] && [ "${srcDelta:-0}" -ge 2 ] && [ "${cmapDelta:-0}" -eq 0 ] && [ -n "$u2" ]; then
-        rwP="$stateDir/claude-retrieval-warned"; rwSeen=""
-        [ -f "$rwP" ] && rwSeen="$(cat "$rwP" 2>/dev/null)"
-        if [ "$u2" != "$rwSeen" ]; then
-          printf '%s' "$u2" > "$rwP"
+        # 세션당 최대 2회 하드캡. uuid dedupe는 "같은 응답 재경고"만 막고, 매 턴 새 uuid로 block이
+        # 재발행되는 교착은 못 막는다 (block 1회 = 전체 응답 재생성 -> 수십 분 정지로 나타남).
+        rwP="$stateDir/claude-retrieval-warned"; rwSession=""; rwSeen=""; rwCount=0
+        if [ -f "$rwP" ]; then
+          rwSession="$(sed -n '1p' "$rwP" 2>/dev/null)"
+          rwSeen="$(sed -n '2p' "$rwP" 2>/dev/null)"
+          rwCount="$(sed -n '3p' "$rwP" 2>/dev/null)"
+          case "$rwCount" in ''|*[!0-9]*) rwCount=0 ;; esac
+          # legacy 1줄 포맷(uuid만): 1행을 uuid로 해석
+          if [ -z "$rwSeen" ]; then rwSeen="$rwSession"; rwSession=""; fi
+        fi
+        [ "$rwSession" != "$sessionId" ] && rwCount=0
+        if [ "$u2" != "$rwSeen" ] && [ "$rwCount" -lt 2 ]; then
+          printf '%s\n%s\n%s\n' "$sessionId" "$u2" "$((rwCount + 1))" > "$rwP"
           retrMiss="$srcDelta"
         fi
       fi

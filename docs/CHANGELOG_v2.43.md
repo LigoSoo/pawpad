@@ -95,3 +95,64 @@ v2.43 본작업에서 toolkit **자기 레포에만** `.gitattributes`(`*.sh tex
 ### 한계
 - `Set-Content -Encoding UTF8`(PS 5.1)은 BOM을 붙인다. `.gitattributes` 첫 줄이 주석이라 git 파싱에 무해하나, 사용자가 첫 줄에 패턴을 추가하며 BOM 위치를 바꾸면 이론상 취약(`.gitignore` 경로와 동일 관행).
 - 무범위 Grep(예: `Grep "sym"` repo-wide)은 여전히 src 1건 — 실제 탐색 규모와 무관하게 1로 계수.
+
+## 사후수정 #3 (버전 불변, 2026-07-10) — `Get-Content -Tail` 최악값 경화 (**hang 원인 아님 — 오진 기록 포함**)
+
+> ⚠️ 이 절은 처음에 "Stop 훅 hang의 원인"으로 기록했다가 **실측으로 반증되어 정정**했다. 진짜 원인은 사후수정 #4다. 오진 과정을 지운 뒤 결론만 남기면 같은 함정을 다시 밟으므로 그대로 둔다.
+
+발단: 다운스트림 세션이 `running stop hooks… 1/2 · 15m 21s`로 정지. 합성 fixture(7MB, 120KB/줄)로 `stop-check.ps1`을 실호출하니 2분 타임아웃 초과 → "원인 발견"으로 결론지었다. **틀렸다.** 실제 그 세션의 transcript(21.7MB, 1011줄, 최대 786KB/줄)로 재측정하니 **구버전 훅도 1.35초**였다. `-Tail 60` 창(window) 안의 줄이 실전에선 작아 병리가 발현되지 않는다. 합성 fixture는 모든 줄을 크게 만들어 최악값을 인위적으로 만든 것이었다.
+
+남는 사실(경화 가치는 있음): PS 5.1 `Get-Content -Tail`은 **`-Encoding`을 지정하면** 역방향 탐색이 초선형으로 붕괴한다. `stop-check.ps1:40`이 `-Tail 60 -Encoding UTF8`로 transcript를 읽었고, transcript 한 줄은 tool_result 때문에 수십~수백 KB다.
+
+실측(16MB / 401줄 × 40KB):
+
+| 방식 | 시간 |
+|---|---|
+| `Get-Content -Tail 80` (`-Encoding` 없음) | 0.19 s |
+| `Get-Content -Tail 80 -Encoding UTF8` | **26.79 s** |
+| `StreamReader`(UTF-8) 1패스 + 링버퍼 | 0.13 s |
+
+7MB / 120KB per line fixture로 훅 전체를 실호출하면 **2분 타임아웃 초과**. 같은 fixture에서 수정 후 **1.25 s**.
+
+함정은 `-Encoding UTF8`을 그냥 빼면 안 된다는 것: PS 5.1은 인코딩 미지정 시 ANSI(CP949 등)로 읽어 **Retrieval 선언의 이모지/한글이 깨지고 B1 앵커가 실패**한다. 속도와 정확성을 동시에 얻는 유일한 길이 StreamReader다.
+
+- fix: `Get-TailLines`(FileStream `FileShare.ReadWrite` + StreamReader UTF-8 + 링버퍼) 신규, `stop-check.ps1`·`statusline.ps1` 양쪽 적용. `FileShare.ReadWrite`는 Claude Code가 append 중인 transcript를 잠금 충돌 없이 읽기 위함.
+- 구현 함정: 링버퍼 반환을 `return ,$out`으로 쓰면 호출부 `@()`가 **"배열 1개를 담은 배열"** 로 재수집해 줄 단위 파싱이 통째로 죽는다(구현 중 실제 발생, 훅이 조용히 transcript를 못 읽음). 언롤 반환 + 호출부 `@()`가 정답.
+- `statusline.ps1`은 `-Encoding`이 없어 **hang의 원인이 아니었다**(0.19s 경로). 다만 ANSI 읽기라 비-ASCII 줄에서 JSON 파싱이 깨질 수 있어 같은 헬퍼로 통일 — 정확성 개선이지 성능 수정이 아니다.
+- `.sh` 포트는 `tail -n`이라 무관(무변경). v2.43 회귀 아님 — `-Tail`은 v2.41부터 존재. retrieval 백스톱(추가D)이 block→재생성을 유발해 이 비용을 한 턴에 여러 번 물리면서 증상이 드러났을 뿐이다.
+
+- 표면: `.claude/hooks/stop-check.ps1`, `.claude/hooks/statusline.ps1`, `pawpad-setup.ps1`(임베드 2종)
+- 검증: PSParser 0(setup + live 2종). **emitted==live 8/8**. **stop-check 백스톱/파서 매트릭스 7/7** — 수정본·pre-fix HEAD **양쪽 동일 7/7**로 기능 회귀 없음. 합성 최악 fixture `>120s → 1.25s`. **실제 transcript(21.7MB): before 1.35s / after 1.14s — 즉 실전 이득 없음, 최악값 보험일 뿐.** statusline 렌더 전후 동일(`ctx 8% (80k/1M) | Opus`).
+
+### 조사 중 배운 것 (기록)
+- **PS 5.1은 BOM 없는 .ps1을 CP949로 읽는다.** 스크래치 테스트 스크립트에 이모지/한글 **리터럴**을 넣으면 정규식이 조용히 깨져 "훅이 틀렸다"는 오진을 만든다(이번에 3회 반복). 테스트 하네스는 ASCII 전용으로 쓰고 비-ASCII는 `[char]0xD83D` 식으로 조립하거나, 패턴을 훅 파일에서 직접 추출할 것.
+- **자식 프로세스 CWD는 `Set-Location`/`Push-Location`으로 신뢰할 수 없다.** 케이스 간 state가 새어 매트릭스가 거짓 FAIL(2건)을 냈다. `ProcessStartInfo.WorkingDirectory`로 명시할 것.
+- **stdout/stderr 인터리브 순서는 신뢰 불가.** DBG(stderr)와 결과(stdout)를 grep으로 섞어 읽어 케이스를 오귀속했다. 단일 케이스 격리 실행이 결정적 측정이었다.
+
+## 사후수정 #4 (버전 불변, 2026-07-11) — 🔴 retrieval 백스톱 block 교착 (추가D 자체 결함)
+
+**증상**: 다운스트림 세션이 `running stop hooks… 1/2 · 22m 28s · ↓ 19.9k tokens`. 훅이 매달린 게 아니라 **block → 전체 응답 재생성**이 매 턴 반복된 것. 사용자에겐 수십 분 정지로 보인다.
+
+**원인 2종이 곱해진다. 둘 다 v2.43 추가D가 넣은 것이다.**
+
+1. **read-track이 `src`를 잘못 정의했다.** `.claude/.agents/.codex`가 아니면 전부 `src`. 그래서 **스크린샷 PNG, scratchpad 임시파일, 다른 repo의 파일**까지 "소스 읽기"로 계수했다. 실제 로그: `read-track measured 4 source reads` — 그 턴에 읽은 건 `scratchpad/qa/*.png` 4장뿐이었다.
+2. **B3가 탈출구를 막았다.** 백스톱 면제는 `codemap hit|miss` 선언뿐이고 `미사용`은 면제가 아니다(허위 `미사용` 차단 목적). 그런데 위 오계수로 `srcDelta ≥ 2`가 서면, **소스를 하나도 안 읽은 에이전트가 낼 수 있는 정직한 선언은 `미사용`뿐인데 그게 곧 block 사유**가 된다. 정직할수록 못 빠져나온다.
+3. uuid dedupe는 "같은 응답 재경고"만 막는다. 교정 응답은 **새 uuid**라 다음 Stop에서 다시 block → 무한.
+
+**fix**
+
+- `read-track.{ps1,sh}`: `src` = **이 repo(cwd) 하위 + 비-자산 파일**. 자산/바이너리 확장자(`png jpg jpeg gif webp bmp ico svg pdf zip gz mp4 mov mp3 wav ttf otf woff woff2 exe dll so dylib bin`) 미집계. 절대경로가 `cwd` 하위가 아니면 미집계(scratchpad·temp·타 repo). 상대경로는 repo 내부로 간주.
+- `stop-check.{ps1,sh}`: retrieval block **세션당 하드캡 2회**(`claude-retrieval-warned` = `session / uuid / count` 3줄, legacy 1줄 포맷 하위호환). 원인이 무엇이든 무한 재생성 불가. B3의 억지력은 첫 2회로 유지된다.
+
+**검증**
+- read-track 재분류 매트릭스 **ps1·sh 각 10케이스 = 20/20**: 실사례(scratchpad PNG)·repo 자산 png·타 repo 절대경로 → 미집계 / repo 소스(절대·상대)·codemap·ctxdb·glob 분류는 기존대로.
+- 기존 B4 회귀 스위트 **14/14 ps1·sh**(fixture의 비현실적 `cwd`를 실제 값으로 교정 후 — 첫 실행의 1건 FAIL은 새 "repo 밖" 규칙이 정확히 걸러낸 것이었다).
+- 루프 하드가드 E2E: **정직한 `미사용` 선언 + src 2건**을 5턴 연속 재현(매 턴 새 uuid) → 발화 `BLOCK BLOCK - - -`. 세션당 2회에서 정지.
+- stop-check 백스톱/파서 매트릭스 **7/7**, emitted==live **8/8**, PSParser 0, `bash -n` OK.
+- 실제 transcript(21.7MB) 실호출 1.14s.
+
+**교훈 (이번 건의 핵심)**
+- **관측 도구가 관측 대상을 망가뜨렸다.** 계측(read-track)의 분류가 틀린 채로 그 위에 강제(block)를 얹으면, 오계수가 곧 강제력이 된다. 강제를 붙이기 전에 계측의 오탐률을 실사용 데이터로 먼저 재야 한다.
+- **에이전트에게 정직한 탈출구가 항상 있어야 한다.** B3는 거짓 `미사용`을 막으려다 참인 `미사용`까지 막았다. 게이트를 설계할 때 "사실을 말하는 응답이 게이트를 통과하는가"를 반드시 확인할 것.
+- **block은 공짜가 아니다.** 1회 = 전체 응답 재생성. 재발행 상한 없는 block 조건은 잠재적 무한 비용이다.
+- 진단은 **실제 데이터로 재현**될 때까지 확정하지 말 것. 합성 fixture는 존재하지 않는 병목을 만들어냈다(#3 참조).
