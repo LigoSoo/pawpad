@@ -315,7 +315,23 @@ CLAUDE.md의 DoD 8개가 **전부** 통과해야 완료:
 
 ■ 세션 그냥 이어가기 (같은 owner)
   /checkpoint → 새 세션 → /resume → 재개
+
+■ 작업 완료 후 세션 정리
+  /task-done(lane 종결) → 새 세션 → /resume
+  ※ task-done이 lane을 이미 닫았으면 /checkpoint 불필요 — checkpoint는 "작업 도중" 전용
 ```
+
+### checkpoint vs handoff — 선택 기준
+
+| 상황 | 선택 | 이유 |
+|------|------|------|
+| 같은 agent가 새 세션에서 계속 | `/checkpoint` | 저장만 (snapshot 없음, owner 유지, 저렴) |
+| 다른 agent(Claude↔Codex)가 인수 | `/handoff {agent} {feature}` | snapshot + owner 이전 |
+| 같은 agent지만 상태 복잡 (검증 실패 중·Known Issues 다수) | `/handoff next {feature}` | lane만으론 부족 — snapshot의 Next Commands가 가치 |
+| 기능이 실제로 끝남 | `/task-done` | checkpoint/handoff 아님 — 종결 게이트 |
+| 기획 완료 → 구현 대기 | (`/to-prd`가 `SPEC_READY` 설정) | handoff 아님 — snapshot 불필요, 구현 세션이 인수 |
+
+> 인수 측 주의: handoff 수신 후 **owner를 본인으로 변경**(lane + `_wip.md`) + `_meta.md`에 ACCEPT 기록. 누락하면 다음 세션 Owner Mismatch 게이트가 복구하지만 대조 비용이 든다.
 
 ---
 
