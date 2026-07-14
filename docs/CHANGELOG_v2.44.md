@@ -51,6 +51,15 @@
 - Low-2 반영: bundle 주석 `Core 11` → `Core 12` (v2.43 task-done 추가분).
 - 반영 후 회귀: lean/prd-only/standard/full 4조합 fresh install — FAILED 0, 스킬 수 12/15/17/20 정합, 미설치 스킬 이름 dangling 0 (동사 "review/trust" 제외), PSParser 0.
 
+## 사후수정 #1 (2026-07-14, 버전 불변) — 종결 기록 4벌 → 2벌 + 표시 계층 점검
+
+배경: 세션 종결 시 같은 사실이 4곳(L2 세션 블록 / INDEX AGENT SYNC 상태 셀 / _meta RECENT / sessions 이월)에 기록되고, 그중 가장 뚱뚱한 사본(INDEX 상태 셀 = L2 거의 전문 복제)이 가장 비싼 자리(매 세션 무조건 hook 주입)에 있던 구조 개선.
+
+- **context-saver SKILL STEP 3** (live + 임베드 + 미러): INDEX 상태 셀 = 헤드라인 1줄(150자 이내: 버전/기능 + 결과 1구 + 잔여 유무 + "상세 -> L2 {블록명}" 포인터). L2 세션 블록 전문 복제 금지 — 상세는 on-demand 자리(L2)에 1벌만(SoT 1곳, drift 방지, 주입 토큰 절감).
+- **task-done SKILL 체크리스트 4항** (live + 임베드 + 미러): _meta RECENT 1줄 = 2문장 이내 + 커밋 해시(타임라인 전용, 상세는 L2/lane).
+- 재개 정보 손실 없음 근거: BLOCKED/NEXT는 _meta 상단(ON START 상시 read), 헤드라인은 INDEX(상시 주입), 상세는 L2 1홉 read. hook/계측 코드 무변경 — 오탐/차단 회귀 가능성 0.
+- **statusline 점검 (수정 없음, 정상 판정)**: ①`codemap 100% · routed 1 / full-scan 0` = hit 선언 1건/전체 선언 1건 → 100%. 산식 routed/(routed+full-scan)이라 100% 초과 불가, 표본 크기는 routed/full-scan 카운트로 병기 노출. `미사용` 선언은 분모 제외(v2.42 설계). 상태 파일 실측으로 화면 값 재현 확인. ②📡 세그먼트 간헐 표시 = session-start가 매 세션 stats 0-byte 리셋 + (선언 분모+src)=0이면 세그먼트 숨김 → 세션 초반·순수 문답 세션엔 안 뜨는 게 설계 의도. run-hook.ps1 Push-Location으로 cwd 문제 없음. ③🐾 Active Skills 라인 간헐 = hook 아닌 모델 지침 준수 문제 — 표시용 라인에 Stop hook 강제를 얹는 것은 비채택(v2.43 교훈: block 비용 > 표시 이득, 오탐 시 강제력화).
+
 ## Notes
 
 - 표면(수정 파일): CLAUDE.md·AGENTS.md(live), `.claude/skills/{clarity,code-delegate}/SKILL.md`, `.agents/skills/{clarity,code-delegate}/SKILL.md`(재생성), `pawpad-setup.ps1`(임베드 4곳 + Stack 5면 + 헤더/`$ver`/완료요약), README.md, GUIDE.md, USAGE.md, PAWPAD_VERSIONS.md, docs/CHANGELOG_v2.44.md.
