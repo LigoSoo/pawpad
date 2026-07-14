@@ -60,6 +60,16 @@
 - 재개 정보 손실 없음 근거: BLOCKED/NEXT는 _meta 상단(ON START 상시 read), 헤드라인은 INDEX(상시 주입), 상세는 L2 1홉 read. hook/계측 코드 무변경 — 오탐/차단 회귀 가능성 0.
 - **statusline 점검 (수정 없음, 정상 판정)**: ①`codemap 100% · routed 1 / full-scan 0` = hit 선언 1건/전체 선언 1건 → 100%. 산식 routed/(routed+full-scan)이라 100% 초과 불가, 표본 크기는 routed/full-scan 카운트로 병기 노출. `미사용` 선언은 분모 제외(v2.42 설계). 상태 파일 실측으로 화면 값 재현 확인. ②📡 세그먼트 간헐 표시 = session-start가 매 세션 stats 0-byte 리셋 + (선언 분모+src)=0이면 세그먼트 숨김 → 세션 초반·순수 문답 세션엔 안 뜨는 게 설계 의도. run-hook.ps1 Push-Location으로 cwd 문제 없음. ③🐾 Active Skills 라인 간헐 = hook 아닌 모델 지침 준수 문제 — 표시용 라인에 Stop hook 강제를 얹는 것은 비채택(v2.43 교훈: block 비용 > 표시 이득, 오탐 시 강제력화).
 
+## 사후수정 #2 (2026-07-15, 버전 불변) — codemap 활용률 응답 단위 통일
+
+배경: `codemap 100% · routed 2 / full-scan 0 · src 9`가 제작자도 오독하는 표기 — ①선언(응답 단위)과 실측(read 단위)이 한 줄에 섞여 "src 중 몇이 경유?"로 읽힘 ②분모가 선언뿐이라 미선언 풀스캔 턴이 빠져 100%가 과대 신호 ③분모 1~2에서 0/100% 스윙. 사용자 AskUserQuestion "응답 단위 통일안" 채택.
+
+- **stop-check.ps1/.sh `cmap:direct` 계수**: 응답이 codemap hit/miss 선언 없이 src 2건 이상 읽음(read-track 실측) = '직행'으로 `claude-retrieval-stats`에 계수. src 1건 면제(백스톱 동일 — 이미 아는 파일 재편집). `미사용` 선언도 hit/miss 아님 → 직행(B3 일관). **순수 계측 — block/캡 로직 무변경**, dedupe 별도 파일(`claude-direct-seen`, uuid 고유라 세션 reset 불요).
+- **statusline.ps1/.sh 렌더**: `📡 codemap 활용 N% (경유 X · 직행 Y) · 소스 읽기 N` — 활용률 = hit ÷ (hit+miss+direct), 미선언 사각으로 인한 100% 뻥튀기 제거. **분모 3 미만은 % 숨기고 건수만**(소표본 스윙 방지). 분모 0 시 `codemap 미선언`(노랑) 라벨 폐기 → dim `codemap –` (미선언 풀스캔은 이제 direct로 분모에 들어가므로 라벨 불요, 턴 중간 과도상태에 노랑 경고가 뜨던 노이즈 제거).
+- CLAUDE.md/AGENTS.md Retrieval 표시 절 statusline 설명 문구 갱신 (live + 임베드 2곳).
+- 검증: PSParser 0 · bash -n OK · secret-scan clean. **ps1 E2E 4/4**(미선언+src3→direct / 재실행 dedupe / hit 선언→hit만 / `미사용`+src3→direct) · **sh E2E 4/4 동일**(jq 1.7.1 scratchpad 확보) · statusline 렌더 ps1 4/4·sh 3/3(활용 67%/소표본 건수만/`codemap –`/저활용 25% 빨강 경로). **부수 해소: v2.43 잔여 NEXT "stop-check.sh jq 앵커 E2E" — 실 jq로 hit 정파싱·미사용 비계수 확인 완료.**
+- 알려진 한계(문서화): retrieval 백스톱 block 후 교정 응답이 선언하면 원 응답(direct)+교정 응답(hit)이 각 1건씩 집계 — 논리적 한 턴이 분모 2가 될 수 있음. 원 응답의 미선언 행동 자체는 사실이므로 수용.
+
 ## Notes
 
 - 표면(수정 파일): CLAUDE.md·AGENTS.md(live), `.claude/skills/{clarity,code-delegate}/SKILL.md`, `.agents/skills/{clarity,code-delegate}/SKILL.md`(재생성), `pawpad-setup.ps1`(임베드 4곳 + Stack 5면 + 헤더/`$ver`/완료요약), README.md, GUIDE.md, USAGE.md, PAWPAD_VERSIONS.md, docs/CHANGELOG_v2.44.md.

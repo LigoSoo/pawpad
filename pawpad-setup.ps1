@@ -1327,7 +1327,7 @@ caveman 항상 포함. off 시 라인에 ``normal mode (caveman 압축 off)``로
 형식: ``📡 Retrieval: codemap {hit(경로)|miss|미사용} | ctxdb {hit(파일)|miss|미사용} | src {read N (codemap 경유)|full-scan N (사유)}``
 - 소스 탐색 전 codemap lookup 의무. miss여도 곧장 full-scan 금지 — keywords/INDEX 의미매칭 재시도 후에도 miss면 **사유와 함께 full-scan 선언**.
 - 코드/컨텍스트 탐색이 없는 응답(순수 문답·이미 아는 파일 재편집)은 라인 생략.
-- 허위 선언·누락 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. ``codemap lookup 0 + src 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')``이면 Stop hook이 decision:block으로 선언을 1회 요구(retrieval 백스톱). 선언 라인은 **라인 선두 앵커 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. statusline ``📡 codemap N% · routed/full-scan · src N``의 경유율은 이 선언 집계 기반 — 선언을 빼먹으면 분모가 비어 ``codemap 미선언``(src를 읽은 경우) 또는 ``codemap –``로 렌더된다.
+- 허위 선언·누락 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. ``codemap lookup 0 + src 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')``이면 Stop hook이 decision:block으로 선언을 1회 요구(retrieval 백스톱). 선언 라인은 **라인 선두 앵커 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. statusline ``📡 codemap 활용 N% (경유 X · 직행 Y) · 소스 읽기 N``의 활용률은 응답 단위 집계 — 경유=hit 선언, 직행=miss 선언+미선언 풀스캔(Stop hook이 read-track 실측으로 계수). 선언을 빼먹으면 직행으로 분모에 들어가 활용률이 내려간다(분모 3 미만은 % 대신 건수만).
 "@
 Write-FileContent "CLAUDE.md" $tmplClaudeMd
 
@@ -1471,7 +1471,7 @@ ACTIVE EVERY RESPONSE.
 형식: ``📡 Retrieval: codemap {hit(경로)|miss|미사용} | ctxdb {hit(파일)|miss|미사용} | src {read N (codemap 경유)|full-scan N (사유)}``
 - 소스 탐색 전 codemap lookup 의무. miss여도 곧장 full-scan 금지 — keywords/INDEX 의미매칭 재시도 후에도 miss면 **사유와 함께 full-scan 선언**.
 - 코드/컨텍스트 탐색이 없는 응답(순수 문답·이미 아는 파일 재편집)은 라인 생략.
-- 허위 선언·누락 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. ``codemap lookup 0 + src 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')``이면 Stop hook이 decision:block으로 선언을 1회 요구(retrieval 백스톱). 선언 라인은 **라인 선두 앵커 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. statusline ``📡 codemap N% · routed/full-scan · src N``의 경유율은 이 선언 집계 기반 — 선언을 빼먹으면 분모가 비어 ``codemap 미선언``(src를 읽은 경우) 또는 ``codemap –``로 렌더된다.
+- 허위 선언·누락 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. ``codemap lookup 0 + src 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')``이면 Stop hook이 decision:block으로 선언을 1회 요구(retrieval 백스톱). 선언 라인은 **라인 선두 앵커 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. statusline ``📡 codemap 활용 N% (경유 X · 직행 Y) · 소스 읽기 N``의 활용률은 응답 단위 집계 — 경유=hit 선언, 직행=miss 선언+미선언 풀스캔(Stop hook이 read-track 실측으로 계수). 선언을 빼먹으면 직행으로 분모에 들어가 활용률이 내려간다(분모 3 미만은 % 대신 건수만).
 
 ## Checkpoint (매 응답 종료 전 확인 - hooks 대체)
 자세한 운영은 .claude/HYBRID.md 참조.
@@ -1942,6 +1942,26 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
             $t2 = ""
             foreach ($c2 in @($o2.message.content)) { if ($c2.type -eq 'text') { $t2 += [string]$c2.text + "`n" } }
             if ($t2) { $dTxt = $t2; $dUuid = [string]$o2.uuid; break }
+        }
+    } catch {}
+
+    # cmap:direct 계측 (v2.44 사후수정#2): 이 응답이 codemap hit/miss 선언 없이 src를 2건 이상 읽었으면 '직행'으로
+    # stats에 계수 -> statusline 활용률 분모 포함 (선언만 분모이던 지표의 미선언 사각 = 100% 뻥튀기 봉합).
+    # src 1건은 백스톱과 동일 면제(이미 아는 파일 재편집). '미사용' 선언도 hit/miss 아님 -> 직행 (B3 일관).
+    # 순수 계측 — block/캡과 무관. dedupe는 별도 파일(claude-direct-seen, uuid 고유라 세션 reset 불요).
+    try {
+        $curDecl = $false
+        if ($rl -and $rlUuid -eq $dUuid) {
+            $segsD = $rl -split '\|'
+            if ($segsD.Count -ge 3 -and ($segsD[0] -match 'hit' -or $segsD[0] -match 'miss')) { $curDecl = $true }
+        }
+        if (-not $curDecl -and $dUuid -and $srcDelta -ge 2) {
+            $dsPath = Join-Path $stateDir "claude-direct-seen"
+            $dsSeen = if (Test-Path $dsPath) { "$(Get-Content -LiteralPath $dsPath -Raw -Encoding UTF8)".Trim() } else { "" }
+            if ($dUuid -ne $dsSeen) {
+                Add-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value 'cmap:direct' -Encoding ascii
+                Set-Content -Path $dsPath -Value $dUuid -Encoding ascii
+            }
         }
     } catch {}
 
@@ -2465,6 +2485,26 @@ if command -v jq >/dev/null 2>&1; then
       | last | if . == null then "" else (.uuid + "\t" + (.txt | gsub("[\t\n]";" "))) end' 2>/dev/null)"
     u2="${res2%%$'\t'*}"; t2="${res2#*$'\t'}"
 
+    # cmap:direct 계측 (v2.44 사후수정#2): 이 응답이 codemap hit/miss 선언 없이 src 2건 이상 읽음 = '직행'으로
+    # stats 계수(statusline 활용률 분모). src 1건 면제(백스톱 동일). '미사용' 선언도 hit/miss 아님 -> 직행(B3 일관).
+    # 순수 계측 — block/캡 없음. dedupe 별도 파일(claude-direct-seen, uuid 고유라 세션 reset 불요).
+    curDecl=0
+    if [ -n "$uuid" ] && [ "$uuid" = "$u2" ] && [ -n "$rline" ]; then
+      nsegD="$(printf '%s' "$rline" | awk -F'|' '{print NF}')"
+      if [ "${nsegD:-0}" -ge 3 ]; then
+        c1="$(printf '%s' "$rline" | awk -F'|' '{print $1}')"
+        case "$c1" in *hit*|*miss*) curDecl=1 ;; esac
+      fi
+    fi
+    if [ "$curDecl" -eq 0 ] && [ -n "$u2" ] && [ "${srcDelta:-0}" -ge 2 ]; then
+      dsP="$stateDir/claude-direct-seen"; dsSeen=""
+      [ -f "$dsP" ] && dsSeen="$(cat "$dsP" 2>/dev/null)"
+      if [ "$u2" != "$dsSeen" ]; then
+        printf 'cmap:direct\n' >> "$stateDir/claude-retrieval-stats"
+        printf '%s' "$u2" > "$dsP"
+      fi
+    fi
+
     laneClose=0
     if [ "$hookActive" -eq 0 ]; then
       # lane-close 백스톱 (v2.43): 마지막 assistant 응답이 완료/종료 선언인데 _wip Active Lanes 잔존 -> task-done 리마인더 1회 (uuid dedupe).
@@ -2689,29 +2729,32 @@ if ($model) { $out += " | $model" }
 # codemap N% = routed/(routed+full-scan). routed=codemap hit 선언, full-scan=codemap miss 선언. src=색인 미경유 직접 read 수.
 # 선언 0 + src>0 = 미선언 직접읽기(풀스캔 의심) → src 노랑. ctx N%(ctxdb 매칭율)은 샘플 있을 때만 뒤에 붙임.
 $e = [char]27; $G = "$e[32m"; $Y = "$e[33m"; $R = "$e[31m"; $D = "$e[90m"; $Z = "$e[0m"
-$ch = 0; $cm = 0; $xh = 0; $xm = 0
+$ch = 0; $cm = 0; $cd = 0; $xh = 0; $xm = 0
 $retFile = ".ctxdb/.state/claude-retrieval-stats"
 if (Test-Path -LiteralPath $retFile) {
     $rs = @(Get-Content -LiteralPath $retFile -ErrorAction SilentlyContinue)
-    $ch = @($rs -eq 'cmap:hit').Count; $cm = @($rs -eq 'cmap:miss').Count
+    $ch = @($rs -eq 'cmap:hit').Count; $cm = @($rs -eq 'cmap:miss').Count; $cd = @($rs -eq 'cmap:direct').Count
     $xh = @($rs -eq 'ctx:hit').Count;  $xm = @($rs -eq 'ctx:miss').Count
 }
 $srcN = 0
 $statsFile = ".ctxdb/.state/claude-read-stats"
 if (Test-Path -LiteralPath $statsFile) { $srcN = @((Get-Content -LiteralPath $statsFile -ErrorAction SilentlyContinue) -eq 'src').Count }
-$cdenom = $ch + $cm
+# 응답 단위 통일 (v2.44 사후수정#2): 분모 = hit 선언(경유) + miss 선언 + 미선언 풀스캔(cmap:direct, stop-check 계수).
+# 활용률 = 경유 / 전체 탐색 응답 -> 미선언 사각으로 인한 100% 뻥튀기 제거. 분모 3 미만은 소표본 스윙 방지로 % 숨김.
+$fsN = $cm + $cd
+$cdenom = $ch + $fsN
 if (($cdenom + $srcN) -gt 0) {
-    if ($cdenom -gt 0) {
+    if ($cdenom -ge 3) {
         $rate = [int][math]::Floor($ch * 100.0 / $cdenom + 0.5)
         $rcol = if ($rate -ge 70) { $G } elseif ($rate -ge 40) { $Y } else { $R }
-        $seg = "${D}codemap${Z} ${rcol}${rate}%${Z} ${D}·${Z} routed $ch / full-scan $cm"
+        $seg = "${D}codemap${Z} ${rcol}활용 ${rate}%${Z} ${D}(경유 $ch · 직행 $fsN)${Z}"
+    } elseif ($cdenom -gt 0) {
+        $seg = "${D}codemap${Z} 경유 $ch ${D}·${Z} 직행 $fsN"
     } else {
-        # 분모 0 = 선언이 하나도 없었다는 뜻. src를 읽었는데도 분모가 비면 원인(선언 누락)이 보이도록 라벨링.
-        $seg = if ($srcN -gt 0) { "${Y}codemap 미선언${Z}" } else { "${D}codemap –${Z}" }
+        $seg = "${D}codemap –${Z}"
     }
     if ($srcN -gt 0) {
-        $scol = if ($cdenom -eq 0) { $Y } else { $D }
-        $seg += " ${D}·${Z} ${scol}src $srcN${Z}"
+        $seg += " ${D}·${Z} ${D}소스 읽기 $srcN${Z}"
     }
     if (($xh + $xm) -gt 0) {
         $xrate = [int][math]::Floor($xh * 100.0 / ($xh + $xm) + 0.5)
@@ -2767,29 +2810,33 @@ out="ctx ${pct}% (${usedk}k/${limitlabel})"
 # retrieval routing 표시: codemap 경유율(선언 기반) 주지표 + src 직접읽기 볼륨(백스톱).
 # codemap N% = routed/(routed+full-scan). 선언 0 + src>0 = 미선언 직접읽기 → src 노랑. ctx N%은 샘플 있을 때만.
 E=$(printf '\033'); G="${E}[32m"; Y="${E}[33m"; R="${E}[31m"; D="${E}[90m"; Z="${E}[0m"
-ch=0; cm=0; xh=0; xm=0
+ch=0; cm=0; cd=0; xh=0; xm=0
 rf=".ctxdb/.state/claude-retrieval-stats"
 if [ -f "$rf" ]; then
   ch="$(grep -c '^cmap:hit$' "$rf" 2>/dev/null)"; cm="$(grep -c '^cmap:miss$' "$rf" 2>/dev/null)"
+  cd="$(grep -c '^cmap:direct$' "$rf" 2>/dev/null)"
   xh="$(grep -c '^ctx:hit$' "$rf" 2>/dev/null)"; xm="$(grep -c '^ctx:miss$' "$rf" 2>/dev/null)"
 fi
 srcn=0
 sf=".ctxdb/.state/claude-read-stats"
 if [ -f "$sf" ]; then srcn="$(grep -c '^src$' "$sf" 2>/dev/null)"; fi
-for v in ch cm xh xm srcn; do eval "case \"\$$v\" in (''|*[!0-9]*) $v=0 ;; esac"; done
-cden=$(( ch + cm ))
+for v in ch cm cd xh xm srcn; do eval "case \"\$$v\" in (''|*[!0-9]*) $v=0 ;; esac"; done
+# 응답 단위 통일 (v2.44 사후수정#2): 분모 = hit 선언(경유) + miss 선언 + 미선언 풀스캔(cmap:direct).
+# 활용률 = 경유 / 전체 탐색 응답. 분모 3 미만은 소표본 스윙 방지로 % 숨김.
+fsn=$(( cm + cd ))
+cden=$(( ch + fsn ))
 if [ $(( cden + srcn )) -gt 0 ]; then
-  if [ "$cden" -gt 0 ]; then
+  if [ "$cden" -ge 3 ]; then
     rate=$(( (ch * 100 + cden / 2) / cden ))
     if [ "$rate" -ge 70 ]; then rcol="$G"; elif [ "$rate" -ge 40 ]; then rcol="$Y"; else rcol="$R"; fi
-    seg="${D}codemap${Z} ${rcol}${rate}%${Z} ${D}·${Z} routed ${ch} / full-scan ${cm}"
+    seg="${D}codemap${Z} ${rcol}활용 ${rate}%${Z} ${D}(경유 ${ch} · 직행 ${fsn})${Z}"
+  elif [ "$cden" -gt 0 ]; then
+    seg="${D}codemap${Z} 경유 ${ch} ${D}·${Z} 직행 ${fsn}"
   else
-    # 분모 0 = 선언이 하나도 없었다는 뜻. src를 읽었는데도 분모가 비면 원인(선언 누락)이 보이도록 라벨링.
-    if [ "$srcn" -gt 0 ]; then seg="${Y}codemap 미선언${Z}"; else seg="${D}codemap –${Z}"; fi
+    seg="${D}codemap –${Z}"
   fi
   if [ "$srcn" -gt 0 ]; then
-    if [ "$cden" -eq 0 ]; then scol="$Y"; else scol="$D"; fi
-    seg="$seg ${D}·${Z} ${scol}src ${srcn}${Z}"
+    seg="$seg ${D}·${Z} ${D}소스 읽기 ${srcn}${Z}"
   fi
   xden=$(( xh + xm ))
   if [ "$xden" -gt 0 ]; then

@@ -40,29 +40,33 @@ out="ctx ${pct}% (${usedk}k/${limitlabel})"
 # retrieval routing 표시: codemap 경유율(선언 기반) 주지표 + src 직접읽기 볼륨(백스톱).
 # codemap N% = routed/(routed+full-scan). 선언 0 + src>0 = 미선언 직접읽기 → src 노랑. ctx N%은 샘플 있을 때만.
 E=$(printf '\033'); G="${E}[32m"; Y="${E}[33m"; R="${E}[31m"; D="${E}[90m"; Z="${E}[0m"
-ch=0; cm=0; xh=0; xm=0
+ch=0; cm=0; cd=0; xh=0; xm=0
 rf=".ctxdb/.state/claude-retrieval-stats"
 if [ -f "$rf" ]; then
   ch="$(grep -c '^cmap:hit$' "$rf" 2>/dev/null)"; cm="$(grep -c '^cmap:miss$' "$rf" 2>/dev/null)"
+  cd="$(grep -c '^cmap:direct$' "$rf" 2>/dev/null)"
   xh="$(grep -c '^ctx:hit$' "$rf" 2>/dev/null)"; xm="$(grep -c '^ctx:miss$' "$rf" 2>/dev/null)"
 fi
 srcn=0
 sf=".ctxdb/.state/claude-read-stats"
 if [ -f "$sf" ]; then srcn="$(grep -c '^src$' "$sf" 2>/dev/null)"; fi
-for v in ch cm xh xm srcn; do eval "case \"\$$v\" in (''|*[!0-9]*) $v=0 ;; esac"; done
-cden=$(( ch + cm ))
+for v in ch cm cd xh xm srcn; do eval "case \"\$$v\" in (''|*[!0-9]*) $v=0 ;; esac"; done
+# 응답 단위 통일 (v2.44 사후수정#2): 분모 = hit 선언(경유) + miss 선언 + 미선언 풀스캔(cmap:direct).
+# 활용률 = 경유 / 전체 탐색 응답. 분모 3 미만은 소표본 스윙 방지로 % 숨김.
+fsn=$(( cm + cd ))
+cden=$(( ch + fsn ))
 if [ $(( cden + srcn )) -gt 0 ]; then
-  if [ "$cden" -gt 0 ]; then
+  if [ "$cden" -ge 3 ]; then
     rate=$(( (ch * 100 + cden / 2) / cden ))
     if [ "$rate" -ge 70 ]; then rcol="$G"; elif [ "$rate" -ge 40 ]; then rcol="$Y"; else rcol="$R"; fi
-    seg="${D}codemap${Z} ${rcol}${rate}%${Z} ${D}·${Z} routed ${ch} / full-scan ${cm}"
+    seg="${D}codemap${Z} ${rcol}활용 ${rate}%${Z} ${D}(경유 ${ch} · 직행 ${fsn})${Z}"
+  elif [ "$cden" -gt 0 ]; then
+    seg="${D}codemap${Z} 경유 ${ch} ${D}·${Z} 직행 ${fsn}"
   else
-    # 분모 0 = 선언이 하나도 없었다는 뜻. src를 읽었는데도 분모가 비면 원인(선언 누락)이 보이도록 라벨링.
-    if [ "$srcn" -gt 0 ]; then seg="${Y}codemap 미선언${Z}"; else seg="${D}codemap –${Z}"; fi
+    seg="${D}codemap –${Z}"
   fi
   if [ "$srcn" -gt 0 ]; then
-    if [ "$cden" -eq 0 ]; then scol="$Y"; else scol="$D"; fi
-    seg="$seg ${D}·${Z} ${scol}src ${srcn}${Z}"
+    seg="$seg ${D}·${Z} ${D}소스 읽기 ${srcn}${Z}"
   fi
   xden=$(( xh + xm ))
   if [ "$xden" -gt 0 ]; then

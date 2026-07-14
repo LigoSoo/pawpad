@@ -80,6 +80,26 @@ if command -v jq >/dev/null 2>&1; then
       | last | if . == null then "" else (.uuid + "\t" + (.txt | gsub("[\t\n]";" "))) end' 2>/dev/null)"
     u2="${res2%%$'\t'*}"; t2="${res2#*$'\t'}"
 
+    # cmap:direct 계측 (v2.44 사후수정#2): 이 응답이 codemap hit/miss 선언 없이 src 2건 이상 읽음 = '직행'으로
+    # stats 계수(statusline 활용률 분모). src 1건 면제(백스톱 동일). '미사용' 선언도 hit/miss 아님 -> 직행(B3 일관).
+    # 순수 계측 — block/캡 없음. dedupe 별도 파일(claude-direct-seen, uuid 고유라 세션 reset 불요).
+    curDecl=0
+    if [ -n "$uuid" ] && [ "$uuid" = "$u2" ] && [ -n "$rline" ]; then
+      nsegD="$(printf '%s' "$rline" | awk -F'|' '{print NF}')"
+      if [ "${nsegD:-0}" -ge 3 ]; then
+        c1="$(printf '%s' "$rline" | awk -F'|' '{print $1}')"
+        case "$c1" in *hit*|*miss*) curDecl=1 ;; esac
+      fi
+    fi
+    if [ "$curDecl" -eq 0 ] && [ -n "$u2" ] && [ "${srcDelta:-0}" -ge 2 ]; then
+      dsP="$stateDir/claude-direct-seen"; dsSeen=""
+      [ -f "$dsP" ] && dsSeen="$(cat "$dsP" 2>/dev/null)"
+      if [ "$u2" != "$dsSeen" ]; then
+        printf 'cmap:direct\n' >> "$stateDir/claude-retrieval-stats"
+        printf '%s' "$u2" > "$dsP"
+      fi
+    fi
+
     laneClose=0
     if [ "$hookActive" -eq 0 ]; then
       # lane-close 백스톱 (v2.43): 마지막 assistant 응답이 완료/종료 선언인데 _wip Active Lanes 잔존 -> task-done 리마인더 1회 (uuid dedupe).

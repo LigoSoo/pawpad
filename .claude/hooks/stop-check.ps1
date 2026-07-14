@@ -113,6 +113,26 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
         }
     } catch {}
 
+    # cmap:direct 계측 (v2.44 사후수정#2): 이 응답이 codemap hit/miss 선언 없이 src를 2건 이상 읽었으면 '직행'으로
+    # stats에 계수 -> statusline 활용률 분모 포함 (선언만 분모이던 지표의 미선언 사각 = 100% 뻥튀기 봉합).
+    # src 1건은 백스톱과 동일 면제(이미 아는 파일 재편집). '미사용' 선언도 hit/miss 아님 -> 직행 (B3 일관).
+    # 순수 계측 — block/캡과 무관. dedupe는 별도 파일(claude-direct-seen, uuid 고유라 세션 reset 불요).
+    try {
+        $curDecl = $false
+        if ($rl -and $rlUuid -eq $dUuid) {
+            $segsD = $rl -split '\|'
+            if ($segsD.Count -ge 3 -and ($segsD[0] -match 'hit' -or $segsD[0] -match 'miss')) { $curDecl = $true }
+        }
+        if (-not $curDecl -and $dUuid -and $srcDelta -ge 2) {
+            $dsPath = Join-Path $stateDir "claude-direct-seen"
+            $dsSeen = if (Test-Path $dsPath) { "$(Get-Content -LiteralPath $dsPath -Raw -Encoding UTF8)".Trim() } else { "" }
+            if ($dUuid -ne $dsSeen) {
+                Add-Content -Path (Join-Path $stateDir "claude-retrieval-stats") -Value 'cmap:direct' -Encoding ascii
+                Set-Content -Path $dsPath -Value $dUuid -Encoding ascii
+            }
+        }
+    } catch {}
+
     if (-not $hookActive) {
         # lane-close 백스톱 (v2.43): 마지막 assistant 응답이 작업 완료/종료를 선언했는데 _wip Active Lanes가 잔존하면
         # task-done 실행 리마인더 1회 (uuid dedupe). ON TASK DONE 미실행 -> stale lane -> resume 재제안 사고 방지.

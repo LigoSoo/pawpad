@@ -128,7 +128,7 @@ ACTIVE EVERY RESPONSE.
 형식: `📡 Retrieval: codemap {hit(경로)|miss|미사용} | ctxdb {hit(파일)|miss|미사용} | src {read N (codemap 경유)|full-scan N (사유)}`
 - 소스 탐색 전 codemap lookup 의무. miss여도 곧장 full-scan 금지 — keywords/INDEX 의미매칭 재시도 후에도 miss면 **사유와 함께 full-scan 선언**.
 - 코드/컨텍스트 탐색이 없는 응답(순수 문답·이미 아는 파일 재편집)은 라인 생략.
-- 허위 선언·누락 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. `codemap lookup 0 + src 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')`이면 Stop hook이 decision:block으로 선언을 1회 요구(retrieval 백스톱). 선언 라인은 **라인 선두 앵커 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. statusline `📡 codemap N% · routed/full-scan · src N`의 경유율은 이 선언 집계 기반 — 선언을 빼먹으면 분모가 비어 `codemap 미선언`(src를 읽은 경우) 또는 `codemap –`로 렌더된다.
+- 허위 선언·누락 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. `codemap lookup 0 + src 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')`이면 Stop hook이 decision:block으로 선언을 1회 요구(retrieval 백스톱). 선언 라인은 **라인 선두 앵커 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. statusline `📡 codemap 활용 N% (경유 X · 직행 Y) · 소스 읽기 N`의 활용률은 응답 단위 집계 — 경유=hit 선언, 직행=miss 선언+미선언 풀스캔(Stop hook이 read-track 실측으로 계수). 선언을 빼먹으면 직행으로 분모에 들어가 활용률이 내려간다(분모 3 미만은 % 대신 건수만).
 
 ## Checkpoint (매 응답 종료 전 확인 - hooks 대체)
 자세한 운영은 .claude/HYBRID.md 참조.

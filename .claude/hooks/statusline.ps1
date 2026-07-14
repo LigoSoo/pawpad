@@ -79,29 +79,32 @@ if ($model) { $out += " | $model" }
 # codemap N% = routed/(routed+full-scan). routed=codemap hit 선언, full-scan=codemap miss 선언. src=색인 미경유 직접 read 수.
 # 선언 0 + src>0 = 미선언 직접읽기(풀스캔 의심) → src 노랑. ctx N%(ctxdb 매칭율)은 샘플 있을 때만 뒤에 붙임.
 $e = [char]27; $G = "$e[32m"; $Y = "$e[33m"; $R = "$e[31m"; $D = "$e[90m"; $Z = "$e[0m"
-$ch = 0; $cm = 0; $xh = 0; $xm = 0
+$ch = 0; $cm = 0; $cd = 0; $xh = 0; $xm = 0
 $retFile = ".ctxdb/.state/claude-retrieval-stats"
 if (Test-Path -LiteralPath $retFile) {
     $rs = @(Get-Content -LiteralPath $retFile -ErrorAction SilentlyContinue)
-    $ch = @($rs -eq 'cmap:hit').Count; $cm = @($rs -eq 'cmap:miss').Count
+    $ch = @($rs -eq 'cmap:hit').Count; $cm = @($rs -eq 'cmap:miss').Count; $cd = @($rs -eq 'cmap:direct').Count
     $xh = @($rs -eq 'ctx:hit').Count;  $xm = @($rs -eq 'ctx:miss').Count
 }
 $srcN = 0
 $statsFile = ".ctxdb/.state/claude-read-stats"
 if (Test-Path -LiteralPath $statsFile) { $srcN = @((Get-Content -LiteralPath $statsFile -ErrorAction SilentlyContinue) -eq 'src').Count }
-$cdenom = $ch + $cm
+# 응답 단위 통일 (v2.44 사후수정#2): 분모 = hit 선언(경유) + miss 선언 + 미선언 풀스캔(cmap:direct, stop-check 계수).
+# 활용률 = 경유 / 전체 탐색 응답 -> 미선언 사각으로 인한 100% 뻥튀기 제거. 분모 3 미만은 소표본 스윙 방지로 % 숨김.
+$fsN = $cm + $cd
+$cdenom = $ch + $fsN
 if (($cdenom + $srcN) -gt 0) {
-    if ($cdenom -gt 0) {
+    if ($cdenom -ge 3) {
         $rate = [int][math]::Floor($ch * 100.0 / $cdenom + 0.5)
         $rcol = if ($rate -ge 70) { $G } elseif ($rate -ge 40) { $Y } else { $R }
-        $seg = "${D}codemap${Z} ${rcol}${rate}%${Z} ${D}·${Z} routed $ch / full-scan $cm"
+        $seg = "${D}codemap${Z} ${rcol}활용 ${rate}%${Z} ${D}(경유 $ch · 직행 $fsN)${Z}"
+    } elseif ($cdenom -gt 0) {
+        $seg = "${D}codemap${Z} 경유 $ch ${D}·${Z} 직행 $fsN"
     } else {
-        # 분모 0 = 선언이 하나도 없었다는 뜻. src를 읽었는데도 분모가 비면 원인(선언 누락)이 보이도록 라벨링.
-        $seg = if ($srcN -gt 0) { "${Y}codemap 미선언${Z}" } else { "${D}codemap –${Z}" }
+        $seg = "${D}codemap –${Z}"
     }
     if ($srcN -gt 0) {
-        $scol = if ($cdenom -eq 0) { $Y } else { $D }
-        $seg += " ${D}·${Z} ${scol}src $srcN${Z}"
+        $seg += " ${D}·${Z} ${D}소스 읽기 $srcN${Z}"
     }
     if (($xh + $xm) -gt 0) {
         $xrate = [int][math]::Floor($xh * 100.0 / ($xh + $xm) + 0.5)
