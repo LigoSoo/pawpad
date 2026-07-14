@@ -227,7 +227,8 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 ---
 
 ## 변경 이력
-> PawPad v2.43 FROZEN.
+> PawPad v2.44 FROZEN.
+> - **v2.44**: 외부 문서 구현 진입 게이트 + 선택지 체크박스 전면화 + 데스크탑 스택 4종 — ① md/spec 문서를 첨부해 "참조해서 구현해줘" 하면 **기획 게이트를 건너뛰고 바로 코딩하던 사고**를 방어: 코딩 전 clarity 모호도 채점 1회 의무(문서가 명확하면 질문 없이 바로 진행 — 마찰 없음, 모호하면 재질문), UI 포함 시 design 추천, 코딩 진입 시 code-delegate 권장(첨부 문서 = written 설계 인정). ② 선택지 질문은 이제 **어느 상황에서든** 체크박스(AskUserQuestion)로: 추천 1개 "(추천)" 표시 + 선택지에 없는 답은 "Other"로 직접 입력. ③ 설치 시 데스크탑 앱 스택 선택 가능: `-Stack wpf|tauri|electron|avalonia` (MVVM/IPC 보안 컨벤션 + ADR 포함). 기존 설치는 `-Upgrade` 재실행.
 > - **v2.43**: task-done 종결 게이트 — "이슈 종료 작업 해줘" 했는데 마감 절차가 일부만 실행돼, 다음 세션이 **이미 끝난 일을 다음 작업으로 다시 제안**하던 사고를 3겹으로 방어. ① 새 `task-done` 스킬(스킬 20개): 종결을 체크리스트로 강제(lane 완료함 이동+진행목록 제거+이력 기록+커밋까지 한 단위). ② Stop 훅 백스톱: 응답이 "완료"를 선언했는데 진행 중 lane이 남아 있으면 1회 리마인더. ③ 세션 재개 게이트: resume이 lane을 그대로 믿지 않고 완료 흔적·실제 코드와 1회 대조 — 어긋나면 작업 재개 전에 물어봄. 기존 설치는 `-Upgrade` 재실행.
 > - **v2.42**: retrieval routing 가시화 — v2.41 계측을 "코드맵을 거쳐 소스에 갔나, 아니면 전체를 뒤졌나"가 한눈에 보이게 재설계. statusline이 `📡 codemap N% · routed X / full-scan Y · src N`로 뜬다. **codemap N%** = 경유율(코드 찾기 시도 중 코드맵으로 정확히 간 비율, 초록≥70/노랑≥40/빨강<40) — "잘 작동하는가" 핵심 지표. **src N** = 코드맵 안 거치고 직접 연 파일 수(백스톱 — 선언 없이 직접 읽기가 많으면 노랑 경고=풀스캔 의심). **ctx N%** = ctxdb 매칭율(샘플 있을 때). 기존 원시 `cmap/ctx` 카운터와 `route%`는 뺐다(기계 카운터로는 read가 경유였는지 풀스캔이었는지 구분 못 함 → agent 선언 기반으로 판정, src가 위조불가 백스톱). hit/miss는 Stop 훅이 응답의 `📡 Retrieval:` 선언을 읽어 집계. statusline은 화면 표시라 **모델 토큰 0**. 기존 설치는 `-Upgrade` 재실행, 스킬 수(19) 불변.
 > - **v2.41**: retrieval-source 표시 — agent가 "코드를 어떻게 찾았는지"를 두 겹으로 보여준다. ① 응답 안 선언: 탐색을 수행한 응답 상단에 `📡 Retrieval: codemap hit(...) | ctxdb ... | src ...` 1줄(소스 탐색 전 codemap 조회 의무, 전체 스캔은 사유와 함께 선언). ② statusline 실측: `PostToolUse` read-track 훅이 Read/Grep/Glob 경로를 cmap(코드맵)/ctx(컨텍스트DB)/src(소스)로 분류·집계해 `📡 cmap N ctx N src N` 표시 — 코드맵을 안 타고 소스 전체를 뒤지면 src 숫자가 치솟아 즉시 보인다(자기보고와 달리 속일 수 없음). 계측은 Claude Code 전용(Codex는 ① 선언만), 기존 설치는 `-Upgrade` 재실행. 스킬 수(19) 불변.
@@ -246,4 +247,4 @@ A. 그냥 만들고 싶은 걸 말하세요. 막히면 `/clarity`. 그게 시작
 > - **v2.28**: `/mockup` 스킬 추가 — PRD-tree를 단일 HTML 목업(와이어프레임 lo-fi / 디자인 hi-fi)으로 시각화, Feature ID로 메뉴 위치 추적 + drift 경고. 기획/설계 스킬 선택지 질문은 체크박스로, 단계 경계에서 다음 스킬·목업 자동제안.
 > - **v2.27**: `Idea → PRD Routing` + `Active Skills` 표시 추가 — 아이디어→PRD 구체화 시 다음 스킬 추천(clarity→grill-me→to-prd, 강제 X) + 매 응답 `🐾 Active Skills` 라인. doc/스킬 군살 제거(중복·불필요 문구).
 > - **v2.26**: `feature-architecture` 추가 — feature-first 구조 규율(추후 기능 추가·수정이 쉽고, 사람이 코드 구조를 파악하기 쉽게). `lean-code`(오버엔지니어링 방지)와 짝.
-> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.41.md](docs/CHANGELOG_v2.41.md).
+> - 이전 버전 이력: [GUIDE.md](GUIDE.md) 상단, 상세 보고서 [docs/CHANGELOG_v2.44.md](docs/CHANGELOG_v2.44.md).

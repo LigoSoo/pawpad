@@ -19,7 +19,7 @@ description: Coding-phase subagent delegation gate. Use when moving from design 
 
 ## 위임 적합성 게이트 (선행 판정)
 아래 충족 시에만 위임 권장:
-1. written 설계 존재 — 구현 계획이 spec(.claude/pawpad/specs/{feature}.md) 또는 lane에 적혀 있다. 대화에만 있으면 dump 필요 -> 이점 반감(경고).
+1. written 설계 존재 — 구현 계획이 spec(.claude/pawpad/specs/{feature}.md) 또는 lane에 적혀 있다. 사용자가 참조시킨 외부 문서(첨부 md/spec/기획서)도 written 설계로 인정 — 이 경우 문서 경로를 포인터로 전달. 대화에만 있으면 dump 필요 -> 이점 반감(경고).
 2. 코딩 단계 — 기획/구조 결정 완료, 실제 파일 변경 단계.
 3. 격리 가능 — 부모와 잦은 상호작용이 불필요한 독립 범위.
 미충족 시(설계 미작성/탐색 단계/고도 상호작용) 위임 비권장, 인라인 진행 안내.
