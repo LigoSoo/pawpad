@@ -1,4 +1,4 @@
-# PawPad 버전별 업데이트 (v2.18 → v2.44)
+# PawPad 버전별 업데이트 (v2.18 → v2.45)
 
 | 버전 | 날짜 | 핵심 변경 | 주요 영향 요소 |
 |------|------|----------|--------------|
@@ -29,12 +29,13 @@
 | v2.42 | 2026-07-08~09 | retrieval 계측 시각화 (routing 대시보드) | v2.41 계측 위에 statusline 시각 신호 + 파생 지표: `📡 codemap N% · routed X / full-scan Y · src N` — **codemap 경유율**(선언 기반 주지표, routed=`codemap hit` 선언/full-scan=`miss` 선언, 초록≥70/노랑≥40/빨강<40) + `src N` 직접읽기 볼륨(위조불가 백스톱: 선언 0+src>0=풀스캔 의심 노랑) + `ctx N%`(ctxdb 매칭율, 샘플 시). hit/miss는 stop-check 훅이 완료 응답 `📡 Retrieval:` 라인 파싱→`.ctxdb/.state/claude-retrieval-stats` 누적(uuid dedupe·`미사용` 분모 제외·형식예시 `{}` 라인 제외·`\|` 고정순서 위치분해). statusline=UI 렌더=모델 토큰 0. 2단계 크로스리뷰(서브에이전트+codex exec) 반영 + 사후수정 3건(transcript 다중 엔트리 파서·0-byte seen NPE·bash jq 관용 slurp). 기존 설치 `-Upgrade`, 스킬 19 불변 |
 | v2.43 | 2026-07-09 | task-done 종결 게이트 3종 (A+B+C) | ON TASK DONE 미실행→stale lane→resume이 완료 작업 재제안 사고(사용자 실관측) 계층 방어. **A** 신규 `task-done` 스킬(19→20, Core): 종결 체크리스트 전항 강제(Verification Evidence cap→lane→done 이관→_wip 제거→_meta RECENT(8줄 cap 이월)→tasklog 이월→codemap→commit), "작업/이슈 종료" 자연어 발동, 보고 1줄 형식. **B** stop-check lane-close 백스톱(Claude 훅): 마지막 assistant text가 완료/종료 선언 + Active Lanes 잔존 → decision:block 1회(`claude-taskdone-warned` uuid dedupe, 'task-done' 언급 제거 후 매칭·transcript 다중 엔트리 스캔 재사용). **C** resume Lane 신뢰성 게이트: ON START 3단 신호(_meta RECENT DONE+lane 잔존=확정 누락→즉시 종결 / next steps 전항 체크=완료 의심→종결 제안 / stale updated+실코드 spot-check=사용자 확인) + 다음 작업 제안 전 실상태 1회 대조 규율(_meta 상단 부분읽기 호환, RECENT는 Grep on-demand). 기존 설치 `-Upgrade` |
 | v2.44 | 2026-07-14 | 외부 문서 구현 진입 게이트 + 선택지 체크박스 전면화 + 데스크탑 스택 4종 | 사용자 실관측 사고 대응. **①** 외부 md/spec 첨부 "참조 구현" 요청이 clarity/design/code-delegate 게이트를 우회(phase 분해·task 저장만 수행)하던 문제 — 라우팅 트리거 "아이디어→PRD" 한정 + written 설계 회색지대가 원인 → CLAUDE/AGENTS `### 외부 문서 구현 진입 게이트` 신설(clarity 채점 **의무**: 모호도 블록 1회, PASS=무질문 통과·BLOCK=재질문) + clarity SKILL "외부 문서 모드" 섹션 + code-delegate written 설계에 외부 참조 문서 인정. **②** 선택지 질문 생략 — 체크박스 규칙이 기획 스킬 6종 진행 중 한정 → 스킬 무관 전면 확장, 추천 1개 "(추천)" 첫 옵션 + description 근거 + Other 자유 입력 명시(선택지 생략·산문 대체 금지). **③** `-Stack` 데스크탑 4종 추가: wpf(.NET 8 MVVM)/tauri(2, IPC 최소권한)/electron(contextIsolation 고정)/avalonia(크로스플랫폼 XAML) — Commands/Boundaries/Directories/Conventions/ADR 프로파일, 대화형 1~8(Enter=generic). 표면: CLAUDE/AGENTS live+`$tmpl` 2 / clarity·code-delegate SKILL live+임베드+`.agents` 미러 / validStacks·TR ko/en·switch·profiles 4종·usage·완료요약 / README·GUIDE·USAGE·PAWPAD_VERSIONS. 스킬 20 불변 |
+| v2.45 | 2026-07-15 | brainstorming 스킬 신규 (20→21, prd 번들) | clarity 이전 발산 단계 공백 해소 — 구현 후반 기능 추가/삭제 churn(누락형, 사용자 실관측 pain)을 기획 단계에서 차단. 단일 스킬에 3단계: **①발산**(방향 후보 2-3개+추천 1개, 방향 3요소[무엇을/누구에게/왜] 확정, clarity 접근법 게이트 원칙 재사용) **②누락 스윕**(인접기능·저니 워크스루 + 비해피패스 8축 고정 체크리스트[빈 상태/에러/권한/CRUD 대칭/데이터 수명주기/알림/설정/운영]) **③MoSCoW 스코프 게이트**(Won't 명시 의무 — 삭제 churn 차단). 진입 판정: 방향 3요소 충족 문서→스윕 직행, 미충족→발산부터(+사용자 오버라이드). 파이프라인 brainstorming→clarity→grill-me→to-prd→mockup. 기존 자동제안·Active Skills 첨자의 dangling `brainstorming` 이름 실체화(v2.32 superpowers 통째 도입 회피 결정과 무충돌 — pawpad 자체 설계). 표면: SKILL live+임베드(grill-me 단계 동거, stepTotal 불변)+`.agents` 미러 / Idea→PRD Routing 판정·종결 체인 4표면(live+`$tmpl` CLAUDE/AGENTS) / `$bpMap` prd 번들 / SKILLS_MANIFEST·config.json 21 / README·GUIDE·USAGE·PAWPAD_VERSIONS |
 
-# 누적 현황 (현재 v2.44)
+# 누적 현황 (현재 v2.45)
 
 | 항목 | 수치 |
 |------|------|
-| 스킬 | 20개 |
+| 스킬 | 21개 |
 | 런타임 | Claude Code + Codex (단일 배포본) |
 | hook | 양 런타임 5종 (SessionStart/UserPromptSubmit/PreCompact/Stop/statusLine) + Claude PostToolUse(read-track 항상·analyze 스택 조건부) |
 | DoD 게이트 | 9개 (security-check #8, feature-architecture #9 포함) |

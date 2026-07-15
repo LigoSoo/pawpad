@@ -1,6 +1,6 @@
 ﻿# Skills Manifest
 
-프로젝트에 설치된 모든 스킬 목록. (20개)
+프로젝트에 설치된 모든 스킬 목록. (21개)
 
 > **환경별 활성 방식**
 > - Claude Code: `/skill` slash 호출 + description 자동 트리거 둘 다 지원.
@@ -36,6 +36,7 @@
 |------|------|------|
 | **handoff** | `.claude/skills/handoff/` | 세션/에이전트 인수인계 (PawPad snapshot + owner transfer) |
 | **checkpoint** | `.claude/skills/checkpoint/` | 컨텍스트 60% 롤오버 게이트 (상태 보존) |
+| **brainstorming** | `.claude/skills/brainstorming/` | 아이디어 발산 게이트 (방향 발산 + 누락 스윕[인접기능·비해피패스 8축] + MoSCoW 스코프 확정, clarity 이전 단계) |
 | **grill-me** | `.claude/skills/grill-me/` | 계획/설계 스트레스 테스트 (재귀적 질문 + 용어 canonical 좁힘 + 코드 모순 표면화) |
 | **to-prd** | `.claude/skills/to-prd/` | 대화 → PRD (`.claude/pawpad/specs/` 저장 + SPEC_READY) |
 | **mockup** | `.claude/skills/mockup/` | PRD-tree→단일 HTML 목업 시각화 (lo/hi-fi, Feature ID 태깅 + drift 경고) |
@@ -61,6 +62,7 @@
 
 ### 협업/기획
 ```
+/brainstorming   # 아이디어 발산 + 누락 스윕 + 스코프 확정 (clarity 이전 단계)
 /grill-me        # 설계 스트레스 테스트 (용어 좁힘·코드 모순 표면화 포함)
 /to-prd          # 대화 → PRD + SPEC_READY 등록
 /checkpoint      # 60% 컨텍스트 정리

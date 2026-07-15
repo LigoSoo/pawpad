@@ -146,16 +146,17 @@ ACTIVE EVERY RESPONSE.
 새 기능 위치: 기존 도메인 하위 / 새 도메인 폴더 / 도메인 비소속 shared 중 하나. 결정트리는 skill 참조.
 
 ## Idea → PRD Routing
-아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선). skill mirror: `.agents/skills/{clarity,grill-me,to-prd,design,mockup}/`.
-판정: 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
+아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선). skill mirror: `.agents/skills/{brainstorming,clarity,grill-me,to-prd,design,mockup}/`.
+판정: 방향 미정(무엇을/누구에게/왜 미충족)·기능 누락/스코프 점검 필요→brainstorming(발산+스윕) / 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
 - 큰 덩어리: clarity 전 "분해 권장"(굵은 조각+순서, 조각별 반복).
+- brainstorming 종결 후: →clarity.
 - clarity PASS 후: grill-me 신호(결정 상호의존·트레이드오프 연쇄·스택/아키텍처/스키마 비가역) 있으면 →grill-me, 없으면 →to-prd.
 - grill-me 종결 후: →to-prd.
 - UI/화면 기획 시: design(토큰/레이아웃 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
 ### 외부 문서 구현 진입 게이트
 외부 문서(첨부 md/spec/기획서 경로) 참조 구현 요청 시 — 문서 존재 ≠ 게이트 통과: ① clarity 채점 **의무**(코딩 전 문서 기준 모호도 블록 1회, PASS면 무질문 진행·BLOCK이면 재질문. clarity SKILL 외부 문서 모드) ② UI/화면 포함 시 design 1회 추천 ③ 코딩 진입 시 code-delegate 1회 권장(외부 참조 문서 = written 설계 인정). phase 분해·task 저장만으로 게이트 건너뛰기 금지.
 ### 자동제안 (단계 경계)
-다음 시점에 다음 스킬 또는 목업 1회 추천(강제 X): PRD/PRD-tree 갱신 직후→mockup(통합 4탭=/mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 반영), clarity/grill-me/to-prd 종료 시→다음 스킬. 매 응답 판단 X. 거절 시 다음 단계 경계까지 침묵. 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming(나머지는 Checkpoint/hook 트리거 → 제외). 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료 직전 고위험·배포본 영향이면 /review 권장(강제 X); 광범위·맹점우려·설치 스크립트는 codex exec 에스컬레이션. 코딩 위임 제안(구현 진입 경계): SPEC_READY/written 설계(외부 첨부/참조 문서 포함) 직후 코딩 진입 시 /code-delegate 1회 권장(강제 X, 선택 모델 서브에이전트 위임으로 부모 컨텍스트·토큰 절감; 설계 미작성 시 제안 X).
+다음 시점에 다음 스킬 또는 목업 1회 추천(강제 X): PRD/PRD-tree 갱신 직후→mockup(통합 4탭=/mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 반영), brainstorming/clarity/grill-me/to-prd 종료 시→다음 스킬. 매 응답 판단 X. 거절 시 다음 단계 경계까지 침묵. 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming(나머지는 Checkpoint/hook 트리거 → 제외). 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료 직전 고위험·배포본 영향이면 /review 권장(강제 X); 광범위·맹점우려·설치 스크립트는 codex exec 에스컬레이션. 코딩 위임 제안(구현 진입 경계): SPEC_READY/written 설계(외부 첨부/참조 문서 포함) 직후 코딩 진입 시 /code-delegate 1회 권장(강제 X, 선택 모델 서브에이전트 위임으로 부모 컨텍스트·토큰 절감; 설계 미작성 시 제안 X).
 ### 선택지 질문 = 체크박스
 스킬 진행 여부 무관, 사용자 결정 필요한 선택지 N개 질문은 AskUserQuestion(체크박스)로 — 추천 1개 첫 옵션 + "(추천)" 표기 + description 근거, 선택지 밖 답은 기본 "Other" 자유 입력(선택지 생략·산문 대체 금지). 자유서술·수치는 텍스트로.
 

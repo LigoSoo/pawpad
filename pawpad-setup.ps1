@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.44 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.44. v2.43 기반 + 외부 문서 구현 진입 게이트 + 선택지 체크박스 전면화 + 데스크탑 스택 4종. ① 외부 문서(md/spec/기획서) 참조 구현 요청 시 clarity 채점 의무(PASS=무질문 통과·BLOCK=재질문, clarity SKILL "외부 문서 모드" 신설) + design/code-delegate 경계 추천, code-delegate written 설계에 외부 문서 인정 — phase 분해·task 저장만으로 게이트 우회하던 사용자 실관측 사고 대응. ② 선택지 질문 규칙 스코프 확장: 기획 스킬 한정→스킬 무관 전면, 추천 1개 "(추천)" first + Other 자유 입력 명시. ③ -Stack 데스크탑 4종 추가: wpf|tauri|electron|avalonia (Commands/Boundaries/Directories/Conventions/ADR 프로파일, 대화형 1~8). 보고서: docs/CHANGELOG_v2.44.md.
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.45 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.45. v2.44 기반 + brainstorming 스킬 신규(20→21, prd 번들) — 발산(방향 2-3 대안+추천 1개, 초과 시 상위 3 shortlist) + 누락 스윕(인접기능·저니 워크스루 + 비해피패스 8축 체크리스트) + MoSCoW 스코프 게이트(Won't 명시 의무)를 단일 스킬로 통합. 진입 판정(방향 3요소: 무엇을/누구에게/왜)으로 막연한 아이디어는 발산부터, 구체화된 기획문서는 스윕 직행(+사용자 오버라이드). 파이프라인 brainstorming→clarity→grill-me→to-prd→mockup — clarity 이전 발산 단계 공백 해소, 구현 후반 기능 추가/삭제 churn(누락형)을 기획 단계에서 차단(사용자 실관측 pain). Idea→PRD Routing 판정 4표면(live+tmpl CLAUDE/AGENTS) 동기, 자동제안 dangling 이름 실체화. 보고서: docs/CHANGELOG_v2.45.md.
+#         이전: v2.44. v2.43 기반 + 외부 문서 구현 진입 게이트 + 선택지 체크박스 전면화 + 데스크탑 스택 4종. ① 외부 문서(md/spec/기획서) 참조 구현 요청 시 clarity 채점 의무(PASS=무질문 통과·BLOCK=재질문, clarity SKILL "외부 문서 모드" 신설) + design/code-delegate 경계 추천, code-delegate written 설계에 외부 문서 인정 — phase 분해·task 저장만으로 게이트 우회하던 사용자 실관측 사고 대응. ② 선택지 질문 규칙 스코프 확장: 기획 스킬 한정→스킬 무관 전면, 추천 1개 "(추천)" first + Other 자유 입력 명시. ③ -Stack 데스크탑 4종 추가: wpf|tauri|electron|avalonia (Commands/Boundaries/Directories/Conventions/ADR 프로파일, 대화형 1~8). 보고서: docs/CHANGELOG_v2.44.md.
 #         이전: v2.43. v2.42 기반 + task-done 종결 게이트 3종(A+B+C) — ON TASK DONE 미실행→stale lane→resume이 완료 작업 재제안하는 사고 계층 방어. A: 신규 task-done 스킬(19→20, Core): ON TASK DONE 체크리스트 강제 실행("작업/이슈 종료" 자연어 라우팅, lane→done 이관+_wip 제거+_meta+tasklog+codemap+commit 전항). B: stop-check lane-close 백스톱: 완료 선언 감지+Active Lanes 잔존 시 decision:block 1회(uuid dedupe, 'task-done' 언급 제거 후 매칭). C: resume Lane 신뢰성 게이트: ON START 3단 신호(_meta DONE+lane 잔존=확정 누락 / next steps 전항 체크=완료 의심 / stale+실코드 대조=사용자 확인), 다음 작업 제안 전 실상태 1회 대조. D(추가): retrieval 계측 결함 4종 — ①선언 파서 앵커+3세그먼트 구조 검증(훅 논하는 산문이 cmap:hit로 오탐돼 지표가 거짓이 되던 경로 차단) ②read-track 실측 watermark 대조로 "cmap 0 + src>=2 + hit/miss 선언 없음"=미선언 full-scan 시 decision:block 1회(uuid dedupe) + statusline 분모0+src>0 시 "codemap 미선언" 라벨 ③'미사용' 허위 선언도 누락과 동일 취급 ④stop_hook_active는 판정만 생략하고 계측은 수행(교정 응답 선언 파싱 보장). 보고서: docs/CHANGELOG_v2.43.md.
 #         이전: v2.42 retrieval routing 가시화 — statusline "📡 codemap N% · routed/full-scan · src N"(선언 기반 경유율+백스톱), stop-check가 완료 응답 "📡 Retrieval:" 라인 파싱→claude-retrieval-stats(uuid dedupe·미사용 제외·'{}' 예시 제외·고정순서 위치분해). 보고서: docs/CHANGELOG_v2.42.md.
 #         이전: v2.41 retrieval-source 표시 A+B(선언식 "📡 Retrieval" 라인 + 계측식 read-track hook→statusline "cmap N ctx N src N"). 보고서: docs/CHANGELOG_v2.41.md.
@@ -25,7 +26,7 @@
 # - CLAUDE.md, AGENTS.md (Context files, 하이브리드 프로토콜 반영)
 # - .claude/settings.json (Claude Code hooks: SessionStart 자동주입 + Stop decision:block)
 # - .claude/hooks/* (session-start.{ps1,sh}, stop-check.{ps1,sh}, statusline.{ps1,sh} - 크로스플랫폼 자동화/상태줄)
-# - .claude/skills/* (resume, task-done, codemap, codebase-map, caveman, lean-code, feature-architecture, clarity, handoff, checkpoint, grill-me, to-prd, design, mockup, review, code-delegate, viewer-apply, ctxdb-navigator, context-saver, security-check)
+# - .claude/skills/* (resume, task-done, codemap, codebase-map, caveman, lean-code, feature-architecture, brainstorming, clarity, handoff, checkpoint, grill-me, to-prd, design, mockup, review, code-delegate, viewer-apply, ctxdb-navigator, context-saver, security-check)
 # - .agents/skills/* (Codex repo skill mirror, .claude/skills 단일 소스에서 재생성)
 # - .claude/pawpad/* (_wip router, wip/lanes, wip/done, handoffs/, specs/, decisions/)
 # - .claude/codemap/_index.md
@@ -57,7 +58,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.44"
+$ver = "2.45"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -1290,8 +1291,9 @@ ON 8턴/60% CONTEXT: Stop hook이 8턴마다 checkpoint block -> context-saver(.
 
 ## Idea → PRD Routing
 아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선).
-판정: 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
+판정: 방향 미정(무엇을/누구에게/왜 미충족)·기능 누락/스코프 점검 필요→brainstorming(발산+스윕) / 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
 - 큰 덩어리: clarity 전 "분해 권장"(굵은 조각+순서, 조각별 반복).
+- brainstorming 종결 후: →clarity.
 - clarity PASS 후: grill-me 신호(결정 상호의존·트레이드오프 연쇄·스택/아키텍처/스키마 비가역) 있으면 →grill-me, 없으면 →to-prd.
 - grill-me 종결 후: →to-prd.
 - UI/화면 기획 시: design(토큰/레이아웃 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
@@ -1304,7 +1306,7 @@ phase 분해·task 저장만으로 이 게이트를 건너뛰지 않는다.
 ### 자동제안 (단계 경계)
 agent가 흐름 중 다음 시점에 다음 스킬 또는 목업을 **1회 추천**(강제 X):
 - PRD/PRD-tree 생성·갱신 직후 → mockup 추천(통합 4탭 검토는 /mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 로 반영).
-- clarity/grill-me/to-prd 종료 시 → 다음 단계 스킬 추천.
+- brainstorming/clarity/grill-me/to-prd 종료 시 → 다음 단계 스킬 추천.
 - 매 응답 판단 X(과추천 방지). 거절 시 같은 산출물 버전엔 재제안 X → 다음 단계 경계까지 침묵.
 - 추천 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming. 나머지(resume·codemap·security-check·checkpoint·handoff·context-saver·task-done 등)는 Session Protocol/DoD/hook이 트리거 → 자동제안 제외(이중 트리거 방지).
 - 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료(DoD) 직전 + 고위험·배포본 영향이면 → ``/review`` 1회 권장(강제 X, 저비용 문서형 라운드트립). 광범위·맹점우려·설치 스크립트 변경은 codex exec 자율 리뷰로 에스컬레이션.
@@ -1444,16 +1446,17 @@ state 마커: HANDOFF_TO_CODEX(Claude→Codex), HANDOFF_TO_CLAUDE(Codex→Claude
 다음 agent는 _wip.md Active Lanes state/handoff로 snapshot 위치 파악. 인수 시: state→WIP, owner→받는 agent.
 
 ## Idea → PRD Routing
-아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선). skill mirror: ``.agents/skills/{clarity,grill-me,to-prd,design,mockup}/``.
-판정: 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
+아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선). skill mirror: ``.agents/skills/{brainstorming,clarity,grill-me,to-prd,design,mockup}/``.
+판정: 방향 미정(무엇을/누구에게/왜 미충족)·기능 누락/스코프 점검 필요→brainstorming(발산+스윕) / 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
 - 큰 덩어리: clarity 전 "분해 권장"(굵은 조각+순서, 조각별 반복).
+- brainstorming 종결 후: →clarity.
 - clarity PASS 후: grill-me 신호(결정 상호의존·트레이드오프 연쇄·스택/아키텍처/스키마 비가역) 있으면 →grill-me, 없으면 →to-prd.
 - grill-me 종결 후: →to-prd.
 - UI/화면 기획 시: design(토큰/레이아웃 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
 ### 외부 문서 구현 진입 게이트
 외부 문서(첨부 md/spec/기획서 경로) 참조 구현 요청 시 — 문서 존재 ≠ 게이트 통과: ① clarity 채점 **의무**(코딩 전 문서 기준 모호도 블록 1회, PASS면 무질문 진행·BLOCK이면 재질문. clarity SKILL 외부 문서 모드) ② UI/화면 포함 시 design 1회 추천 ③ 코딩 진입 시 code-delegate 1회 권장(외부 참조 문서 = written 설계 인정). phase 분해·task 저장만으로 게이트 건너뛰기 금지.
 ### 자동제안 (단계 경계)
-다음 시점에 다음 스킬 또는 목업 1회 추천(강제 X): PRD/PRD-tree 갱신 직후→mockup(통합 4탭=/mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 반영), clarity/grill-me/to-prd 종료 시→다음 스킬. 매 응답 판단 X. 거절 시 다음 단계 경계까지 침묵. 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming(나머지는 Checkpoint/hook 트리거 → 제외). 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료 직전 고위험·배포본 영향이면 /review 권장(강제 X); 광범위·맹점우려·설치 스크립트는 codex exec 에스컬레이션. 코딩 위임 제안(구현 진입 경계): SPEC_READY/written 설계(외부 첨부/참조 문서 포함) 직후 코딩 진입 시 /code-delegate 1회 권장(강제 X, 선택 모델 서브에이전트 위임으로 부모 컨텍스트·토큰 절감; 설계 미작성 시 제안 X).
+다음 시점에 다음 스킬 또는 목업 1회 추천(강제 X): PRD/PRD-tree 갱신 직후→mockup(통합 4탭=/mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 반영), brainstorming/clarity/grill-me/to-prd 종료 시→다음 스킬. 매 응답 판단 X. 거절 시 다음 단계 경계까지 침묵. 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming(나머지는 Checkpoint/hook 트리거 → 제외). 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료 직전 고위험·배포본 영향이면 /review 권장(강제 X); 광범위·맹점우려·설치 스크립트는 codex exec 에스컬레이션. 코딩 위임 제안(구현 진입 경계): SPEC_READY/written 설계(외부 첨부/참조 문서 포함) 직후 코딩 진입 시 /code-delegate 1회 권장(강제 X, 선택 모델 서브에이전트 위임으로 부모 컨텍스트·토큰 절감; 설계 미작성 시 제안 X).
 ### 선택지 질문 = 체크박스
 스킬 진행 여부 무관, 사용자 결정 필요한 선택지 N개 질문은 AskUserQuestion(체크박스)로 — 추천 1개 첫 옵션 + "(추천)" 표기 + description 근거, 선택지 밖 답은 기본 "Other" 자유 입력(선택지 생략·산문 대체 금지). 자유서술·수치는 텍스트로.
 
@@ -4538,6 +4541,94 @@ While grilling, sharpen the conversation:
 - Cross-reference with code — 사용자가 동작을 설명하면 코드와 일치하는지 확인하고, 모순을 즉시 표면화한다. "코드는 Order 전체를 취소하는데 방금 부분 취소가 가능하다고 했다 — 어느 게 맞나?"
 "@
 
+# brainstorming: grill-me 단계 동거 설치 (v2.45 신규, 발산+누락 스윕+스코프 게이트 — stepTotal 불변, v2.43 task-done 선례)
+Write-FileContent ".claude\skills\brainstorming\SKILL.md" -NoBom @'
+---
+name: brainstorming
+description: Idea expansion gate. Use before clarity to turn a vague idea or draft planning doc into a complete feature list - divergent direction exploration, omission sweep (adjacent features + non-happy-path checklist), and MoSCoW scope gate.
+---
+# Brainstorming Skill - 발산 + 누락 스윕 + 스코프 게이트
+
+## 목적
+막연한 아이디어 또는 초안 기획문서를 받아 ①방향 발산·확정 ②기능 누락 스윕 ③MoSCoW 스코프 확정까지 수행, clarity로 넘길 "완전한 기능 후보 목록"을 만든다. 구현 후반 기능 추가/삭제 churn(누락형)을 기획 단계에서 차단.
+
+## 트리거
+/brainstorming {막연한 아이디어 | 기획문서.md 경로}
+- 인수 없으면 "아이디어 또는 기획문서 경로를 입력하세요:" 프롬프트
+- 파이프라인 위치: **brainstorming → clarity → grill-me → to-prd → mockup** (clarity 이전 단계)
+
+## 진입 판정 (방향 확정도)
+입력(아이디어/문서)에서 방향 3요소를 확인:
+1. 무엇을 (제품/기능 핵심)
+2. 누구에게 (대상 사용자)
+3. 왜 (해결하는 문제/가치)
+
+- 3요소 모두 명시 → **[스윕 단계] 직행**
+- 하나라도 누락 → **[발산 단계]부터**
+
+판정 결과 1줄 선언 후 진행: `진입 판정: {발산|스윕} — {근거 1줄}`
+사용자 오버라이드 허용 ("발산부터" / "스윕부터" 입력 시 그 단계로).
+
+## 1단계: 발산 (방향 미확정 시)
+1. 입력의 핵심을 1줄로 재진술 (오해 조기 노출)
+2. 방향 후보 2-3개 제시 — 각 트레이드오프 1줄 이상 + **추천 정확히 1개** (clarity 접근법 게이트와 동일 원칙: 가짜 대안 금지, 자명 단일이면 후보 생략·확인만. 4개 이상 발산되면 추천 근거로 상위 3개 shortlist 후 질문 — Codex 질문 도구 최대 3옵션 계약)
+3. AskUserQuestion(체크박스)로 선택 수신 — 추천 첫 배치 + "(추천)" 라벨
+4. 확정 방향의 3요소 요약 출력 → 스윕 단계 진행
+
+원칙: 발산은 방향 탐색까지만. 세부 사양·구현 방식 파고들기 금지 (clarity/grill-me 영역 침범).
+
+## 2단계: 스윕 (누락 감사)
+확정된 방향 기준. 두 축을 순서대로.
+
+### 2a. 인접기능 스윕
+핵심 기능에서 한 홉 거리의 기능 나열:
+- 사용자 여정 전/후 단계 (진입 경로, 완료 후 행동)
+- 관리자/운영자 관점 기능
+- 데이터 입출력 짝 (넣는 게 있으면 보는/내보내는 것)
+- 주 페르소나 저니 워크스루 1회 (시작→목표 달성까지 단계별 필요 기능)
+
+### 2b. 비해피패스 체크리스트 (8축 고정)
+매 실행 동일 항목. 각 축 해당/비해당 판정 + 해당 시 필요한 기능 도출.
+
+| 축 | 점검 질문 |
+|----|----------|
+| 빈 상태 | 데이터 0건일 때 화면/행동은? |
+| 에러·실패 | 실패 시 사용자에게 뭘 보여주고 어떻게 복구? |
+| 권한·인증 | 누가 접근하고, 미인증/무권한이면? |
+| CRUD 대칭 | 생성이 있으면 조회/수정/삭제는? 삭제 확인은? |
+| 데이터 수명주기 | 오래된/누적 데이터의 보관·정리·이관은? |
+| 알림·피드백 | 사용자가 알아야 할 상태 변화는 어떻게 전달? |
+| 설정·개인화 | 사용자별로 달라져야 하는 것은? |
+| 운영·관측 | 운영자가 상태를 확인/개입할 수단은? |
+
+체크리스트 8축 초과 확장 금지 (비대해지면 안 쓰게 됨 — lean).
+
+## 3단계: 스코프 게이트 (MoSCoW)
+1. 발산+스윕에서 수집된 전체 기능 후보를 Must/Should/Could/Won't로 분류 **제안**
+2. AskUserQuestion(체크박스)로 경계 확정 (이견 있을 후보 중심)
+3. **Won't 명시 없이 종료 금지** — "이번엔 안 만든다" 목록이 삭제 churn을 차단하는 이 스킬의 존재 이유
+
+## 출력 포맷 (종료 시)
+기능 목록 완전판:
+
+| 기능 | 출처 | MoSCoW |
+|------|------|--------|
+| {기능명} | 발산/인접/체크리스트({축}) | M/S/C/W |
+
+- Won't 항목도 표에 유지 (근거 1줄 병기)
+- 산출물은 대화 출력 기본 (PRD 저장은 to-prd 몫). 목록이 크면 사용자 요청 시 .claude/pawpad/specs/{feature-id}-ideation.md 저장
+
+## 종료 & 체이닝
+- 종결 시 /clarity 1회 추천 (CLAUDE.md/AGENTS.md 자동제안 규칙, 설치된 스킬만)
+- Active Skills 첨자: `brainstorming` (발산) / `brainstorming sweep` (스윕·스코프)
+
+## 원칙
+- 추천 1개 필수·가짜 대안 금지 (clarity 대안 제시 원칙 준수)
+- 선택지 질문은 AskUserQuestion(체크박스) — 추천 첫 배치 + "(추천)"
+- 스윕은 후보 나열이 목적 — 채택 여부는 3단계 스코프 게이트에서 결정 (스윕 중 즉석 탈락 금지)
+- 이미 구체화된 문서 입력 시 발산 생략이 기본 (마찰 최소, clarity 외부 문서 모드와 동일 정신)
+'@
+
 Step-Begin "skill: to-prd"
 Write-FileContent ".claude\skills\to-prd\SKILL.md" -NoBom @'
 ---
@@ -6399,7 +6490,7 @@ PowerShell hook을 stdin 주입으로 단독 검증:
 Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 # Skills Manifest
 
-프로젝트에 설치된 모든 스킬 목록. (20개)
+프로젝트에 설치된 모든 스킬 목록. (21개)
 
 > **환경별 활성 방식**
 > - Claude Code: `/skill` slash 호출 + description 자동 트리거 둘 다 지원.
@@ -6435,6 +6526,7 @@ Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 |------|------|------|
 | **handoff** | `.claude/skills/handoff/` | 세션/에이전트 인수인계 (PawPad snapshot + owner transfer) |
 | **checkpoint** | `.claude/skills/checkpoint/` | 컨텍스트 60% 롤오버 게이트 (상태 보존) |
+| **brainstorming** | `.claude/skills/brainstorming/` | 아이디어 발산 게이트 (방향 발산 + 누락 스윕[인접기능·비해피패스 8축] + MoSCoW 스코프 확정, clarity 이전 단계) |
 | **grill-me** | `.claude/skills/grill-me/` | 계획/설계 스트레스 테스트 (재귀적 질문 + 용어 canonical 좁힘 + 코드 모순 표면화) |
 | **to-prd** | `.claude/skills/to-prd/` | 대화 → PRD (`.claude/pawpad/specs/` 저장 + SPEC_READY) |
 | **mockup** | `.claude/skills/mockup/` | PRD-tree→단일 HTML 목업 시각화 (lo/hi-fi, Feature ID 태깅 + drift 경고) |
@@ -6460,6 +6552,7 @@ Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 
 ### 협업/기획
 ```
+/brainstorming   # 아이디어 발산 + 누락 스윕 + 스코프 확정 (clarity 이전 단계)
 /grill-me        # 설계 스트레스 테스트 (용어 좁힘·코드 모순 표면화 포함)
 /to-prd          # 대화 → PRD + SPEC_READY 등록
 /checkpoint      # 60% 컨텍스트 정리
@@ -6580,6 +6673,7 @@ $($p.StackInfo)
     "caveman",
     "lean-code",
     "feature-architecture",
+    "brainstorming",
     "clarity",
     "handoff",
     "checkpoint",
@@ -6665,7 +6759,7 @@ Update-Gitattributes
 # 전체 설치 후 미선택 번들 정리(가산적). docs/config/manifest dangling 0 유지.
 if ($script:bundleMode -eq 'custom') {
     $bpCore = @('resume', 'task-done', 'ctxdb-navigator', 'checkpoint', 'context-saver', 'handoff', 'codemap', 'codebase-map', 'caveman', 'lean-code', 'feature-architecture', 'security-check')
-    $bpMap = [ordered]@{ prd = @('clarity', 'grill-me', 'to-prd'); ui = @('design', 'mockup', 'viewer-apply'); delegate = @('code-delegate'); review = @('review') }
+    $bpMap = [ordered]@{ prd = @('brainstorming', 'clarity', 'grill-me', 'to-prd'); ui = @('design', 'mockup', 'viewer-apply'); delegate = @('code-delegate'); review = @('review') }
     $bpAll = @($bpCore); foreach ($k in $bpMap.Keys) { $bpAll += $bpMap[$k] }
     $bpDeps = @{ ui = @('prd'); delegate = @('prd') }
     $sel = @($script:bundleSelected)
@@ -6764,7 +6858,7 @@ if ($failed -eq 0) {
     Write-Host ($L.complete -f $ver) -ForegroundColor Green
     Write-Host ""
     if ($Lang -eq 'ko') {
-        Write-Host "v$ver 누적 (20 스킬 + hook + .ctxdb + codemap + codebase-map + security-check):" -ForegroundColor Cyan
+        Write-Host "v$ver 누적 (21 스킬 + hook + .ctxdb + codemap + codebase-map + security-check):" -ForegroundColor Cyan
         Write-Host "  - Stack 프리셋: $Stack (flutter|node|python|wpf|tauri|electron|avalonia|generic 중 -Stack로 선택)" -ForegroundColor Cyan
         Write-Host "  - 크로스플랫폼 hook: Windows=.ps1 / Unix=.sh (설치 OS 자동 선택)" -ForegroundColor Cyan
         Write-Host "  - statusLine: Claude Code 매 턴 컨텍스트 윈도우 사용량(%) 표시" -ForegroundColor Cyan
@@ -6787,9 +6881,10 @@ if ($failed -eq 0) {
         Write-Host "  - task-done 종결 게이트 (v2.43): 신규 task-done 스킬(ON TASK DONE 체크리스트 강제) + Stop hook lane-close 백스톱(완료 선언+lane 잔존 시 1회 리마인더) + resume Lane 신뢰성 게이트(stale lane 감지·실코드 대조) — 완료 lane 미이관→재작업 사고 방지" -ForegroundColor Cyan
         Write-Host "  - 외부 문서 구현 진입 게이트 (v2.44): md/spec 첨부 구현 요청 시 clarity 채점 의무(PASS=무질문 통과) + design/code-delegate 경계 추천 — 문서 첨부 시 게이트 우회 사고 방지. 선택지 질문 체크박스 전면화(추천 1개 + Other 자유 입력)" -ForegroundColor Cyan
         Write-Host "  - 데스크탑 스택 프리셋 (v2.44): -Stack wpf|tauri|electron|avalonia 추가 (MVVM/IPC 보안 컨벤션 + ADR 포함, 대화형 1~8)" -ForegroundColor Cyan
-        Write-Host "  - 상세: docs/CHANGELOG_v2.44.md" -ForegroundColor Cyan
+        Write-Host "  - brainstorming 스킬 (v2.45): 아이디어 발산 + 누락 스윕(인접기능·비해피패스 8축) + MoSCoW 스코프 게이트 단일 통합 — clarity 이전 단계, 구현 후반 기능 추가/삭제 churn 차단 (prd 번들, 20→21)" -ForegroundColor Cyan
+        Write-Host "  - 상세: docs/CHANGELOG_v2.45.md" -ForegroundColor Cyan
     } else {
-        Write-Host "v${ver}: 20 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
+        Write-Host "v${ver}: 21 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review" -ForegroundColor Cyan
         Write-Host "  - cross-platform hooks (.ps1/.sh), statusLine, Codex adapter, -Upgrade (preserves user data)" -ForegroundColor Cyan
         Write-Host "  - codemap / codebase-map / .ctxdb context DB / security-check gate (DoD)" -ForegroundColor Cyan
@@ -6797,7 +6892,8 @@ if ($failed -eq 0) {
         Write-Host "  - retrieval indicator (v2.41): in-response 📡 Retrieval declaration + statusline 📡 cmap/ctx/src measured counters (read-track hook)" -ForegroundColor Cyan
         Write-Host "  - retrieval routing viz (v2.42): statusline 📡 codemap N% (routing rate = routed/full-scan, declaration-based) + src direct-read volume (backstop) — codemap-routed vs full-scan at a glance, 0 model tokens" -ForegroundColor Cyan
         Write-Host "  - task-done closure gates (v2.43): new task-done skill (enforced ON TASK DONE checklist) + Stop-hook lane-close backstop (completion declared + lane remaining -> one reminder) + resume lane-trust gate (stale lane detection vs real code)" -ForegroundColor Cyan
-        Write-Host "  - doc-entry gate (v2.44): mandatory clarity scoring when implementing from an attached md/spec (PASS = proceed without questions) + design/code-delegate boundary suggestions; checkbox questions everywhere (1 recommended + free-text Other); desktop stack presets -Stack wpf|tauri|electron|avalonia | details: docs/CHANGELOG_v2.44.md" -ForegroundColor Cyan
+        Write-Host "  - doc-entry gate (v2.44): mandatory clarity scoring when implementing from an attached md/spec (PASS = proceed without questions) + design/code-delegate boundary suggestions; checkbox questions everywhere (1 recommended + free-text Other); desktop stack presets -Stack wpf|tauri|electron|avalonia" -ForegroundColor Cyan
+        Write-Host "  - brainstorming skill (v2.45): idea divergence + omission sweep (adjacent features, 8-axis non-happy-path checklist) + MoSCoW scope gate in one skill — pre-clarity stage, cuts late feature add/remove churn (prd bundle, 20->21) | details: docs/CHANGELOG_v2.45.md" -ForegroundColor Cyan
     }
     Write-Host ""
 } else {
