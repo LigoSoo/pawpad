@@ -99,3 +99,22 @@ fallback rg: rg -n "kw|Symbol" lib -g "!*.g.dart" -g "!*.freezed.dart" -g "!lib/
 root 2KB / keywords·feature 4KB hard cap. 초과 시 split 후 완료.
 검사: .claude/codemap 하위 *.md 각 파일 UTF-8 byte 수가 cap(_root.md=2048, 그외=4096)을 넘으면 FAIL. PowerShell 스크립트는 spec(codemap-8kb-router.md Acceptance) / lane 참조.
 
+## 초기 부트스트랩 (기존 코드베이스에 처음 도입할 때)
+설치는 codemap 템플릿만 만든다. 이미 코드가 쌓인 프로젝트는 **1회 백필**을 해야 lookup이 동작한다. 백필 없이 두면 miss -> 소스 full-scan 경로가 열린 채 운영된다(실관측: 설치 후 수 주간 1개 도메인만 등록된 상태로 방치).
+
+### 발동 판정 (자동 1회 제안)
+코드 수정 세션 ON START에 **등록 심볼 < 10 && 소스 파일 >= 30**이면 부트스트랩을 1회 제안한다. 거절 시 그 세션에서 재제안 금지. 신규(빈) 프로젝트는 대상 아님 — 증분 등록으로 충분.
+
+### 절차
+1. **스캔 범위** — 소스 루트만. generated 제외(위 generated 제외 절 패턴을 스택에 맞게 치환).
+2. **등록 기준** — 포함: public 진입점(클래스/화면/route/서비스/repository/모델 진입점/상태 provider·store/주요 public 메서드). 제외: private 헬퍼, 1줄 getter, 뷰 내부 렌더 로직, 순수 표현용 서브컴포넌트.
+3. **규모 분기** —
+   - 소스 < 40 파일: 인라인 진행.
+   - 소스 >= 40 파일: code-delegate로 배치 위임. 기능/폴더 기준 3~4배치(배치당 30~40파일). 각 서브는 .claude/codemap/_staging/{batch}.md에 **직접 Write**하고 **반환은 4줄 요약만**(staging 경로 / 심볼 수 / 파일 수 / 특이사항). 심볼 본문을 부모로 반환하면 위임 이득이 사라진다. 서브는 _index.md 직접 편집 금지(owner 권한).
+4. **병합** — owner가 staging을 합친다. 기존 MAP·HOT·수기 등록 섹션은 **보존**(덮어쓰기 금지), 중복 심볼만 제거. 병합 후 _staging/ 제거.
+5. **크기 판정** — 합계 30KB 초과면 flat 유지하지 말고 즉시 Phase B(trim-router) 전환. leaf가 4KB 근접하면 layer(data/state/ui)로 분할.
+6. **검증 게이트(완료 조건)** — (a) size cap 전수 검사 PASS (b) 무작위 심볼 5~6개의 path:line을 실파일과 대조해 **전건 일치**. 불일치 시 해당 배치 재작업.
+
+### Phase B 전환 시 _index.md 처리
+_index.md는 삭제하지 않고 **라우팅 스텁**으로 남긴다(3~5줄: _root.md / keywords.md / features/ 포인터 + "심볼표 없음, 통째 read 금지" 명시). 기존 문서·설정이 _index.md 경로를 가리키는 경우가 있어 경로가 죽으면 ON START read가 실패한다.
+

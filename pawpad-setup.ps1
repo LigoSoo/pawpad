@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.46 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.46. v2.45 기반 + design 스킬 시각 품질 재설계(스킬 21 불변) — 외부 사양서를 pawpad lean 단일 SKILL.md 구조로 흡수. 최상위 3원칙(Consistency First: 모양·크기·간격은 스케일 토큰에서만 파생 / Intentional Direction: 코드 전 방향 명시+사유 / Anti-slop: 제네릭·불일치 차단) + 2-pass 워크플로우(계획→자기비평→구현→재비평) + 일관성 시스템 5축(간격/크기/모양/정렬/상태, Token-first raw 값 금지) + anti-slop 체크(불일치=AI 티 최우선 정규화, 과용 폰트 회피는 신규 선택 한정, 경계 기본값 3종, 금지 레이아웃/이모지 아이콘/그라디언트 남발) + 정량 assertion(spacing 임의값 0·radius 고유값<=4·컨트롤 높이<=3) + 신규 프로젝트 토큰 부트스트랩 + 선택지 체크박스·3옵션 상한 + 파이프라인 관계 4자 확장(brainstorming/mockup 연결, 외부 문서 게이트 진입 명시). 근거: "AI 티는 화려함이 아니라 불일치" — 적용 전/후 비교 검증(구현 전 사용자 확인) 수행. 보고서: docs/CHANGELOG_v2.46.md.
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.47 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.47. v2.46 기반 + codemap 초기 부트스트랩 절차 신설(스킬 21 불변) — 설치가 codemap 템플릿만 만들고 기존 코드베이스를 스캔하지 않아, 이미 코드가 쌓인 프로젝트는 백필 없이 방치되던 공백을 메움(실관측: 설치 후 수 주간 1개 도메인만 등록). codemap SKILL에 "## 초기 부트스트랩" 섹션 추가 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START에 1회 제안, 거절 시 재제안 금지) + 스캔범위/등록기준(public 진입점만) + 규모 분기(소스<40 인라인 / >=40 code-delegate 배치 위임, 서브는 _staging에 직접 Write하고 4줄 요약만 반환) + 병합 규율(기존 MAP/HOT/수기 섹션 보존) + 크기 판정(30KB 초과 즉시 Phase B) + 검증 게이트(size cap 전수 + 무작위 심볼 path:line 실측 전건 일치). 부수: Phase B 전환 시 _index.md를 삭제하지 않고 라우팅 스텁으로 남기는 규약 명문화 + Session Protocol step7을 "_root.md 우선, 없으면 _index.md"로 수정(경로 사멸 차단, live+tmpl 4표면). 근거: TeamPitch_2.0 실증 백필(115파일 -> 283 심볼, trim-router 전환, 서브 3배치 위임). 보고서: docs/CHANGELOG_v2.47.md.
+#         이전: v2.46. v2.45 기반 + design 스킬 시각 품질 재설계(스킬 21 불변) — 외부 사양서를 pawpad lean 단일 SKILL.md 구조로 흡수. 최상위 3원칙(Consistency First: 모양·크기·간격은 스케일 토큰에서만 파생 / Intentional Direction: 코드 전 방향 명시+사유 / Anti-slop: 제네릭·불일치 차단) + 2-pass 워크플로우(계획→자기비평→구현→재비평) + 일관성 시스템 5축(간격/크기/모양/정렬/상태, Token-first raw 값 금지) + anti-slop 체크(불일치=AI 티 최우선 정규화, 과용 폰트 회피는 신규 선택 한정, 경계 기본값 3종, 금지 레이아웃/이모지 아이콘/그라디언트 남발) + 정량 assertion(spacing 임의값 0·radius 고유값<=4·컨트롤 높이<=3) + 신규 프로젝트 토큰 부트스트랩 + 선택지 체크박스·3옵션 상한 + 파이프라인 관계 4자 확장(brainstorming/mockup 연결, 외부 문서 게이트 진입 명시). 근거: "AI 티는 화려함이 아니라 불일치" — 적용 전/후 비교 검증(구현 전 사용자 확인) 수행. 보고서: docs/CHANGELOG_v2.46.md.
 #         이전: v2.45. v2.44 기반 + brainstorming 스킬 신규(20→21, prd 번들) — 발산(방향 2-3 대안+추천 1개, 초과 시 상위 3 shortlist) + 누락 스윕(인접기능·저니 워크스루 + 비해피패스 8축 체크리스트) + MoSCoW 스코프 게이트(Won't 명시 의무)를 단일 스킬로 통합. 진입 판정(방향 3요소: 무엇을/누구에게/왜)으로 막연한 아이디어는 발산부터, 구체화된 기획문서는 스윕 직행(+사용자 오버라이드). 파이프라인 brainstorming→clarity→grill-me→to-prd→mockup — clarity 이전 발산 단계 공백 해소, 구현 후반 기능 추가/삭제 churn(누락형)을 기획 단계에서 차단(사용자 실관측 pain). Idea→PRD Routing 판정 4표면(live+tmpl CLAUDE/AGENTS) 동기, 자동제안 dangling 이름 실체화. 보고서: docs/CHANGELOG_v2.45.md.
 #         이전: v2.44. v2.43 기반 + 외부 문서 구현 진입 게이트 + 선택지 체크박스 전면화 + 데스크탑 스택 4종. ① 외부 문서(md/spec/기획서) 참조 구현 요청 시 clarity 채점 의무(PASS=무질문 통과·BLOCK=재질문, clarity SKILL "외부 문서 모드" 신설) + design/code-delegate 경계 추천, code-delegate written 설계에 외부 문서 인정 — phase 분해·task 저장만으로 게이트 우회하던 사용자 실관측 사고 대응. ② 선택지 질문 규칙 스코프 확장: 기획 스킬 한정→스킬 무관 전면, 추천 1개 "(추천)" first + Other 자유 입력 명시. ③ -Stack 데스크탑 4종 추가: wpf|tauri|electron|avalonia (Commands/Boundaries/Directories/Conventions/ADR 프로파일, 대화형 1~8). 보고서: docs/CHANGELOG_v2.44.md.
 #         이전: v2.43. v2.42 기반 + task-done 종결 게이트 3종(A+B+C) — ON TASK DONE 미실행→stale lane→resume이 완료 작업 재제안하는 사고 계층 방어. A: 신규 task-done 스킬(19→20, Core): ON TASK DONE 체크리스트 강제 실행("작업/이슈 종료" 자연어 라우팅, lane→done 이관+_wip 제거+_meta+tasklog+codemap+commit 전항). B: stop-check lane-close 백스톱: 완료 선언 감지+Active Lanes 잔존 시 decision:block 1회(uuid dedupe, 'task-done' 언급 제거 후 매칭). C: resume Lane 신뢰성 게이트: ON START 3단 신호(_meta DONE+lane 잔존=확정 누락 / next steps 전항 체크=완료 의심 / stale+실코드 대조=사용자 확인), 다음 작업 제안 전 실상태 1회 대조. D(추가): retrieval 계측 결함 4종 — ①선언 파서 앵커+3세그먼트 구조 검증(훅 논하는 산문이 cmap:hit로 오탐돼 지표가 거짓이 되던 경로 차단) ②read-track 실측 watermark 대조로 "cmap 0 + src>=2 + hit/miss 선언 없음"=미선언 full-scan 시 decision:block 1회(uuid dedupe) + statusline 분모0+src>0 시 "codemap 미선언" 라벨 ③'미사용' 허위 선언도 누락과 동일 취급 ④stop_hook_active는 판정만 생략하고 계측은 수행(교정 응답 선언 파싱 보장). 보고서: docs/CHANGELOG_v2.43.md.
@@ -59,7 +60,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.46"
+$ver = "2.47"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -246,7 +247,7 @@ $TR = @{
         step1 = "  1. CLAUDE.md / AGENTS.md 의 Stack(Commands/Boundaries) 정보 확인 및 수정"
         step2 = "  2. .claude/pawpad/_meta.md 의 STACK 정보 확인"
         step3 = "  3. .claude/HYBRID.md 읽기 (협업 프로토콜 숙지)"
-        step4 = "  4. 기존 코드 있으면: '.claude/codemap/_index.md 초기값 만들어줘' 요청"
+        step4 = "  4. 기존 코드 있으면: 'codemap 초기 부트스트랩 해줘' 요청 (codemap SKILL 초기 부트스트랩 절차 — 규모 크면 code-delegate 배치 위임)"
         forceHint1 = "기존 파일 덮어쓰려면: .\pawpad-setup.ps1 -Force"
         forceHint2 = "기존 설치 업그레이드: .\pawpad-setup.ps1 -Upgrade (사용자 데이터 보존, 툴킷 파일만 갱신)"
         forceHint3 = "(둘 다 PawPad + Context files 자동 백업됩니다)"
@@ -270,7 +271,7 @@ $TR = @{
         step1 = "  1. Review/edit Stack info (Commands/Boundaries) in CLAUDE.md / AGENTS.md"
         step2 = "  2. Check STACK info in .claude/pawpad/_meta.md"
         step3 = "  3. Read .claude/HYBRID.md (collaboration protocol)"
-        step4 = "  4. If existing code: ask 'create initial .claude/codemap/_index.md'"
+        step4 = "  4. If existing code: ask 'run codemap initial bootstrap' (codemap SKILL bootstrap section; large repos delegate in batches)"
         forceHint1 = "Overwrite existing files: .\pawpad-setup.ps1 -Force"
         forceHint2 = "Upgrade existing install: .\pawpad-setup.ps1 -Upgrade (preserves user data, toolkit files only)"
         forceHint3 = "(both auto-backup PawPad + Context files)"
@@ -1274,7 +1275,7 @@ ON START (agent가 순차 실행):
   4. _wip.md Active Lanes에 state=HANDOFF_TO_* 발견 시 -> handoff 필드 경로 read
   5. state=SPEC_READY 또는 spec 있으면 read .claude/pawpad/specs/{feature}.md
   6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT; RECENT 완료이력은 하단·재개 불요 -> 생략, history 시 on-demand)
-  7. .claude/codemap/_index.md는 코드 수정 작업 시작 시점에 read — MAP+HOT(조망)만 부분읽기(상단), INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand (질문/분석 전용 세션은 skip)
+  7. codemap은 코드 수정 작업 시작 시점에 read — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP+HOT(조망)만 부분읽기(상단). 전체 심볼표는 심볼 필요 시 Grep on-demand (질문/분석 전용 세션은 skip). 등록 심볼<10 & 소스≥30이면 codemap SKILL 초기 부트스트랩 1회 제안
 ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
 ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함) — 실행은 task-done 스킬 체크리스트로(부분 실행/누락 방지; "작업/이슈 종료" 자연어 요청 = task-done 발동)
 ON STOP:         agent가 lane 파일 (state + reason) 갱신
@@ -1414,7 +1415,7 @@ ON START (agent가 순차 실행):
   4. _wip.md Active Lanes에 state=HANDOFF_TO_* 발견 시 -> handoff 필드 경로 read
   5. state=SPEC_READY 또는 spec 있으면 read .claude/pawpad/specs/{feature}.md
   6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT; RECENT 완료이력은 하단·재개 불요 -> 생략, history 시 on-demand)
-  7. .claude/codemap/_index.md는 코드 수정 작업 시작 시점에 read — MAP+HOT(조망)만 부분읽기(상단), INDEX(전체 심볼표)는 심볼 필요 시 Grep on-demand (질문/분석 전용 세션은 skip)
+  7. codemap은 코드 수정 작업 시작 시점에 read — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP+HOT(조망)만 부분읽기(상단). 전체 심볼표는 심볼 필요 시 Grep on-demand (질문/분석 전용 세션은 skip). 등록 심볼<10 & 소스≥30이면 codemap SKILL 초기 부트스트랩 1회 제안
 ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
 ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함) — 실행은 task-done 스킬 체크리스트로(부분 실행/누락 방지; "작업/이슈 종료" 자연어 요청 = task-done 발동)
 ON STOP:         agent가 lane 파일 (state + reason) 갱신
@@ -4073,6 +4074,25 @@ fallback rg: rg -n "kw|Symbol" lib -g "!*.g.dart" -g "!*.freezed.dart" -g "!lib/
 ### size cap (완료 게이트)
 root 2KB / keywords·feature 4KB hard cap. 초과 시 split 후 완료.
 검사: .claude/codemap 하위 *.md 각 파일 UTF-8 byte 수가 cap(_root.md=2048, 그외=4096)을 넘으면 FAIL. PowerShell 스크립트는 spec(codemap-8kb-router.md Acceptance) / lane 참조.
+
+## 초기 부트스트랩 (기존 코드베이스에 처음 도입할 때)
+설치는 codemap 템플릿만 만든다. 이미 코드가 쌓인 프로젝트는 **1회 백필**을 해야 lookup이 동작한다. 백필 없이 두면 miss -> 소스 full-scan 경로가 열린 채 운영된다(실관측: 설치 후 수 주간 1개 도메인만 등록된 상태로 방치).
+
+### 발동 판정 (자동 1회 제안)
+코드 수정 세션 ON START에 **등록 심볼 < 10 && 소스 파일 >= 30**이면 부트스트랩을 1회 제안한다. 거절 시 그 세션에서 재제안 금지. 신규(빈) 프로젝트는 대상 아님 — 증분 등록으로 충분.
+
+### 절차
+1. **스캔 범위** — 소스 루트만. generated 제외(위 generated 제외 절 패턴을 스택에 맞게 치환).
+2. **등록 기준** — 포함: public 진입점(클래스/화면/route/서비스/repository/모델 진입점/상태 provider·store/주요 public 메서드). 제외: private 헬퍼, 1줄 getter, 뷰 내부 렌더 로직, 순수 표현용 서브컴포넌트.
+3. **규모 분기** —
+   - 소스 < 40 파일: 인라인 진행.
+   - 소스 >= 40 파일: code-delegate로 배치 위임. 기능/폴더 기준 3~4배치(배치당 30~40파일). 각 서브는 .claude/codemap/_staging/{batch}.md에 **직접 Write**하고 **반환은 4줄 요약만**(staging 경로 / 심볼 수 / 파일 수 / 특이사항). 심볼 본문을 부모로 반환하면 위임 이득이 사라진다. 서브는 _index.md 직접 편집 금지(owner 권한).
+4. **병합** — owner가 staging을 합친다. 기존 MAP·HOT·수기 등록 섹션은 **보존**(덮어쓰기 금지), 중복 심볼만 제거. 병합 후 _staging/ 제거.
+5. **크기 판정** — 합계 30KB 초과면 flat 유지하지 말고 즉시 Phase B(trim-router) 전환. leaf가 4KB 근접하면 layer(data/state/ui)로 분할.
+6. **검증 게이트(완료 조건)** — (a) size cap 전수 검사 PASS (b) 무작위 심볼 5~6개의 path:line을 실파일과 대조해 **전건 일치**. 불일치 시 해당 배치 재작업.
+
+### Phase B 전환 시 _index.md 처리
+_index.md는 삭제하지 않고 **라우팅 스텁**으로 남긴다(3~5줄: _root.md / keywords.md / features/ 포인터 + "심볼표 없음, 통째 read 금지" 명시). 기존 문서·설정이 _index.md 경로를 가리키는 경우가 있어 경로가 죽으면 ON START read가 실패한다.
 "@
 
 # ── Skills: caveman ───────────────────────────────────────────────────────────
@@ -6922,7 +6942,8 @@ if ($failed -eq 0) {
         Write-Host "  - 데스크탑 스택 프리셋 (v2.44): -Stack wpf|tauri|electron|avalonia 추가 (MVVM/IPC 보안 컨벤션 + ADR 포함, 대화형 1~8)" -ForegroundColor Cyan
         Write-Host "  - brainstorming 스킬 (v2.45): 아이디어 발산 + 누락 스윕(인접기능·비해피패스 8축) + MoSCoW 스코프 게이트 단일 통합 — clarity 이전 단계, 구현 후반 기능 추가/삭제 churn 차단 (prd 번들, 20→21)" -ForegroundColor Cyan
         Write-Host "  - design 스킬 시각 품질 재설계 (v2.46): 최상위 3원칙(일관성 우선·의도된 방향·anti-slop) + 일관성 5축 스케일(토큰 파생 강제, 임의값 금지) + 정량 체크(radius<=4·컨트롤 높이<=3·spacing 임의값 0) + 2-pass 워크플로우 — 'AI 티=불일치' 차단 (스킬 21 불변)" -ForegroundColor Cyan
-        Write-Host "  - 상세: docs/CHANGELOG_v2.46.md" -ForegroundColor Cyan
+        Write-Host "  - codemap 초기 부트스트랩 (v2.47): 기존 코드베이스 도입 시 1회 백필 절차 규격화 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START 1회 제안) + 규모 분기(소스>=40이면 code-delegate 배치 위임, 서브는 staging에 직접 쓰고 4줄 요약만 반환) + 30KB 초과 즉시 trim-router + 검증 게이트(size cap 전수 + 심볼 path:line 실측 대조). Phase B 전환 시 _index.md=라우팅 스텁 규약, step7 _root.md 우선 (스킬 21 불변)" -ForegroundColor Cyan
+        Write-Host "  - 상세: docs/CHANGELOG_v2.47.md" -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 21 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review" -ForegroundColor Cyan
