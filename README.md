@@ -120,7 +120,7 @@ Claude Code ⇄ Codex 하이브리드 협업을 위한 **멀티에이전트 상�
 
 ```
 CLAUDE.md / AGENTS.md            # 에이전트 컨텍스트 (Claude / Codex). 완료 기준(DoD) 8번 = security-check 보안 게이트 포함
-pawpad-setup.ps1     # 통합 단일 설치 스크립트 (FROZEN v2.47, 번들 선택 -Preset/-Bundles + 안내 언어 -Lang, 설치 UI: paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
+pawpad-setup.ps1     # 통합 단일 설치 스크립트 (FROZEN v2.47, 번들 선택 -Preset/-Bundles + 안내 언어 -Lang, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
 .codex/
 ├── config.json                  # Codex 보조 설정 (skills 21 + context/backup keys)
 ├── config.toml                  # project config layer note
