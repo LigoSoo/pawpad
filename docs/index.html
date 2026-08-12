@@ -56,8 +56,21 @@
   #cover{justify-content:space-between;}
   .cover-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;}
   .badge{font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:.04em;}
-  .cover-mid{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin:auto 0;}
+  .cover-mid{display:flex;align-items:center;justify-content:space-between;gap:clamp(24px,5vw,64px);margin:auto 0;}
+  .cover-id{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;}
   .cover-mid h1{display:flex;align-items:baseline;gap:.12em;}
+
+  /* 설치 배너 회전 프레임 (docs/paw-spin.gif — 설치본과 동일 프레임 데이터) */
+  .termcard{margin:0;flex:0 1 340px;max-width:340px;border:1px solid var(--line);border-radius:12px;
+            overflow:hidden;background:#16181B;box-shadow:0 26px 60px -30px rgba(0,0,0,.8);}
+  .termcard .tbar{display:flex;gap:8px;align-items:center;font-family:var(--mono);font-size:11.5px;
+                  color:var(--muted);background:var(--ground-3);padding:8px 12px;border-bottom:1px solid var(--line);}
+  .termcard .tbar .t{flex:1;text-align:center;}
+  .termcard img{display:block;width:100%;height:auto;}
+  @media (max-width:860px){
+    .cover-mid{flex-direction:column;align-items:flex-start;}
+    .termcard{display:none;}
+  }
   .cover-sub{font-size:clamp(18px,2.6vw,30px);color:var(--text);font-weight:500;margin-top:18px;max-width:24ch;letter-spacing:-.01em;}
   .cover-sub b{color:var(--amber);font-weight:700;}
   .cover-foot{display:flex;flex-wrap:wrap;gap:10px 22px;font-family:var(--mono);font-size:13px;color:var(--muted);align-items:center;}
@@ -235,10 +248,17 @@
       <span class="badge rv">v2.47</span>
     </div>
     <div class="wrap cover-mid">
-      <img class="mark rv" src="icon.png" alt="PawPad 로고 — 터미널 프롬프트가 새겨진 젤리발"
-           style="width:104px;margin-bottom:26px;" width="1256" height="1256">
-      <h1 class="rv">Paw<span class="amber">Pad</span></h1>
-      <p class="cover-sub rv">코딩 에이전트를 위한 <b>상태관리 · 토큰절약</b> 하네스</p>
+      <div class="cover-id">
+        <img class="mark rv" src="icon.png" alt="PawPad 로고 — 터미널 프롬프트가 새겨진 젤리발"
+             style="width:104px;margin-bottom:26px;" width="1256" height="1256">
+        <h1 class="rv">Paw<span class="amber">Pad</span></h1>
+        <p class="cover-sub rv">코딩 에이전트를 위한 <b>상태관리 · 토큰절약</b> 하네스</p>
+      </div>
+      <figure class="termcard rv">
+        <div class="tbar"><span>🐾</span><span class="t">pawpad-setup.ps1</span><span>− □ ×</span></div>
+        <img src="paw-spin.gif" width="459" height="444"
+             alt="설치 화면에서 1회전하는 PawPad ASCII 로고 — 브랜드 마크를 ASCII로 변환한 16프레임 코인 스핀">
+      </figure>
     </div>
     <div class="wrap cover-foot rv">
       <span class="chip">Claude Code ⇄ Codex</span>
