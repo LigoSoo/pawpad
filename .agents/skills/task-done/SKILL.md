@@ -13,6 +13,8 @@ ON TASK DONE(Session Protocol)은 선언적 지시라 자연어 종료 요청("�
 - 사용자 자연어: "작업 종료", "이슈 종료", "이번 작업 마무리", "task done", "close this task" 등 작업 종결 요청
 - agent 자체: 태스크 완료(DoD 충족) 판단 시점 = ON TASK DONE
 - Stop hook의 [lane-close] 리마인더 수신 시 (완료 선언했는데 Active Lanes 잔존)
+- **선행 규율**: "완료/정상 확인/끝났다"를 보고하기 전에 _wip.md Active Lanes를 먼저 확인한다.
+  잔존하면 보고와 같은 턴에 이 스킬을 실행 — hook 리마인더를 기다리지 않는다.
 
 ## 전제 게이트 (미충족 시 종결 중단 + 사유 보고)
 - DoD 확인(CLAUDE.md/AGENTS.md Definition of Done): Analyze 0 에러 / Test green / scope 준수 / lane Verification Evidence 기록 / 코드 변경 시 security-check 빨강 0

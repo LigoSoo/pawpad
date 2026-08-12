@@ -4252,6 +4252,7 @@ lane read 직후 신뢰도 순 3단 신호로 대조하고, 통과 후에만 nex
 | _meta.md RECENT에 해당 feature-id의 DONE 기록 존재 + lane이 Active Lanes 잔존 | 확정 누락 (기록-이관 불일치) | 사용자 통지 후 task-done 스킬로 즉시 종결 |
 | lane next steps(다음 단계) 전항 체크 완료 또는 본문에 완료 선언 | 완료 의심 | task-done 종결 제안 (사용자 확인 후 실행) |
 | lane updated가 오래됨 + next steps 첫 항목의 실코드 spot-check 결과 이미 반영됨 | stale 의심 | 작업 재개 전 사용자 확인 - "lane과 실상태 불일치, 이미 완료된 것 아닌가" |
+| lane에 [사용자] 표기 항목 또는 외부 완료 조건(스토어 심사·배포·서버 반영)이 존재 | 파일 대조 불가 | next steps 제안 전 해당 항목 상태를 1줄 질의 - 파일만 보고 미완으로 단정 금지 |
 
 - 규율: 다음 작업을 제안하기 전 next steps 첫 항목의 실상태(대상 파일/심볼 존재, 내용)를 1회 대조한다. 문서와 현실이 어긋나면 문서를 믿지 말고 어긋남을 보고한다.
 - 확정 누락 신호 외에는 자동 이관 금지 - 게이트는 제안/확인까지. 실제 종결은 task-done 스킬 체크리스트로 실행.
@@ -4401,6 +4402,8 @@ ON TASK DONE(Session Protocol)은 선언적 지시라 자연어 종료 요청("�
 - 사용자 자연어: "작업 종료", "이슈 종료", "이번 작업 마무리", "task done", "close this task" 등 작업 종결 요청
 - agent 자체: 태스크 완료(DoD 충족) 판단 시점 = ON TASK DONE
 - Stop hook의 [lane-close] 리마인더 수신 시 (완료 선언했는데 Active Lanes 잔존)
+- **선행 규율**: "완료/정상 확인/끝났다"를 보고하기 전에 _wip.md Active Lanes를 먼저 확인한다.
+  잔존하면 보고와 같은 턴에 이 스킬을 실행 — hook 리마인더를 기다리지 않는다.
 
 ## 전제 게이트 (미충족 시 종결 중단 + 사유 보고)
 - DoD 확인(CLAUDE.md/AGENTS.md Definition of Done): Analyze 0 에러 / Test green / scope 준수 / lane Verification Evidence 기록 / 코드 변경 시 security-check 빨강 0
@@ -4575,6 +4578,12 @@ description: Output compression reference. Enforcement lives in CLAUDE.md/AGENTS
 
 ## 출력 패턴
 [대상] [동작] [이유]. [다음 단계].
+
+## 압축 예외 (사용자 결정을 요구하는 문장)
+제안·선택지 문장은 압축하지 않는다. 명령형 축약("~로 바꿔줘", "~에 넣어줘")은 무엇을 어디에
+바꾸는지가 지워져 되묻기를 유발한다.
+- 형식: [대상 파일/문서] [무엇을] [어떻게] -> [결과] 완전문 1~2줄.
+- 옵션 라벨도 동일. 라벨만으로 판단 불가하면 before/after 발췌를 같이 낸다.
 
 ## 레벨 (참조)
 | 모드   | 설명 |
