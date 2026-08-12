@@ -1,22 +1,12 @@
-```text
-  ═════════════════════════════
+<p align="center">
+  <img src="docs/paw-spin.gif" width="340"
+       alt="설치 화면에서 1회전하는 PawPad ASCII 로고 — 브랜드 마크를 ASCII로 변환한 16프레임 코인 스핀">
+</p>
 
-          ▄██▄    ▄██▄
-          ████    ████
-          ▀██▀    ▀██▀
-     ▄██▄     ▄▄▄▄     ▄██▄
-     ████   ▄██████▄   ████
-     ▀██▀ ▄██████████▄ ▀██▀
-         ██████████████
-        ████████████████
-        ████████████████
-         ▀████▀  ▀████▀
-
-         P A W   P A D
-   Agentic Engineering Toolkit
-
-  ═════════════════════════════
-```
+<p align="center">
+  <b>P A W &nbsp; P A D</b><br>
+  <sub>Agentic Engineering Toolkit</sub>
+</p>
 
 # PawPad — Agentic Engineering Toolkit (v2.47 FROZEN)
 
