@@ -1,7 +1,7 @@
 ﻿# CHANGELOG v2.48 — ctxdb 키워드 회수 복구 + 계층 성장 규약
 
 > 날짜: 2026-08-27 | 기반: v2.47 | 스킬 수: **21 불변**
-> 한 줄: "프롬프트 키워드로 과거를 부른다"가 설치처에서 6주간 한 번도 동작하지 않았다. 원인 6종을 toolkit 원본에서 재확인해 훅을 고치고, 저장량에 따라 L2→L3→L4로 넓어지는 성장 규약을 붙이고 회귀셋 사양을 정리했다.
+> 한 줄: "프롬프트 키워드로 과거를 부른다"가 설치처에서 6주간 한 번도 동작하지 않았다. 원인 6종을 toolkit 원본에서 재확인해 훅을 고치고, 저장량에 따라 L2→L3→L4로 넓어지는 성장 규약과 회귀셋을 붙였다.
 
 ---
 
@@ -76,13 +76,12 @@ toolkit 원본에서 6종 전부 재확인(`.claude/hooks/ctxdb-inject.ps1`, `.c
 | checkpoint 실행 절차 | `context-saver` 호출 단계 추가(D-8) — 빠지면 다음 세션이 그 작업을 키워드로 못 찾는다 |
 | Session Protocol `ON NEW TOPIC` | 새 주제 + 훅 주입 블록 부재면 `keywords.md` 의미매칭 1회(N-2 폴백). 같은 주제 재발동 금지 |
 
-### 2-3. 회귀셋 `tests/ctxdb-recall` (사양 확정, **이 레포에 미커밋**)
+### 2-3. 회귀셋 `tests/ctxdb-recall` (신규, **배포본 미포함**)
 
 toolkit 개발 자산. 픽스처(가짜 설치처) + 18케이스 러너. 설치처에는 넣지 않는다(설치본이 훅을 테스트할 이유가 없다).
 
-> **상태(2026-08-27)**: 러너·픽스처가 이 레포에 존재하지 않는다(`tests/` 부재, stash·reflog에도 없음).
-> 아래 실행법과 C1~C18은 **구현 사양**으로 남기고, 회귀셋 자체는 별건으로 분리한다.
-> 이번 릴리스의 훅 수정은 실환경 스모크(§4)로만 검증됐다 — 자동 가드는 아직 없다.
+> **이력 정정(2026-08-27)**: 최초 구현·통과는 다른 머신에서 이뤄졌고 산출물이 이 레포에 없었다.
+> 같은 사양(C1~C18)으로 이 머신에서 재구현해 커밋했다. 설계 메모와 검출력 근거는 `tests/ctxdb-recall/README.md`.
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File tests\ctxdb-recall\run-recall-tests.ps1
@@ -118,7 +117,9 @@ C15 INDEX 부재 진단 / C16 L4 회수 / C17 60줄 컷 / C18 Codex pointer 모�
 | 항목 | 결과 |
 |---|---|
 | PSParser | `pawpad-setup.ps1` / 훅 2종 parse errors 0 |
-| 회귀셋 | **미실행** — 러너·픽스처가 이 레포에 없다(§2-3). 자동 가드 부재 |
+| 회귀셋 (Claude 훅) | **17/17 PASS** (+Codex 전용 C18 SKIP) |
+| 회귀셋 (Codex 훅) | **18/18 PASS** |
+| 회귀 검출력 (mutation) | 수정본에 D-1·D-2·D-3·D-4·D-5·60줄컷을 하나씩 되심어 **6/6 검출**. D-1·D-3은 파급이 넓어 여러 케이스가 동시에 죽으므로, 개별 검출력은 나머지 4종의 targeted mutation(단일 케이스만 실패)이 증명 |
 | 스킬 미러 정합 | self `-Upgrade` 후 emitted==live — 21개 중 변경분 3개(`checkpoint`·`context-saver`·`ctxdb-navigator`) 외 불일치 0 |
 | 자체 배포 | toolkit self `-Upgrade`: 1 created / 77 updated / 4 merged / 17 skipped / **0 failed** |
 | 다운스트림 배포 | TeamPitch_2.0 · TodayQuest · LottoNumberPicks 각 78 updated, kingdom_test_cluade 77 updated — **각 0 failed**, 4곳 전부 훅 2종 + `keywords.md` + `ON NEW TOPIC` 적중 |
@@ -138,4 +139,4 @@ C15 INDEX 부재 진단 / C16 L4 회수 / C17 60줄 컷 / C18 Codex pointer 모�
 - **`.sh` 스텁 현행 유지**(D-7). `pwsh` 부재 시 `hook-skip`. 단일 배포본 철학 + Mac 지원 보류 결정(`_meta` NEXT)에 따른다.
   비Windows에서는 `ON NEW TOPIC` agent 폴백이 회수를 대신한다.
 - **오탐률 미측정**. 하한을 2자로 낮추면 짧은 일반어 오탐이 늘 수 있다. 점수화 매칭이 완충이지만 실사용 관측이 필요하다.
-- **Codex pointer 모드는 회귀셋 미커버**. 픽스처가 `injectMode: full`로 고정돼 회수 로직 자체를 검증한다. pointer는 렌더링 변형.
+- **Codex pointer 모드는 C18 1건만 커버**. 나머지 픽스처는 `injectMode: full` 고정 — 렌더링을 벗겨야 회수 로직 자체가 보인다. pointer 렌더링의 세부 변형은 미커버.
