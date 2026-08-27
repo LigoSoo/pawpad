@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.47 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.47. v2.46 기반 + codemap 초기 부트스트랩 절차 신설(스킬 21 불변) — 설치가 codemap 템플릿만 만들고 기존 코드베이스를 스캔하지 않아, 이미 코드가 쌓인 프로젝트는 백필 없이 방치되던 공백을 메움(실관측: 설치 후 수 주간 1개 도메인만 등록). codemap SKILL에 "## 초기 부트스트랩" 섹션 추가 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START에 1회 제안, 거절 시 재제안 금지) + 스캔범위/등록기준(public 진입점만) + 규모 분기(소스<40 인라인 / >=40 code-delegate 배치 위임, 서브는 _staging에 직접 Write하고 4줄 요약만 반환) + 병합 규율(기존 MAP/HOT/수기 섹션 보존) + 크기 판정(30KB 초과 즉시 Phase B) + 검증 게이트(size cap 전수 + 무작위 심볼 path:line 실측 전건 일치). 부수: Phase B 전환 시 _index.md를 삭제하지 않고 라우팅 스텁으로 남기는 규약 명문화 + Session Protocol step7을 "_root.md 우선, 없으면 _index.md"로 수정(경로 사멸 차단, live+tmpl 4표면). 근거: TeamPitch_2.0 실증 백필(115파일 -> 283 심볼, trim-router 전환, 서브 3배치 위임). 보고서: docs/CHANGELOG_v2.47.md.
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.48 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.48. v2.47 기반 + ctxdb 키워드 회수 복구 + 계층 성장 규약(스킬 21 불변) — 설치처 실측에서 "프롬프트 키워드로 과거를 부른다"가 사실상 죽어 있었다: 한글 2음절 키워드가 길이 하한 3에 전량 탈락(관측 레포 INDEX 키워드 38%), L1이 자라 포인터가 읽기범위 밖으로 밀리면 무주입인데 진단이 `{}` 하나뿐, 매칭 성공이 폴백을 끄고(가장 관련 있는 프롬프트에서 실패), 이월한 L3는 회수 정규식(`L2/`만)에 안 걸려 영구 회수불가 — 즉 규정대로 이월할수록 장기기억이 사라졌다. 훅 양 런타임 수정: CJK 2자/라틴 3자 하한 분리 + 조사 스트립(원형+어간 양쪽 후보) + 전 행 점수화 매칭(첫 히트 즉시반환 폐기) + `L[234]/` 회수 + L3/L4 `## ` 블록 단위 추출(파일 통째 금지) + L1 포인터 탐색범위와 주입범위 분리 + 폴백 상시 적용 + 무주입 사유 `.ctxdb/.state/{claude|codex}-last-decision` 기록(`{}` 출력계약 유지). 규약: INDEX `L2/L3 경로` 컬럼(포인터를 본문 길이와 분리) + `.ctxdb/keywords.md` 의미매칭 층 신설(agent 전용 — hook 차단·비Windows 폴백, codemap keywords 패턴 이식) + context-saver STEP5 계층 승격(L2 150줄→L3, L3 400줄→L4, L1 60줄/키워드 30개 초과 시 도메인 분할 제안, 이월 시 INDEX·L1 포인터 갱신 의무) + checkpoint 절차 context-saver 누락 보정 + Session Protocol ON NEW TOPIC 폴백. 회귀셋 `tests/ctxdb-recall` 18케이스는 사양만 확정 — 러너·픽스처 미커밋(별건). Codex exec 교차 리뷰 review-01 PASS_WITH_FIXES 84%(H 0) findings 7건 전건 반영 — mixed L2/L3 아카이브 절단·조사 오분해(전문가→전문)·무주입 진단 불일치·clean clone 러너 실패가 실버그였다. 보고서: docs/CHANGELOG_v2.48.md.
+#         이전: v2.47. v2.46 기반 + codemap 초기 부트스트랩 절차 신설(스킬 21 불변) — 설치가 codemap 템플릿만 만들고 기존 코드베이스를 스캔하지 않아, 이미 코드가 쌓인 프로젝트는 백필 없이 방치되던 공백을 메움(실관측: 설치 후 수 주간 1개 도메인만 등록). codemap SKILL에 "## 초기 부트스트랩" 섹션 추가 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START에 1회 제안, 거절 시 재제안 금지) + 스캔범위/등록기준(public 진입점만) + 규모 분기(소스<40 인라인 / >=40 code-delegate 배치 위임, 서브는 _staging에 직접 Write하고 4줄 요약만 반환) + 병합 규율(기존 MAP/HOT/수기 섹션 보존) + 크기 판정(30KB 초과 즉시 Phase B) + 검증 게이트(size cap 전수 + 무작위 심볼 path:line 실측 전건 일치). 부수: Phase B 전환 시 _index.md를 삭제하지 않고 라우팅 스텁으로 남기는 규약 명문화 + Session Protocol step7을 "_root.md 우선, 없으면 _index.md"로 수정(경로 사멸 차단, live+tmpl 4표면). 근거: TeamPitch_2.0 실증 백필(115파일 -> 283 심볼, trim-router 전환, 서브 3배치 위임). 보고서: docs/CHANGELOG_v2.47.md.
 #         이전: v2.46. v2.45 기반 + design 스킬 시각 품질 재설계(스킬 21 불변) — 외부 사양서를 pawpad lean 단일 SKILL.md 구조로 흡수. 최상위 3원칙(Consistency First: 모양·크기·간격은 스케일 토큰에서만 파생 / Intentional Direction: 코드 전 방향 명시+사유 / Anti-slop: 제네릭·불일치 차단) + 2-pass 워크플로우(계획→자기비평→구현→재비평) + 일관성 시스템 5축(간격/크기/모양/정렬/상태, Token-first raw 값 금지) + anti-slop 체크(불일치=AI 티 최우선 정규화, 과용 폰트 회피는 신규 선택 한정, 경계 기본값 3종, 금지 레이아웃/이모지 아이콘/그라디언트 남발) + 정량 assertion(spacing 임의값 0·radius 고유값<=4·컨트롤 높이<=3) + 신규 프로젝트 토큰 부트스트랩 + 선택지 체크박스·3옵션 상한 + 파이프라인 관계 4자 확장(brainstorming/mockup 연결, 외부 문서 게이트 진입 명시). 근거: "AI 티는 화려함이 아니라 불일치" — 적용 전/후 비교 검증(구현 전 사용자 확인) 수행. 보고서: docs/CHANGELOG_v2.46.md.
 #         이전: v2.45. v2.44 기반 + brainstorming 스킬 신규(20→21, prd 번들) — 발산(방향 2-3 대안+추천 1개, 초과 시 상위 3 shortlist) + 누락 스윕(인접기능·저니 워크스루 + 비해피패스 8축 체크리스트) + MoSCoW 스코프 게이트(Won't 명시 의무)를 단일 스킬로 통합. 진입 판정(방향 3요소: 무엇을/누구에게/왜)으로 막연한 아이디어는 발산부터, 구체화된 기획문서는 스윕 직행(+사용자 오버라이드). 파이프라인 brainstorming→clarity→grill-me→to-prd→mockup — clarity 이전 발산 단계 공백 해소, 구현 후반 기능 추가/삭제 churn(누락형)을 기획 단계에서 차단(사용자 실관측 pain). Idea→PRD Routing 판정 4표면(live+tmpl CLAUDE/AGENTS) 동기, 자동제안 dangling 이름 실체화. 보고서: docs/CHANGELOG_v2.45.md.
 #         이전: v2.44. v2.43 기반 + 외부 문서 구현 진입 게이트 + 선택지 체크박스 전면화 + 데스크탑 스택 4종. ① 외부 문서(md/spec/기획서) 참조 구현 요청 시 clarity 채점 의무(PASS=무질문 통과·BLOCK=재질문, clarity SKILL "외부 문서 모드" 신설) + design/code-delegate 경계 추천, code-delegate written 설계에 외부 문서 인정 — phase 분해·task 저장만으로 게이트 우회하던 사용자 실관측 사고 대응. ② 선택지 질문 규칙 스코프 확장: 기획 스킬 한정→스킬 무관 전면, 추천 1개 "(추천)" first + Other 자유 입력 명시. ③ -Stack 데스크탑 4종 추가: wpf|tauri|electron|avalonia (Commands/Boundaries/Directories/Conventions/ADR 프로파일, 대화형 1~8). 보고서: docs/CHANGELOG_v2.44.md.
@@ -60,7 +61,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.47"
+$ver = "2.48"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -1728,6 +1729,7 @@ ON START (agent가 순차 실행):
   5. state=SPEC_READY 또는 spec 있으면 read .claude/pawpad/specs/{feature}.md
   6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT; RECENT 완료이력은 하단·재개 불요 -> 생략, history 시 on-demand)
   7. codemap은 코드 수정 작업 시작 시점에 read — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP+HOT(조망)만 부분읽기(상단). 전체 심볼표는 심볼 필요 시 Grep on-demand (질문/분석 전용 세션은 skip). 등록 심볼<10 & 소스≥30이면 codemap SKILL 초기 부트스트랩 1회 제안
+ON NEW TOPIC (세션 중): 새 주제 등장 + hook 주입 블록(`=== PawPad ... Auto Context ===`) 부재면 -> .ctxdb/keywords.md 의미매칭 1회로 최소 로드 (hook 차단·비Windows 폴백). 같은 주제 재발동 금지. 규칙: ctxdb-navigator SKILL.
 ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
 ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함) — 실행은 task-done 스킬 체크리스트로(부분 실행/누락 방지; "작업/이슈 종료" 자연어 요청 = task-done 발동)
 ON STOP:         agent가 lane 파일 (state + reason) 갱신
@@ -1868,6 +1870,7 @@ ON START (agent가 순차 실행):
   5. state=SPEC_READY 또는 spec 있으면 read .claude/pawpad/specs/{feature}.md
   6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT; RECENT 완료이력은 하단·재개 불요 -> 생략, history 시 on-demand)
   7. codemap은 코드 수정 작업 시작 시점에 read — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP+HOT(조망)만 부분읽기(상단). 전체 심볼표는 심볼 필요 시 Grep on-demand (질문/분석 전용 세션은 skip). 등록 심볼<10 & 소스≥30이면 codemap SKILL 초기 부트스트랩 1회 제안
+ON NEW TOPIC (세션 중): 새 주제 등장 + hook 주입 블록(`=== PawPad ... Auto Context ===`) 부재면 -> .ctxdb/keywords.md 의미매칭 1회로 최소 로드 (hook 차단·비Windows 폴백). 같은 주제 재발동 금지. 규칙: ctxdb-navigator SKILL.
 ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
 ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함) — 실행은 task-done 스킬 체크리스트로(부분 실행/누락 방지; "작업/이슈 종료" 자연어 요청 = task-done 발동)
 ON STOP:         agent가 lane 파일 (state + reason) 갱신
@@ -2548,7 +2551,7 @@ Write-FileContent ".claude\hooks\ctxdb-inject.ps1" @'
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-# UserPromptSubmit hook (Claude Code) - prompt keyword로 .ctxdb L1<=1/L2<=2 최소 로드 + 세션 dedupe.
+# UserPromptSubmit hook (Claude Code) - prompt keyword로 .ctxdb L1<=1/L2<=2(+L3/L4 블록) 최소 로드 + 세션 dedupe.
 # Codex .codex/hooks/ctxdb-inject.ps1과 동일 전략. 상태파일은 claude-loaded 사용.
 
 function Write-HookContext {
@@ -2559,9 +2562,12 @@ function Write-HookContext {
 function Write-EmptyHook { "{}" }
 
 function Find-PawpadRoot {
+    # 마커가 하나라도 있는 '가장 가까운' 디렉터리가 root다.
+    # INDEX.md 존재를 root 조건으로 걸면 INDEX가 없을 때 상위 repo까지 올라가
+    # 남의 .ctxdb를 읽고 진단도 엉뚱한 곳에 남는다 (중첩 설치·픽스처에서 실측).
     $dir = (Get-Location).Path
     while ($dir) {
-        if ((Test-Path (Join-Path $dir ".ctxdb/INDEX.md")) -and
+        if ((Test-Path (Join-Path $dir ".ctxdb")) -or
             (Test-Path (Join-Path $dir ".claude/codemap/_index.md"))) { return $dir }
         $parent = Split-Path -Parent $dir
         if (-not $parent -or $parent -eq $dir) { break }
@@ -2590,6 +2596,15 @@ function Save-LoadedRefs { param([string]$Root, [string]$SessionId, [string[]]$R
     Set-Content -Path (Join-Path $stateDir "claude-loaded") -Value (@($SessionId) + $unique) -Encoding UTF8
 }
 
+# 판정 기록. 무주입도 {} 출력 계약을 유지하되 사유는 state로 남긴다 (진단 불가 방지).
+function Save-Decision { param([string]$Root, [string]$SessionId, [string]$Decision)
+    try {
+        $stateDir = Join-Path $Root ".ctxdb/.state"
+        New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
+        Set-Content -Path (Join-Path $stateDir "claude-last-decision") -Value @($SessionId, $Decision) -Encoding UTF8
+    } catch { }
+}
+
 function Get-TextLines { param([string]$Path, [int]$MaxLines = 150, [switch]$Tail)
     if (-not (Test-Path $Path)) { return @() }
     $lines = Get-Content -Path $Path -Encoding UTF8
@@ -2598,12 +2613,77 @@ function Get-TextLines { param([string]$Path, [int]$MaxLines = 150, [switch]$Tai
     return $lines | Select-Object -First $MaxLines
 }
 
+# 토큰 길이 하한은 문자 종류별로 다르다. 한국어는 2음절이 가장 흔한 어휘 길이라
+# 라틴 기준 3자를 그대로 쓰면 한글 키워드가 대량 탈락한다.
+function Test-TokenLength { param([string]$Text)
+    if (-not $Text) { return $false }
+    if ($Text -match "[\p{IsHangulSyllables}\p{IsHangulJamo}\p{IsCJKUnifiedIdeographs}\p{IsHiragana}\p{IsKatakana}]") {
+        return ($Text.Length -ge 2)
+    }
+    return ($Text.Length -ge 3)
+}
+
+# 한국어 조사가 붙은 토큰은 키워드와 직접 매칭되지 않는다. 원형 + 조사 제거형 둘 다 후보로 둔다.
+# 접미사만 보고 자르면 명사를 오분해한다("전문가" -> "전문"). 짝 조사는 어간 받침에 따라
+# 형태가 정해지므로(은/는·이/가·을/를·과/와·으로/로) 받침 일치를 검사해 오분해를 막는다.
+# Form: C=받침 있는 어간에만 / V=받침 없는 어간에만 / A=무관. Rieul=ㄹ 받침도 V형 허용(…로).
+$script:CtxJosa = @(
+    @{ S="으로써"; Form="C" }, @{ S="으로서"; Form="C" }, @{ S="이라고"; Form="C" },
+    @{ S="이라는"; Form="C" }, @{ S="으로는"; Form="C" }, @{ S="이라도"; Form="C" },
+    @{ S="에서는"; Form="A" }, @{ S="에서도"; Form="A" }, @{ S="한테서"; Form="A" },
+    @{ S="에게서"; Form="A" }, @{ S="까지도"; Form="A" }, @{ S="부터는"; Form="A" },
+    @{ S="으로"; Form="C" }, @{ S="이라"; Form="C" }, @{ S="이란"; Form="C" },
+    @{ S="이나"; Form="C" }, @{ S="이랑"; Form="C" },
+    @{ S="라고"; Form="V" }, @{ S="라는"; Form="V" }, @{ S="라도"; Form="V" },
+    @{ S="에서"; Form="A" }, @{ S="에게"; Form="A" }, @{ S="까지"; Form="A" },
+    @{ S="부터"; Form="A" }, @{ S="한테"; Form="A" }, @{ S="보다"; Form="A" },
+    @{ S="마저"; Form="A" }, @{ S="조차"; Form="A" }, @{ S="처럼"; Form="A" },
+    @{ S="에는"; Form="A" }, @{ S="에도"; Form="A" },
+    @{ S="은"; Form="C" }, @{ S="이"; Form="C" }, @{ S="을"; Form="C" }, @{ S="과"; Form="C" },
+    @{ S="는"; Form="V" }, @{ S="가"; Form="V" }, @{ S="를"; Form="V" }, @{ S="와"; Form="V" },
+    @{ S="랑"; Form="V" }, @{ S="로"; Form="V"; Rieul=$true },
+    @{ S="의"; Form="A" }, @{ S="에"; Form="A" }, @{ S="도"; Form="A" }, @{ S="만"; Form="A" }
+)
+# 한글 음절의 종성(받침) 인덱스. 0 = 받침 없음, 8 = ㄹ.
+function Get-Jongseong { param([char]$Ch)
+    $code = [int]$Ch
+    if ($code -lt 0xAC00 -or $code -gt 0xD7A3) { return -1 }
+    return (($code - 0xAC00) % 28)
+}
+function Get-TokenVariants { param([string]$Token)
+    $out = New-Object System.Collections.Generic.List[string]
+    $out.Add($Token)
+    if ($Token -notmatch "[\p{IsHangulSyllables}]$") { return $out.ToArray() }
+    foreach ($josa in $script:CtxJosa) {
+        if (-not $Token.EndsWith($josa.S)) { continue }
+        $stem = $Token.Substring(0, $Token.Length - $josa.S.Length)
+        if ($stem.Length -lt 2) { continue }
+        $jong = Get-Jongseong $stem[$stem.Length - 1]
+        if ($jong -lt 0) { break }
+        $ok = $false
+        if ($josa.Form -eq "A") { $ok = $true }
+        elseif ($josa.Form -eq "C") { $ok = ($jong -ne 0) }
+        else { $ok = ($jong -eq 0) -or ($josa.Rieul -and $jong -eq 8) }
+        # 형태가 안 맞으면 그 접미사는 조사가 아니라 어간의 일부다. 더 짧은 조사도 시도하지 않는다.
+        if ($ok -and -not $out.Contains($stem)) { $out.Add($stem) }
+        break
+    }
+    return $out.ToArray()
+}
+
 function Get-PromptTokens { param([string]$Prompt)
     if (-not $Prompt) { return @() }
     $stopwords = @{ "and"=$true;"for"=$true;"the"=$true;"this"=$true;"that"=$true;
         "with"=$true;"from"=$true;"into"=$true;"about"=$true;"please"=$true;"file"=$true }
-    return ($Prompt.ToLowerInvariant() -split "[^\p{L}\p{Nd}_:-]+") |
-        Where-Object { $_.Length -ge 3 -and -not $stopwords.ContainsKey($_) } | Select-Object -Unique
+    $raw = ($Prompt.ToLowerInvariant() -split "[^\p{L}\p{Nd}_:-]+") |
+        Where-Object { (Test-TokenLength $_) -and -not $stopwords.ContainsKey($_) }
+    $all = New-Object System.Collections.Generic.List[string]
+    foreach ($token in $raw) {
+        foreach ($variant in (Get-TokenVariants $token)) {
+            if ($variant -and -not $all.Contains($variant) -and -not $stopwords.ContainsKey($variant)) { $all.Add($variant) }
+        }
+    }
+    return $all.ToArray()
 }
 
 function Test-ExplicitContextPrompt { param([string]$Prompt)
@@ -2623,31 +2703,84 @@ function Get-AgentSyncSummary { param([string[]]$IndexLines)
     return $sync
 }
 
+# INDEX 행: | 우선순위 | 키워드 | L1 경로 | (선택) L2/L3 경로 |
+# 첫 히트 즉시 반환하면 짧은 일반어가 엉뚱한 도메인을 먼저 잡는다 -> 전 행 점수화 후 최다 히트 선택.
 function Find-L1Match { param([string[]]$IndexLines, [string[]]$PromptTokens)
     $promptSet = @{}; foreach ($t in $PromptTokens) { $promptSet[$t] = $true }
+    $best = $null; $bestScore = 0; $bestPriority = [int]::MaxValue
     foreach ($line in $IndexLines) {
-        if ($line -notmatch "^\|\s*\d+\s*\|\s*([^|]+)\|\s*(L1/[^|]+)\|") { continue }
-        $keywordsCell = $Matches[1].Trim(); $l1Path = $Matches[2].Trim()
+        if ($line -notmatch "^\|\s*(\d+)\s*\|\s*([^|]+)\|\s*(L1/[^|]+?)\s*\|(.*)$") { continue }
+        $priority = [int]$Matches[1]
+        $keywordsCell = $Matches[2].Trim()
+        $l1Path = $Matches[3].Trim()
+        $refsCell = $Matches[4]
         if ($l1Path -match "domain-sample" -or $keywordsCell -match "AUTH") { continue }
         $keywords = ($keywordsCell -split "[,\s/|]+") |
-            ForEach-Object { $_.Trim("()[]{} `t`r`n").ToLowerInvariant() } | Where-Object { $_.Length -ge 3 }
-        foreach ($keyword in $keywords) {
-            if ($promptSet.ContainsKey($keyword)) { return @{ Keywords = $keywordsCell; L1 = $l1Path } }
+            ForEach-Object { $_.Trim("()[]{} `t`r`n").ToLowerInvariant() } | Where-Object { Test-TokenLength $_ }
+        $score = 0
+        foreach ($keyword in $keywords) { if ($promptSet.ContainsKey($keyword)) { $score++ } }
+        if ($score -gt 0 -and ($score -gt $bestScore -or ($score -eq $bestScore -and $priority -lt $bestPriority))) {
+            $best = @{ Keywords = $keywordsCell; L1 = $l1Path; Score = $score; RefsCell = $refsCell }
+            $bestScore = $score; $bestPriority = $priority
         }
     }
-    return $null
+    return $best
 }
 
-function Get-L2Refs { param([string[]]$Lines)
-    $refs = New-Object System.Collections.Generic.List[string]
+# L2뿐 아니라 장기보관(L3/L4) 포인터도 회수 대상. L2만 매칭하면 이월된 기억이 회수 불가가 된다.
+# 상한은 타입별로 건다 - 전체 개수로 자르면 L2가 여럿일 때 뒤에 오는 L3/L4가 통째로 잘려나간다.
+function Get-CtxRefs { param([string[]]$Lines, [int]$MaxL2 = 4, [int]$MaxArchive = 2)
+    $l2 = New-Object System.Collections.Generic.List[string]
+    $archive = New-Object System.Collections.Generic.List[string]
     foreach ($line in $Lines) {
-        foreach ($match in [regex]::Matches($line, "(?:\.ctxdb/)?(L2/[A-Za-z0-9_.\-/]+\.md)")) {
+        if (-not $line) { continue }
+        foreach ($match in [regex]::Matches($line, "(?:\.ctxdb/)?(L[234]/[A-Za-z0-9_.\-/]+\.md)")) {
             $ref = $match.Groups[1].Value.Replace("\", "/")
-            if (-not $refs.Contains($ref)) { $refs.Add($ref) }
-            if ($refs.Count -ge 2) { return $refs.ToArray() }
+            if ($ref -match "^L[34]/") {
+                if (-not $archive.Contains($ref) -and $archive.Count -lt $MaxArchive) { $archive.Add($ref) }
+            } else {
+                if (-not $l2.Contains($ref) -and $l2.Count -lt $MaxL2) { $l2.Add($ref) }
+            }
+        }
+        if ($l2.Count -ge $MaxL2 -and $archive.Count -ge $MaxArchive) { break }
+    }
+    return (@($l2.ToArray()) + @($archive.ToArray()))
+}
+
+# L3/L4는 파일이 크다. tail 통째가 아니라 '## ' 헤더 블록으로 잘라 키워드가 맞는 블록만 싣는다.
+function Get-BlockMatches { param([string]$Path, [string[]]$Tokens, [int]$MaxLines = 60)
+    if (-not (Test-Path $Path)) { return @() }
+    $lines = Get-Content -Path $Path -Encoding UTF8
+    $blocks = New-Object System.Collections.Generic.List[object]
+    $cur = $null
+    foreach ($line in $lines) {
+        if ($line -match "^##\s") {
+            if ($null -ne $cur -and $cur.Count -gt 0) { $blocks.Add($cur) }
+            $cur = New-Object System.Collections.Generic.List[string]
+        }
+        if ($null -ne $cur) { $cur.Add($line) }
+    }
+    if ($null -ne $cur -and $cur.Count -gt 0) { $blocks.Add($cur) }
+    if ($blocks.Count -eq 0) { return (Get-TextLines $Path $MaxLines -Tail) }
+
+    $scored = @()
+    foreach ($block in $blocks) {
+        $text = (($block -join "`n")).ToLowerInvariant()
+        $hits = 0
+        foreach ($token in $Tokens) { if ($token -and $text.Contains($token)) { $hits++ } }
+        if ($hits -gt 0) { $scored += ,@{ Hits = $hits; Lines = $block } }
+    }
+    if ($scored.Count -eq 0) { return @() }
+
+    $out = New-Object System.Collections.Generic.List[string]
+    foreach ($entry in ($scored | Sort-Object { - $_.Hits })) {
+        if ($out.Count -ge $MaxLines) { break }
+        foreach ($line in $entry.Lines) {
+            if ($out.Count -ge $MaxLines) { break }
+            $out.Add($line)
         }
     }
-    return $refs.ToArray()
+    return $out.ToArray()
 }
 
 function Test-CodemapInject { param([string]$Root)
@@ -2713,28 +2846,43 @@ try {
     $sessionId = Get-SessionId $event
     $project = Split-Path $root -Leaf
     $indexPath = Join-Path $root ".ctxdb/INDEX.md"
-    if (-not (Test-Path $indexPath)) { Write-EmptyHook; exit 0 }
+    if (-not (Test-Path $indexPath)) {
+        Save-Decision $root $sessionId "index-missing | $indexPath"
+        Write-EmptyHook; exit 0
+    }
 
     $indexLines = Get-Content -Path $indexPath -Encoding UTF8
     $tokens = Get-PromptTokens $prompt
     $match = Find-L1Match $indexLines $tokens
     $explicit = Test-ExplicitContextPrompt $prompt
-    if (-not $match -and -not $explicit) { Write-EmptyHook; exit 0 }
+    if (-not $match -and -not $explicit) {
+        Save-Decision $root $sessionId ("no-match | tokens=" + @($tokens).Count)
+        Write-EmptyHook; exit 0
+    }
 
     $alreadyLoaded = @(Get-LoadedRefs $root $sessionId)
     $candidateRefs = New-Object System.Collections.Generic.List[string]
     $l1Lines = @()
     if ($match) {
+        # INDEX 행의 L2/L3 컬럼이 있으면 우선 사용 - L1 본문 길이와 무관하게 포인터가 잡힌다.
+        if ($match.RefsCell) {
+            Get-CtxRefs @($match.RefsCell) | ForEach-Object { if (-not $candidateRefs.Contains($_)) { $candidateRefs.Add($_) } }
+        }
         $l1Rel = $match.L1.Replace("/", [IO.Path]::DirectorySeparatorChar)
         $l1Path = Join-Path $root (Join-Path ".ctxdb" $l1Rel)
-        $l1Lines = Get-TextLines $l1Path 120
-        Get-L2Refs $l1Lines | ForEach-Object { if (-not $candidateRefs.Contains($_)) { $candidateRefs.Add($_) } }
-    } elseif ($explicit) {
-        $candidateRefs.Add("L2/progress-current.md")
+        # 포인터 탐색은 본문 전체, 주입만 앞 120줄. 둘을 같은 범위로 묶으면 L1이 자랄 때 조용히 실패한다.
+        $l1All = @(Get-TextLines $l1Path 100000)
+        $l1Lines = if ($l1All.Count -gt 120) { @($l1All | Select-Object -First 120) } else { $l1All }
+        Get-CtxRefs $l1All | ForEach-Object { if (-not $candidateRefs.Contains($_)) { $candidateRefs.Add($_) } }
     }
+    # 폴백은 매칭 성공 여부와 무관하게 적용한다. 매칭될수록 폴백이 꺼지면 가장 관련 있는 프롬프트에서 실패한다.
+    if ($candidateRefs.Count -eq 0) { $candidateRefs.Add("L2/progress-current.md") }
 
     $newRefs = @($candidateRefs | Where-Object { $alreadyLoaded -notcontains $_ })
-    if ($newRefs.Count -eq 0) { Write-EmptyHook; exit 0 }
+    if ($newRefs.Count -eq 0) {
+        Save-Decision $root $sessionId ("already-loaded | " + ($candidateRefs -join ", "))
+        Write-EmptyHook; exit 0
+    }
 
     $loaded = New-Object System.Collections.Generic.List[string]
     $context = New-Object System.Collections.Generic.List[string]
@@ -2743,21 +2891,36 @@ try {
     foreach ($line in $sync) { if ($line -match "\|\s*Claude Code\s*\|\s*([^|]+)\|") { $lastDate = $Matches[1].Trim(); break } }
 
     $context.Add("=== PawPad Claude Auto Context ===")
-    $context.Add("rule: .ctxdb INDEX -> L1<=1 -> L2<=2; full ctxdb load forbidden.")
+    $context.Add("rule: .ctxdb INDEX -> L1<=1 -> L2<=2 (+L3/L4 keyword blocks); full ctxdb load forbidden.")
     if ($sync.Count -gt 0) { $context.Add("--- AGENT SYNC ---"); $sync | ForEach-Object { $context.Add($_) } }
+    if ($match -and $l1Lines.Count -gt 0) { $context.Add("--- L1: $($match.L1) ---"); $l1Lines | ForEach-Object { $context.Add($_) } }
 
-    if ($match) {
-        if ($l1Lines.Count -gt 0) { $context.Add("--- L1: $($match.L1) ---"); $l1Lines | ForEach-Object { $context.Add($_) } }
-        foreach ($l2Ref in $newRefs) {
-            $l2Rel = $l2Ref.Replace("/", [IO.Path]::DirectorySeparatorChar)
-            $l2Path = Join-Path (Join-Path $root ".ctxdb") $l2Rel
-            $l2Lines = Get-TextLines $l2Path 150 -Tail
-            if ($l2Lines.Count -gt 0) { $loaded.Add($l2Ref); $context.Add("--- $l2Ref ---"); $l2Lines | ForEach-Object { $context.Add($_) } }
+    # 주입 상한도 타입별. L2 2개 + 장기보관 1개 - archive를 L2와 같은 카운터로 묶으면 다시 잘린다.
+    $l2Count = 0; $archiveCount = 0
+    foreach ($ref in $newRefs) {
+        $rel = $ref.Replace("/", [IO.Path]::DirectorySeparatorChar)
+        $path = Join-Path (Join-Path $root ".ctxdb") $rel
+        if ($ref -match "^L[34]/") {
+            if ($archiveCount -ge 1) { continue }
+            $blockLines = @(Get-BlockMatches $path $tokens 60)
+            if ($blockLines.Count -gt 0) {
+                $archiveCount++; $loaded.Add($ref); $context.Add("--- $ref (keyword blocks) ---")
+                $blockLines | ForEach-Object { $context.Add($_) }
+            }
+        } else {
+            if ($l2Count -ge 2) { continue }
+            $l2Lines = @(Get-TextLines $path 150 -Tail)
+            if ($l2Lines.Count -gt 0) {
+                $l2Count++; $loaded.Add($ref); $context.Add("--- $ref ---")
+                $l2Lines | ForEach-Object { $context.Add($_) }
+            }
         }
-    } elseif ($explicit -and $newRefs.Count -gt 0) {
-        $l2Path = Join-Path $root ".ctxdb/L2/progress-current.md"
-        $l2Lines = Get-TextLines $l2Path 150 -Tail
-        if ($l2Lines.Count -gt 0) { $loaded.Add($newRefs[0]); $context.Add("--- $($newRefs[0]) (fallback) ---"); $l2Lines | ForEach-Object { $context.Add($_) } }
+    }
+
+    # 실을 것이 하나도 없으면 헤더만 주입하지 않는다 (Codex 훅과 동일 판정).
+    if ($loaded.Count -eq 0 -and -not ($match -and $l1Lines.Count -gt 0)) {
+        Save-Decision $root $sessionId ("no-refs | " + ($newRefs -join ", "))
+        Write-EmptyHook; exit 0
     }
 
     $includeHot = ($loaded.Count -gt 0 -or $match -or $explicit)
@@ -2767,6 +2930,7 @@ try {
     $loadedText = if ($loaded.Count -gt 0) { ($loaded -join ", ") } else { "L2 0 files" }
     $context.Insert(1, "ctxdb: $project | $lastDate | $loadedText | $status")
 
+    Save-Decision $root $sessionId "$status | $loadedText"
     Save-LoadedRefs $root $sessionId (@($alreadyLoaded) + @($loaded.ToArray()))
     Write-HookContext ($context -join "`n")
 } catch {
@@ -3453,12 +3617,13 @@ function Write-EmptyHook {
 }
 
 function Find-PawpadRoot {
+    # 마커가 하나라도 있는 '가장 가까운' 디렉터리가 root다.
+    # INDEX.md 존재를 root 조건으로 걸면 INDEX가 없을 때 상위 repo까지 올라가
+    # 남의 .ctxdb를 읽고 진단도 엉뚱한 곳에 남는다 (중첩 설치·픽스처에서 실측).
     $dir = (Get-Location).Path
     while ($dir) {
-        if ((Test-Path (Join-Path $dir ".ctxdb/INDEX.md")) -and
-            (Test-Path (Join-Path $dir ".claude/codemap/_index.md"))) {
-            return $dir
-        }
+        if ((Test-Path (Join-Path $dir ".ctxdb")) -or
+            (Test-Path (Join-Path $dir ".claude/codemap/_index.md"))) { return $dir }
         $parent = Split-Path -Parent $dir
         if (-not $parent -or $parent -eq $dir) { break }
         $dir = $parent
@@ -3500,6 +3665,77 @@ function Get-TextLines {
     return $lines | Select-Object -First $MaxLines
 }
 
+# 판정 기록. 무주입도 {} 출력 계약을 유지하되 사유는 state로 남긴다 (진단 불가 방지).
+function Save-Decision {
+    param([string]$Root, [string]$SessionId, [string]$Decision)
+    try {
+        $stateDir = Join-Path $Root ".ctxdb/.state"
+        New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
+        Set-Content -Path (Join-Path $stateDir "codex-last-decision") -Value @($SessionId, $Decision) -Encoding UTF8
+    } catch { }
+}
+
+# 토큰 길이 하한은 문자 종류별로 다르다. 한국어는 2음절이 가장 흔한 어휘 길이라
+# 라틴 기준 3자를 그대로 쓰면 한글 키워드가 대량 탈락한다.
+function Test-TokenLength {
+    param([string]$Text)
+    if (-not $Text) { return $false }
+    if ($Text -match "[\p{IsHangulSyllables}\p{IsHangulJamo}\p{IsCJKUnifiedIdeographs}\p{IsHiragana}\p{IsKatakana}]") {
+        return ($Text.Length -ge 2)
+    }
+    return ($Text.Length -ge 3)
+}
+
+# 한국어 조사가 붙은 토큰은 키워드와 직접 매칭되지 않는다. 원형 + 조사 제거형 둘 다 후보로 둔다.
+# 접미사만 보고 자르면 명사를 오분해한다("전문가" -> "전문"). 짝 조사는 어간 받침에 따라
+# 형태가 정해지므로(은/는·이/가·을/를·과/와·으로/로) 받침 일치를 검사해 오분해를 막는다.
+# Form: C=받침 있는 어간에만 / V=받침 없는 어간에만 / A=무관. Rieul=ㄹ 받침도 V형 허용(…로).
+$script:CtxJosa = @(
+    @{ S="으로써"; Form="C" }, @{ S="으로서"; Form="C" }, @{ S="이라고"; Form="C" },
+    @{ S="이라는"; Form="C" }, @{ S="으로는"; Form="C" }, @{ S="이라도"; Form="C" },
+    @{ S="에서는"; Form="A" }, @{ S="에서도"; Form="A" }, @{ S="한테서"; Form="A" },
+    @{ S="에게서"; Form="A" }, @{ S="까지도"; Form="A" }, @{ S="부터는"; Form="A" },
+    @{ S="으로"; Form="C" }, @{ S="이라"; Form="C" }, @{ S="이란"; Form="C" },
+    @{ S="이나"; Form="C" }, @{ S="이랑"; Form="C" },
+    @{ S="라고"; Form="V" }, @{ S="라는"; Form="V" }, @{ S="라도"; Form="V" },
+    @{ S="에서"; Form="A" }, @{ S="에게"; Form="A" }, @{ S="까지"; Form="A" },
+    @{ S="부터"; Form="A" }, @{ S="한테"; Form="A" }, @{ S="보다"; Form="A" },
+    @{ S="마저"; Form="A" }, @{ S="조차"; Form="A" }, @{ S="처럼"; Form="A" },
+    @{ S="에는"; Form="A" }, @{ S="에도"; Form="A" },
+    @{ S="은"; Form="C" }, @{ S="이"; Form="C" }, @{ S="을"; Form="C" }, @{ S="과"; Form="C" },
+    @{ S="는"; Form="V" }, @{ S="가"; Form="V" }, @{ S="를"; Form="V" }, @{ S="와"; Form="V" },
+    @{ S="랑"; Form="V" }, @{ S="로"; Form="V"; Rieul=$true },
+    @{ S="의"; Form="A" }, @{ S="에"; Form="A" }, @{ S="도"; Form="A" }, @{ S="만"; Form="A" }
+)
+# 한글 음절의 종성(받침) 인덱스. 0 = 받침 없음, 8 = ㄹ.
+function Get-Jongseong {
+    param([char]$Ch)
+    $code = [int]$Ch
+    if ($code -lt 0xAC00 -or $code -gt 0xD7A3) { return -1 }
+    return (($code - 0xAC00) % 28)
+}
+function Get-TokenVariants {
+    param([string]$Token)
+    $out = New-Object System.Collections.Generic.List[string]
+    $out.Add($Token)
+    if ($Token -notmatch "[\p{IsHangulSyllables}]$") { return $out.ToArray() }
+    foreach ($josa in $script:CtxJosa) {
+        if (-not $Token.EndsWith($josa.S)) { continue }
+        $stem = $Token.Substring(0, $Token.Length - $josa.S.Length)
+        if ($stem.Length -lt 2) { continue }
+        $jong = Get-Jongseong $stem[$stem.Length - 1]
+        if ($jong -lt 0) { break }
+        $ok = $false
+        if ($josa.Form -eq "A") { $ok = $true }
+        elseif ($josa.Form -eq "C") { $ok = ($jong -ne 0) }
+        else { $ok = ($jong -eq 0) -or ($josa.Rieul -and $jong -eq 8) }
+        # 형태가 안 맞으면 그 접미사는 조사가 아니라 어간의 일부다. 더 짧은 조사도 시도하지 않는다.
+        if ($ok -and -not $out.Contains($stem)) { $out.Add($stem) }
+        break
+    }
+    return $out.ToArray()
+}
+
 function Get-PromptTokens {
     param([string]$Prompt)
     if (-not $Prompt) { return @() }
@@ -3508,9 +3744,15 @@ function Get-PromptTokens {
         "that" = $true; "with" = $true; "from" = $true; "into" = $true
         "about" = $true; "please" = $true; "file" = $true
     }
-    return ($Prompt.ToLowerInvariant() -split "[^\p{L}\p{Nd}_:-]+") |
-        Where-Object { $_.Length -ge 3 -and -not $stopwords.ContainsKey($_) } |
-        Select-Object -Unique
+    $raw = ($Prompt.ToLowerInvariant() -split "[^\p{L}\p{Nd}_:-]+") |
+        Where-Object { (Test-TokenLength $_) -and -not $stopwords.ContainsKey($_) }
+    $all = New-Object System.Collections.Generic.List[string]
+    foreach ($token in $raw) {
+        foreach ($variant in (Get-TokenVariants $token)) {
+            if ($variant -and -not $all.Contains($variant) -and -not $stopwords.ContainsKey($variant)) { $all.Add($variant) }
+        }
+    }
+    return $all.ToArray()
 }
 
 function Test-ExplicitContextPrompt {
@@ -3539,44 +3781,100 @@ function Get-AgentSyncSummary {
     return $sync
 }
 
+# INDEX 행: | 우선순위 | 키워드 | L1 경로 | (선택) L2/L3 경로 |
+# 첫 히트 즉시 반환하면 짧은 일반어가 엉뚱한 도메인을 먼저 잡는다 -> 전 행 점수화 후 최다 히트 선택.
 function Find-L1Match {
     param([string[]]$IndexLines, [string[]]$PromptTokens)
     $promptSet = @{}
     foreach ($token in $PromptTokens) { $promptSet[$token] = $true }
+    $best = $null; $bestScore = 0; $bestPriority = [int]::MaxValue
 
     foreach ($line in $IndexLines) {
-        if ($line -notmatch "^\|\s*\d+\s*\|\s*([^|]+)\|\s*(L1/[^|]+)\|") { continue }
-        $keywordsCell = $Matches[1].Trim()
-        $l1Path = $Matches[2].Trim()
+        if ($line -notmatch "^\|\s*(\d+)\s*\|\s*([^|]+)\|\s*(L1/[^|]+?)\s*\|(.*)$") { continue }
+        $priority = [int]$Matches[1]
+        $keywordsCell = $Matches[2].Trim()
+        $l1Path = $Matches[3].Trim()
+        $refsCell = $Matches[4]
         if ($l1Path -match "domain-sample" -or $keywordsCell -match "AUTH") { continue }
 
         $keywords = ($keywordsCell -split "[,\s/|]+") |
             ForEach-Object { $_.Trim("()[]{} `t`r`n").ToLowerInvariant() } |
-            Where-Object { $_.Length -ge 3 }
+            Where-Object { Test-TokenLength $_ }
 
+        $score = 0
         foreach ($keyword in $keywords) {
-            if ($promptSet.ContainsKey($keyword)) {
-                return @{
-                    Keywords = $keywordsCell
-                    L1 = $l1Path
-                }
+            if ($promptSet.ContainsKey($keyword)) { $score++ }
+        }
+        if ($score -gt 0 -and ($score -gt $bestScore -or ($score -eq $bestScore -and $priority -lt $bestPriority))) {
+            $best = @{
+                Keywords = $keywordsCell
+                L1 = $l1Path
+                Score = $score
+                RefsCell = $refsCell
             }
+            $bestScore = $score
+            $bestPriority = $priority
         }
     }
-    return $null
+    return $best
 }
 
-function Get-L2Refs {
-    param([string[]]$Lines)
-    $refs = New-Object System.Collections.Generic.List[string]
+# L2뿐 아니라 장기보관(L3/L4) 포인터도 회수 대상. L2만 매칭하면 이월된 기억이 회수 불가가 된다.
+# 상한은 타입별로 건다 - 전체 개수로 자르면 L2가 여럿일 때 뒤에 오는 L3/L4가 통째로 잘려나간다.
+function Get-CtxRefs {
+    param([string[]]$Lines, [int]$MaxL2 = 4, [int]$MaxArchive = 2)
+    $l2 = New-Object System.Collections.Generic.List[string]
+    $archive = New-Object System.Collections.Generic.List[string]
     foreach ($line in $Lines) {
-        foreach ($match in [regex]::Matches($line, "(?:\.ctxdb/)?(L2/[A-Za-z0-9_.\-/]+\.md)")) {
+        if (-not $line) { continue }
+        foreach ($match in [regex]::Matches($line, "(?:\.ctxdb/)?(L[234]/[A-Za-z0-9_.\-/]+\.md)")) {
             $ref = $match.Groups[1].Value.Replace("\", "/")
-            if (-not $refs.Contains($ref)) { $refs.Add($ref) }
-            if ($refs.Count -ge 2) { return $refs.ToArray() }
+            if ($ref -match "^L[34]/") {
+                if (-not $archive.Contains($ref) -and $archive.Count -lt $MaxArchive) { $archive.Add($ref) }
+            } else {
+                if (-not $l2.Contains($ref) -and $l2.Count -lt $MaxL2) { $l2.Add($ref) }
+            }
+        }
+        if ($l2.Count -ge $MaxL2 -and $archive.Count -ge $MaxArchive) { break }
+    }
+    return (@($l2.ToArray()) + @($archive.ToArray()))
+}
+
+# L3/L4는 파일이 크다. tail 통째가 아니라 '## ' 헤더 블록으로 잘라 키워드가 맞는 블록만 싣는다.
+function Get-BlockMatches {
+    param([string]$Path, [string[]]$Tokens, [int]$MaxLines = 60)
+    if (-not (Test-Path $Path)) { return @() }
+    $lines = Get-Content -Path $Path -Encoding UTF8
+    $blocks = New-Object System.Collections.Generic.List[object]
+    $cur = $null
+    foreach ($line in $lines) {
+        if ($line -match "^##\s") {
+            if ($null -ne $cur -and $cur.Count -gt 0) { $blocks.Add($cur) }
+            $cur = New-Object System.Collections.Generic.List[string]
+        }
+        if ($null -ne $cur) { $cur.Add($line) }
+    }
+    if ($null -ne $cur -and $cur.Count -gt 0) { $blocks.Add($cur) }
+    if ($blocks.Count -eq 0) { return (Get-TextLines $Path $MaxLines -Tail) }
+
+    $scored = @()
+    foreach ($block in $blocks) {
+        $text = (($block -join "`n")).ToLowerInvariant()
+        $hits = 0
+        foreach ($token in $Tokens) { if ($token -and $text.Contains($token)) { $hits++ } }
+        if ($hits -gt 0) { $scored += ,@{ Hits = $hits; Lines = $block } }
+    }
+    if ($scored.Count -eq 0) { return @() }
+
+    $out = New-Object System.Collections.Generic.List[string]
+    foreach ($entry in ($scored | Sort-Object { - $_.Hits })) {
+        if ($out.Count -ge $MaxLines) { break }
+        foreach ($line in $entry.Lines) {
+            if ($out.Count -ge $MaxLines) { break }
+            $out.Add($line)
         }
     }
-    return $refs.ToArray()
+    return $out.ToArray()
 }
 
 function Test-CodemapInject {
@@ -3677,6 +3975,7 @@ try {
     $indexPath = Join-Path $root ".ctxdb/INDEX.md"
 
     if (-not (Test-Path $indexPath)) {
+        Save-Decision $root $sessionId "index-missing | $indexPath"
         Write-EmptyHook
         exit 0
     }
@@ -3687,6 +3986,7 @@ try {
     $explicit = Test-ExplicitContextPrompt $prompt
 
     if (-not $match -and -not $explicit) {
+        Save-Decision $root $sessionId ("no-match | tokens=" + @($tokens).Count)
         Write-EmptyHook
         exit 0
     }
@@ -3695,18 +3995,27 @@ try {
     $candidateRefs = New-Object System.Collections.Generic.List[string]
     $l1Lines = @()
     if ($match) {
+        # INDEX 행의 L2/L3 컬럼이 있으면 우선 사용 - L1 본문 길이와 무관하게 포인터가 잡힌다.
+        if ($match.RefsCell) {
+            Get-CtxRefs @($match.RefsCell) | ForEach-Object {
+                if (-not $candidateRefs.Contains($_)) { $candidateRefs.Add($_) }
+            }
+        }
         $l1Rel = $match.L1.Replace("/", [IO.Path]::DirectorySeparatorChar)
         $l1Path = Join-Path $root (Join-Path ".ctxdb" $l1Rel)
-        $l1Lines = Get-TextLines $l1Path 120
-        Get-L2Refs $l1Lines | ForEach-Object {
+        # 포인터 탐색은 본문 전체, 주입만 앞 120줄. 둘을 같은 범위로 묶으면 L1이 자랄 때 조용히 실패한다.
+        $l1All = @(Get-TextLines $l1Path 100000)
+        $l1Lines = if ($l1All.Count -gt 120) { @($l1All | Select-Object -First 120) } else { $l1All }
+        Get-CtxRefs $l1All | ForEach-Object {
             if (-not $candidateRefs.Contains($_)) { $candidateRefs.Add($_) }
         }
-    } elseif ($explicit) {
-        $candidateRefs.Add("L2/progress-current.md")
     }
+    # 폴백은 매칭 성공 여부와 무관하게 적용한다. 매칭될수록 폴백이 꺼지면 가장 관련 있는 프롬프트에서 실패한다.
+    if ($candidateRefs.Count -eq 0) { $candidateRefs.Add("L2/progress-current.md") }
 
     $newRefs = @($candidateRefs | Where-Object { $alreadyLoaded -notcontains $_ })
     if ($newRefs.Count -eq 0) {
+        Save-Decision $root $sessionId ("already-loaded | " + ($candidateRefs -join ", "))
         Write-EmptyHook
         exit 0
     }
@@ -3730,12 +4039,21 @@ try {
         if ($match -and $l1Lines.Count -gt 0) {
             $context.Add("read: .ctxdb/$($match.L1)")
         }
-        foreach ($l2Ref in $newRefs) {
-            $l2Rel = $l2Ref.Replace("/", [IO.Path]::DirectorySeparatorChar)
-            $l2Path = Join-Path (Join-Path $root ".ctxdb") $l2Rel
-            if (Test-Path $l2Path) {
-                $loaded.Add($l2Ref)
-                $context.Add("read: .ctxdb/$l2Ref (tail 150줄만)")
+        $l2Count = 0; $archiveCount = 0
+        foreach ($ref in $newRefs) {
+            $rel = $ref.Replace("/", [IO.Path]::DirectorySeparatorChar)
+            $path = Join-Path (Join-Path $root ".ctxdb") $rel
+            if (-not (Test-Path $path)) { continue }
+            if ($ref -match "^L[34]/") {
+                if ($archiveCount -ge 1) { continue }
+                $archiveCount++
+                $loaded.Add($ref)
+                $context.Add("read: .ctxdb/$ref (## 블록 중 키워드 매칭분만)")
+            } else {
+                if ($l2Count -ge 2) { continue }
+                $l2Count++
+                $loaded.Add($ref)
+                $context.Add("read: .ctxdb/$ref (tail 150줄만)")
             }
         }
         if (Test-CodemapInject $root) {
@@ -3749,29 +4067,32 @@ try {
             $sync | ForEach-Object { $context.Add($_) }
         }
 
-        if ($match) {
-            if ($l1Lines.Count -gt 0) {
-                $context.Add("--- L1: $($match.L1) ---")
-                $l1Lines | ForEach-Object { $context.Add($_) }
-            }
-            foreach ($l2Ref in $newRefs) {
-                $l2Rel = $l2Ref.Replace("/", [IO.Path]::DirectorySeparatorChar)
-                $l2Path = Join-Path (Join-Path $root ".ctxdb") $l2Rel
-                $l2Lines = Get-TextLines $l2Path 150 -Tail
+        if ($match -and $l1Lines.Count -gt 0) {
+            $context.Add("--- L1: $($match.L1) ---")
+            $l1Lines | ForEach-Object { $context.Add($_) }
+        }
+        $l2Count = 0; $archiveCount = 0
+        foreach ($ref in $newRefs) {
+            $rel = $ref.Replace("/", [IO.Path]::DirectorySeparatorChar)
+            $path = Join-Path (Join-Path $root ".ctxdb") $rel
+            if ($ref -match "^L[34]/") {
+                if ($archiveCount -ge 1) { continue }
+                $blockLines = @(Get-BlockMatches $path $tokens 60)
+                if ($blockLines.Count -gt 0) {
+                    $archiveCount++
+                    $loaded.Add($ref)
+                    $context.Add("--- $ref (keyword blocks) ---")
+                    $blockLines | ForEach-Object { $context.Add($_) }
+                }
+            } else {
+                if ($l2Count -ge 2) { continue }
+                $l2Lines = @(Get-TextLines $path 150 -Tail)
                 if ($l2Lines.Count -gt 0) {
-                    $loaded.Add($l2Ref)
-                    $context.Add("--- $l2Ref ---")
+                    $l2Count++
+                    $loaded.Add($ref)
+                    $context.Add("--- $ref ---")
                     $l2Lines | ForEach-Object { $context.Add($_) }
                 }
-            }
-        } elseif ($explicit -and $newRefs.Count -gt 0) {
-            $l2Ref = $newRefs[0]
-            $l2Path = Join-Path $root ".ctxdb/L2/progress-current.md"
-            $l2Lines = Get-TextLines $l2Path 150 -Tail
-            if ($l2Lines.Count -gt 0) {
-                $loaded.Add($l2Ref)
-                $context.Add("--- $l2Ref (fallback) ---")
-                $l2Lines | ForEach-Object { $context.Add($_) }
             }
         }
 
@@ -3781,6 +4102,7 @@ try {
     }
 
     if ($loaded.Count -eq 0 -and -not ($match -and $l1Lines.Count -gt 0)) {
+        Save-Decision $root $sessionId ("no-refs | " + ($newRefs -join ", "))
         Write-EmptyHook
         exit 0
     }
@@ -3790,6 +4112,7 @@ try {
     $statusLine = "ctxdb: $project | $lastDate | $loadedText | $status"
     $context.Insert(1, $statusLine)
 
+    Save-Decision $root $sessionId "$status | $loadedText"
     Save-LoadedRefs $root $sessionId (@($alreadyLoaded) + @($loaded.ToArray()))
     Write-HookContext ($context -join "`n") "PawPad $statusLine"
 } catch {
@@ -4026,10 +4349,14 @@ Write-FileContent ".ctxdb\INDEX.md" @"
 > 이 파일 수정 에이전트는 AGENT SYNC 테이블의 자기 행만 갱신.
 
 ## 키워드 -> L1 매핑 테이블
-| 우선순위 | 키워드 | L1 파일 경로 |
-|---|---|---|
-| 1 | (예: AUTH, 인증, 로그인) | L1/domain-sample.md |
-| 2 | codebase-map, architecture, structure, conventions, concerns, project map, high-level map | L1/domain-codebase-map.md |
+> ``L2/L3 경로`` 컬럼 = 회수 우선 포인터. L1 본문이 길어져도 이 컬럼은 영향받지 않는다(본문 포인터는 보조).
+> 비워두면 L1 본문에서 포인터를 찾는다. 이월(L3/L4)한 파일도 여기 적어야 키워드로 회수된다.
+> 한글 키워드는 2음절부터 인식된다(조사 붙은 형태도 자동 매칭).
+
+| 우선순위 | 키워드 | L1 파일 경로 | L2/L3 경로 |
+|---|---|---|---|
+| 1 | (예: AUTH, 인증, 로그인) | L1/domain-sample.md | |
+| 2 | codebase-map, architecture, structure, conventions, concerns, project map, high-level map | L1/domain-codebase-map.md | L2/codebase-map-current.md |
 
 ## AGENT SYNC 테이블
 | Agent | 마지막 작업일 | 기록된 L2 파일 | 상태 |
@@ -4041,6 +4368,33 @@ Write-FileContent ".ctxdb\INDEX.md" @"
 | 조건 | 예외 내용 |
 |---|---|
 | (예: 미디어/AI 합성) | L2 최대 3개 로드 (기본 2개) |
+"@
+
+Write-FileContent ".ctxdb\keywords.md" @"
+# .ctxdb/keywords.md — 의미매칭 라우팅 층
+
+> agent 전용. hook은 이 파일을 읽지 않는다(hook은 INDEX 키워드 정확매칭).
+> 표현이 흔들리는 요청(동의어·어순·조사·증상 서술)을 도메인으로 보내는 것이 목적.
+> 파일/심볼 경로는 쓰지 않는다 — 그건 codemap 역할이고, 여기 적으면 stale이 회수를 오염시킨다.
+> 상한 4KB. 초과 시 도메인별 분할.
+
+## 라우팅 (의도·증상 -> 도메인)
+
+### -> domain-codebase-map  (L1/domain-codebase-map.md)
+- 이 프로젝트 구조가 어떻게 되나 / 어디에 뭘 넣어야 하나 / 폴더 관례
+- 테스트는 어떻게 도나 / 빌드·배포 흐름 / 횡단 관심사(로깅·에러·설정)
+- 고수준 아키텍처 설명이 필요하다 (심볼 위치가 아니라 조망)
+
+### -> domain-sample  (L1/domain-sample.md)
+- (샘플. 실제 도메인을 만들면 이 형식으로 교체 — 사용자가 실제로 쓰는 말투의 증상 서술로)
+
+## 사용법
+1. 프롬프트 의도를 위 항목과 **의미로** 대조 (정확 단어 일치 불필요)
+2. 고른 도메인의 INDEX 행 -> L1 -> L2/L3 순으로 최소 로드
+3. 어디에도 안 맞으면 폴백 L2/progress-current.md 1개만
+
+## 유지
+신규 도메인을 만들 때 여기에 1~2줄 추가 (context-saver STEP 4).
 "@
 
 Write-FileContent ".ctxdb\L1\domain-sample.md" @"
@@ -4128,16 +4482,37 @@ Step-Begin "skill: ctxdb-navigator"
 Write-FileContent ".claude\skills\ctxdb-navigator\SKILL.md" -NoBom @'
 ---
 name: ctxdb-navigator
-description: Keyword depth context loader. Use at session start (or "컨텍스트 로드"/"INDEX 읽어줘") to traverse .ctxdb/ INDEX->L1->L2 and load only the minimum keyword-matched files, saving tokens.
+description: Keyword depth context loader. Use at session start (or "컨텍스트 로드"/"INDEX 읽어줘") to traverse .ctxdb/ INDEX->L1->L2 and load only the minimum keyword-matched files, saving tokens. Also the hook-free fallback when a new topic appears mid-session.
 ---
 # ctxdb-navigator - 키워드 depth 컨텍스트 로더
 
 ## 목적
-.ctxdb/ 계층 인덱스를 탐색해 작업에 필요한 최소 L1/L2 파일만 로드. 전체 로드 금지로 토큰 절약.
+.ctxdb/ 계층 인덱스를 탐색해 작업에 필요한 최소 L1/L2(+L3/L4 블록)만 로드. 전체 로드 금지로 토큰 절약.
+
+## 회수 경로 2가지
+| 경로 | 수행 주체 | 매칭 | 발동 |
+|---|---|---|---|
+| 자동 | UserPromptSubmit hook | INDEX 키워드 **정확매칭** | 매 프롬프트 (hook 가용 시) |
+| 폴백 | agent (이 스킬) | keywords.md **의미매칭** | 세션 시작 / hook 무주입 / 표현이 흔들리는 요청 |
+
+hook은 결정적 문자열 매칭이라 동의어·어순 변형을 놓친다. 조직 정책·비Windows 환경에서는 발화조차 안 한다.
+**둘 중 하나가 반드시 돈다**는 전제로 설계됐다 — hook이 조용하면 agent가 대신 한다.
 
 ## 트리거
-- 세션 시작 시 자동 (SessionStart hook이 INDEX 미리 주입 -> 키워드 매칭만 수행)
+- 세션 시작 시 (SessionStart hook이 INDEX 미리 주입 -> 키워드 매칭만 수행)
 - "INDEX.md 읽어줘", "컨텍스트 로드" 입력 시
+- **세션 중 신규 주제 등장 시 1회** (hook-free 폴백): 아래 조건 전부 충족하면 폴백 수행
+  1. 직전까지 다루지 않은 주제/도메인이 프롬프트에 등장
+  2. 컨텍스트에 `=== PawPad ... Auto Context ===` 주입 블록이 **없다** (= hook 무주입)
+  3. 그 주제로 이미 폴백을 돌린 적 없다 (같은 주제 반복 금지)
+  -> 조건 미충족이면 침묵. 매 프롬프트 판단 금지(과발화 = 토큰 낭비).
+
+## Lookup 알고리즘 (최대 3 read)
+1. `.ctxdb/keywords.md` 통째 read -> **의미·맥락 매칭**으로 도메인 1개 선택
+   (grep 아님. 정확 단어/띄어쓰기/조사 흔들림 무관 — agent가 의도로 해석한다. keywords.md 없으면 INDEX 키워드 표로 대체)
+2. `.ctxdb/INDEX.md`의 해당 행 -> `L1/{domain}.md` + `L2/L3 경로` 컬럼
+3. L1 read -> 포인터 따라 L2 tail 150줄 (최대 2개). L3/L4는 **통째 금지**, `## ` 블록 중 키워드 맞는 것만
+- 금지: .ctxdb 전체 read / L3·L4 파일 통째 read / keywords.md를 grep 정확매칭
 
 ## 절차
 STEP 1: INDEX.md 읽기
@@ -4145,19 +4520,24 @@ STEP 1: INDEX.md 읽기
 STEP 2: AGENT SYNC 확인
   이전 에이전트의 마지막 작업 L2 파일 / 상태 확인.
 STEP 3: 키워드 매핑
-  사용자 첫 메시지에서 키워드 추출 -> INDEX 매핑 테이블 -> L1/{파일}.md -> L2/{파일}.md
-  키워드 충돌: 매핑 테이블 첫 행 우선.
+  위 Lookup 알고리즘 수행.
+  키워드 충돌: 히트 수 많은 도메인 우선, 동수면 매핑 테이블 우선순위 컬럼.
   키워드 불명확: L2/progress-current.md만 로드 후 사용자 명확화 요청.
 STEP 4: 최소 로드
-  L1 <= 1개, L2 <= 2개 (예외규칙 해당 시 L2 3개).
+  L1 <= 1개, L2 <= 2개 (예외규칙 해당 시 L2 3개). L3/L4는 블록 단위.
 STEP 5: 크기 점검
-  L2 150줄 초과 또는 2,000토큰(문자수/3.5) 초과 -> "분할 필요" 경고.
+  L2 150줄 초과 또는 2,000토큰(문자수/3.5) 초과 -> context-saver STEP 5(계층 승격) 안내.
 STEP 6: 요약
   "로드 완료: {파일목록} / 핵심: {2~3줄}"
 
 ## 첫 응답 검증 출력 (의무)
 첫 응답 최상단에 1줄: 📂 .ctxdb: {project} | {last-date} | {loaded L2} | {status}
 누락 시 사용자는 INDEX 미로드로 간주 -> 재확인 요청.
+
+## 무주입 진단
+hook이 `{}`를 반환한 사유는 `.ctxdb/.state/{claude|codex}-last-decision`에 기록된다
+(`no-match | tokens=N` / `already-loaded | ...` / `no-refs | ...` / `loaded | ...`).
+"회수가 안 된다"는 의심이 들면 이 파일부터 본다 — 무주입 3경로가 화면상 구분되지 않기 때문에 둔 계측점이다.
 '@
 
 # ── Skills: context-saver (세션 종료/8턴 저장) ─────────────────────────────────
@@ -4198,12 +4578,30 @@ STEP 4: 키워드 인덱스 갱신 (신규 도메인/심볼 등장 시만)
   - 기존 도메인 새 용어: 해당 L1 키워드 열에 누락된 핵심어만 추가 (중복/유사어 금지)
   - codemap 연계: 이번에 _index.md에 추가한 신규 심볼의 도메인이 INDEX 키워드로 잡히는지 확인, 누락 시 추가
   - 폭주 방지: INDEX는 도메인당 1행. L1 키워드는 검색용 핵심어만 (심볼 전수나열 금지 = codemap 역할). 변화 없으면 이 STEP 건너뜀.
+  - 2음절 등록은 **도메인 고유어만**: 한글 2음절부터 매칭되므로 일반어(문서·작업·확인·내용·정리 등)를 넣으면 무관한 프롬프트가 그 도메인을 끌어온다.
+    일반어를 꼭 쓰려면 도메인이 그 말로만 불리는지 확인하고, 아니면 3음절 이상 고유어(예: 배포본·적재큐)로 등록한다.
+  - keywords 층 동반: 신규 도메인을 만들었으면 .ctxdb/keywords.md에도 "의도·증상 -> 도메인" 1~2줄 추가.
+    INDEX 키워드는 hook의 정확매칭용, keywords.md는 agent의 의미매칭용 — 표현이 흔들리는 요청은 후자만 잡는다.
   - 권한(하이브리드): 키워드 추가는 누구나 / 기존 매핑 행 수정·삭제는 신중 (codemap 권한 준용, 충돌 시 양쪽 보존 후 정리)
-STEP 5: 보고
-  "저장 완료: {L2 파일 목록}" 출력. 키워드 갱신 시 "INDEX/L1 키워드 갱신: {요약}" 추가.
+STEP 5: 성장 판정 (계층 승격)
+  저장량이 늘면 계층을 넓힌다. 경고만 남기고 넘기면 파일이 계속 커져 키워드 로드의 토큰 절감이 무효가 된다.
+  아래 중 하나라도 걸리면 **이번 세션 안에** 처리:
+
+  | 대상 | 임계 | 조치 |
+  |---|---|---|
+  | L2 파일 | 150줄 또는 2,000토큰 초과 | 오래된 블록을 L3/{name}-{YYYY-MM}.md 상단으로 이월 |
+  | L3 파일 | 400줄 초과 | 연 단위로 L4/{name}-{YYYY}.md 이월 |
+  | L1 파일 | 60줄 초과 또는 키워드 30개 초과 | 주제별 도메인 분할 **제안**(사용자 확인) + INDEX 행도 분리 |
+  | INDEX 행 | 한 도메인이 전체 키워드의 절반 이상 | 위와 동일. 프로젝트 전체가 1개 도메인이면 어떤 키워드가 맞든 같은 내용이 온다 |
+
+  **이월 시 포인터 갱신 필수 (생략 금지)**: 이월한 파일 경로를 ① 해당 L1 본문 ② INDEX 행의 `L2/L3 경로` 컬럼 양쪽에 남긴다.
+  회수는 INDEX/L1의 포인터만 따라간다 — 포인터 없이 내리면 그 기억은 키워드로 **영구 회수 불가**가 된다.
+  이월은 append-only(무손실). 블록 삭제 금지, 위치만 이동. 블록 경계는 `## ` 헤더 — 헤더 없는 덩어리는 L3/L4에서 블록 단위 회수가 안 된다.
+STEP 6: 보고
+  "저장 완료: {L2 파일 목록}" 출력. 키워드 갱신 시 "INDEX/L1 키워드 갱신: {요약}", 승격 시 "계층 승격: {이동 경로}" 추가.
 
 ## 주의
-- L2 초과 시 L3 분할(.ctxdb/L3/) 안내 후 사용자 확인.
+- 이월(L2->L3->L4)은 확인 없이 진행 가능(무손실·append-only). 도메인 분할만 사용자 확인.
 - codemap(_index.md)과 역할 분리: codemap=심볼 위치(전수, 정밀), ctxdb 키워드=도메인 라우팅(핵심어 소수). 키워드에 심볼 전부 넣지 말 것.
 - Decision Placement(.claude/HYBRID.md Decision Placement Matrix): L2는 세션 재개 digest 전용. 지속 결정(arch ADR / spec scope / 거절기록)은 L2에만 묻지 말고 canonical 위치(decisions/arch.md, specs/, decisions/rejected.md)에도 기록.
 '@
@@ -4983,11 +5381,14 @@ LLM 자체 측정 불가. agent가 다음 신호로 추정:
 2. codemap/_index.md 갱신:
    - 신규 심볼 추가
    - HOT 섹션 최신화
-3. _meta.md 갱신 (해당 시):
+3. context-saver 실행 (.ctxdb/L2 저장 + INDEX.md AGENT SYNC 갱신):
+   - lane/codemap만 갱신하고 ctxdb를 빼면 다음 세션이 **키워드로 이 작업을 찾지 못한다**(checkpoint 목적 자체가 무효).
+   - L2 세션 블록 ≤40줄 digest + 신규 도메인/용어면 INDEX·L1 키워드 갱신. 규칙: .claude/skills/context-saver/SKILL.md
+4. _meta.md 갱신 (해당 시):
    - 완료 항목 RECENT에 추가
-4. _wip.md Active Lanes의 updated 필드 갱신
-5. 60% 초과 추정 시 -> agent가 /handoff 권장 (사용자 안내)
-6. 결과:
+5. _wip.md Active Lanes의 updated 필드 갱신
+6. 60% 초과 추정 시 -> agent가 /handoff 권장 (사용자 안내)
+7. 결과:
    - lane 파일이 다음 세션에서 즉시 재개 가능한 상태
    - 새 세션 ON START -> lane 파일 read -> 그대로 이어 작업
 
@@ -4995,7 +5396,8 @@ LLM 자체 측정 불가. agent가 다음 신호로 추정:
 "Context 약 60% 추정. agent가 정리 권장:
 1. lane 파일 갱신 완료
 2. codemap 최신화
-3. /handoff {to-agent} {feature} 실행 권장 (또는 새 세션 직접 시작)"
+3. .ctxdb/L2 저장(context-saver) 완료
+4. /handoff {to-agent} {feature} 실행 권장 (또는 새 세션 직접 시작)"
 
 ## /checkpoint 와 /handoff 차이
 - /checkpoint : 같은 에이전트 새 세션에서 이어 작업 (저장만, snapshot 없음, owner 유지)
@@ -7405,7 +7807,9 @@ if ($failed -eq 0) {
         Write-Host "  - design 스킬 시각 품질 재설계 (v2.46): 최상위 3원칙(일관성 우선·의도된 방향·anti-slop) + 일관성 5축 스케일(토큰 파생 강제, 임의값 금지) + 정량 체크(radius<=4·컨트롤 높이<=3·spacing 임의값 0) + 2-pass 워크플로우 — 'AI 티=불일치' 차단 (스킬 21 불변)" -ForegroundColor Cyan
         Write-Host "  - codemap 초기 부트스트랩 (v2.47): 기존 코드베이스 도입 시 1회 백필 절차 규격화 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START 1회 제안) + 규모 분기(소스>=40이면 code-delegate 배치 위임, 서브는 staging에 직접 쓰고 4줄 요약만 반환) + 30KB 초과 즉시 trim-router + 검증 게이트(size cap 전수 + 심볼 path:line 실측 대조). Phase B 전환 시 _index.md=라우팅 스텁 규약, step7 _root.md 우선 (스킬 21 불변)" -ForegroundColor Cyan
         Write-Host "  - 설치 배너 로고 교체 (v2.47 Addendum): 손으로 그린 블록문자 발바닥 -> 실제 브랜드 마크(docs/icon.png) 기반 ASCII 변환 — alpha coverage 샘플링(luma cut 0.35)으로 패드의 >_ 프롬프트를 구멍으로 보존, cos(theta) 가로 압축 16프레임 사전 렌더. 설치 시 ESC[24A 커서 되감기로 1회전(2.88s) 후 0도 정착, 비ANSI/-ShowLog/리다이렉트/저창높이는 정지 1장 (버전 불변, 기능 변화 없음)" -ForegroundColor Cyan
-        Write-Host "  - 상세: docs/CHANGELOG_v2.47.md" -ForegroundColor Cyan
+        Write-Host "  - ctxdb 키워드 회수 복구 (v2.48): 한글 2음절 키워드 인식(길이 하한 CJK 2/라틴 3 분리) + 조사 스트립 + 점수화 매칭 + L3/L4 블록 단위 회수 + 폴백 상시 + 무주입 사유 기록 — 프롬프트 키워드로 과거 맥락을 부르는 경로 복구 (회귀셋 18케이스, Codex 교차리뷰 반영)" -ForegroundColor Cyan
+        Write-Host "  - ctxdb 계층 성장 규약 (v2.48): L2 150줄→L3, L3 400줄→L4 승격 + 이월 시 INDEX·L1 포인터 갱신 의무 + INDEX L2/L3 경로 컬럼 + .ctxdb/keywords.md 의미매칭 층(hook 차단·비Windows 폴백)" -ForegroundColor Cyan
+        Write-Host "  - 상세: docs/CHANGELOG_v2.48.md" -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 21 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review" -ForegroundColor Cyan

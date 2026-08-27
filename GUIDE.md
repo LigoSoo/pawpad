@@ -1,16 +1,14 @@
-# 프로젝트 설계→완성 워크플로 가이드
+﻿# 프로젝트 설계→완성 워크플로 가이드
 
-이 문서는 PawPad — Agentic Engineering Toolkit(v2.47 FROZEN)를 설치한 프로젝트에서, **하나의 기능/프로젝트를 기획부터 완성·배포까지** 진행하는 전체 절차와 각 단계의 스킬 사용 예시를 설명한다.
+이 문서는 PawPad — Agentic Engineering Toolkit(v2.48 FROZEN)를 설치한 프로젝트에서, **하나의 기능/프로젝트를 기획부터 완성·배포까지** 진행하는 전체 절차와 각 단계의 스킬 사용 예시를 설명한다.
 
 > 설치/배포 방법은 [`README.md`](README.md) 참조. 이 문서는 설치 후 **작업 워크플로** 중심이다.
 > 대상 스택: 프리셋(flutter/node/python/wpf/tauri/electron/avalonia/generic) — 다른 스택도 `CLAUDE.md`의 `<YOUR_*>`만 채우면 동일 절차 적용
 > 협업 모델: Claude Code ⇄ Codex 하이브리드 (파일 시스템 기반 상태 공유, 단독 사용도 가능)
 > 버전 이력: 전체 표는 [PAWPAD_VERSIONS.md](PAWPAD_VERSIONS.md), 버전별 상세는 docs/CHANGELOG_v{N}.md. 아래는 최근 3개만.
-> v2.44: **외부 문서 구현 진입 게이트 + 선택지 체크박스 전면화 + 데스크탑 스택 4종** — ① 외부 md/spec 문서를 첨부해 "참조해서 구현"을 요청하면 clarity/design/code-delegate 게이트가 우회되던 사고(실관측) 대응: CLAUDE/AGENTS `### 외부 문서 구현 진입 게이트` 신설 — clarity 채점 **의무**(문서 기준 모호도 블록 1회, PASS=무질문 통과라 마찰 최소·BLOCK=재질문) + UI 포함 시 design 추천 + 코딩 진입 시 code-delegate 권장(외부 문서 = written 설계 인정), phase 분해·task 저장만으로 게이트 건너뛰기 금지. clarity SKILL에 "외부 문서 모드" 섹션. ② 선택지 질문 체크박스 규칙을 기획 스킬 한정 → **스킬 무관 전면**으로 확장: 추천 1개 "(추천)" 첫 옵션 + 선택지 밖 답은 "Other" 자유 입력(선택지 생략·산문 대체 금지). ③ `-Stack` 데스크탑 프리셋 4종 추가: **wpf**(.NET 8 MVVM)/**tauri**(2, IPC 최소권한)/**electron**(contextIsolation 보안 고정)/**avalonia**(크로스플랫폼 XAML) — 대화형 1~8(Enter=generic). 스킬 수(20) 불변. 상세: docs/CHANGELOG_v2.44.md.
-> v2.45: **brainstorming 스킬 신규**(20→21, prd 번들) — clarity 이전 발산 단계 공백 해소. 막연한 아이디어 또는 초안 기획문서를 받아 ①발산(방향 후보 2-3개+추천 1개, 방향 3요소[무엇을/누구에게/왜] 확정) ②누락 스윕(인접기능·저니 워크스루 + 비해피패스 8축 체크리스트[빈 상태/에러/권한/CRUD 대칭/데이터 수명주기/알림/설정/운영]) ③MoSCoW 스코프 게이트(**Won't 명시 의무** — 삭제 churn 차단)를 단일 스킬로 수행. 진입 판정으로 구체화된 문서는 스윕 직행(+오버라이드). 파이프라인 brainstorming→clarity→grill-me→to-prd→mockup. 구현 후반 기능 추가/삭제 churn(누락형) 기획 단계 차단(실관측 pain). 상세: docs/CHANGELOG_v2.45.md.
-> v2.47: **codemap 초기 부트스트랩 절차 신설**(스킬 21 불변) — 설치는 codemap 템플릿만 만들 뿐 기존 코드베이스를 스캔하지 않아, 이미 코드가 쌓인 프로젝트는 심볼이 비어 있는 채로 시작하고 lookup miss -> 소스 full-scan 경로가 열린다(실관측: 설치 후 수 주간 1개 도메인만 등록). codemap SKILL에 `## 초기 부트스트랩` 추가: ①발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START에 1회 제안, 거절 시 재제안 금지) ②등록 기준(public 진입점만, private 헬퍼·뷰 내부 로직 제외) ③규모 분기(소스<40 인라인 / >=40 `/code-delegate` 배치 위임 — 서브는 `_staging/{batch}.md`에 직접 쓰고 4줄 요약만 반환해 부모 컨텍스트 보호) ④병합 규율(기존 MAP/HOT/수기 섹션 보존) ⑤30KB 초과 시 즉시 Phase B(trim-router) ⑥검증 게이트(size cap 전수 + 무작위 심볼 path:line 실측 전건 일치). 부수로 Phase B 전환 시 `_index.md`를 라우팅 스텁으로 남기는 규약 명문화 + Session Protocol step7이 `_root.md`를 우선 보도록 수정. 상세: docs/CHANGELOG_v2.47.md.
->
 > v2.46: **design 스킬 시각 품질 재설계**(스킬 21 불변) — 기존 절차 게이트(토큰 확인+레이아웃+UI 원칙)를 **시각 품질 게이트**로 확장. 핵심 프레임 "**AI 티는 화려함이 아니라 불일치에서 온다**": 간격 임의값 혼재·radius 혼용·버튼 높이 제각각이 아마추어/AI 결과물로 읽히게 함. ①최상위 3원칙(Consistency First — 모양·크기·간격은 스케일 토큰에서만 파생 / Intentional Direction — 코드 전 방향 명시+사유 / Anti-slop) ②2-pass 워크플로우(계획→자기비평→구현→재비평) ③일관성 5축(간격/크기/모양/정렬/상태)+Token-first(토큰 정의 후 raw 값 금지) ④anti-slop 체크(과용 폰트는 신규 선택 시 한정, 경계 기본값 3종, 이모지 아이콘·목적 없는 그라디언트 금지) ⑤정량 체크(spacing 임의값 0·radius 고유값<=4·컨트롤 높이<=3) ⑥신규 프로젝트 토큰 부트스트랩(spacing/높이/radius/elevation/색 4~6/타입 1.25 모듈러/시그니처 1개). 적용 전/후 비교 검증(구현 전 사용자 확인). 상세: docs/CHANGELOG_v2.46.md.
+> v2.47: **codemap 초기 부트스트랩 절차 신설**(스킬 21 불변) — 설치는 codemap 템플릿만 만들 뿐 기존 코드베이스를 스캔하지 않아, 이미 코드가 쌓인 프로젝트는 심볼이 비어 있는 채로 시작하고 lookup miss -> 소스 full-scan 경로가 열린다(실관측: 설치 후 수 주간 1개 도메인만 등록). codemap SKILL에 `## 초기 부트스트랩` 추가: ①발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START에 1회 제안, 거절 시 재제안 금지) ②등록 기준(public 진입점만, private 헬퍼·뷰 내부 로직 제외) ③규모 분기(소스<40 인라인 / >=40 `/code-delegate` 배치 위임 — 서브는 `_staging/{batch}.md`에 직접 쓰고 4줄 요약만 반환해 부모 컨텍스트 보호) ④병합 규율(기존 MAP/HOT/수기 섹션 보존) ⑤30KB 초과 시 즉시 Phase B(trim-router) ⑥검증 게이트(size cap 전수 + 무작위 심볼 path:line 실측 전건 일치). 부수로 Phase B 전환 시 `_index.md`를 라우팅 스텁으로 남기는 규약 명문화 + Session Protocol step7이 `_root.md`를 우선 보도록 수정. 상세: docs/CHANGELOG_v2.47.md.
+> v2.48: **ctxdb 키워드 회수 복구 + 계층 성장 규약**(스킬 21 불변) — 설치처 실측 결과 "프롬프트 키워드로 과거를 부른다"가 동작하지 않았다: 한글 2음절 키워드가 길이 하한 3에 전량 탈락(관측 레포 INDEX 키워드 38%), L1이 길어져 포인터가 읽기범위 밖으로 밀리면 조용히 무주입, 매칭 성공이 폴백을 끄고, 이월한 L3는 회수 정규식(`L2/`)에 안 걸려 영구 회수불가(규정대로 이월할수록 장기기억이 사라지는 역설). 훅 양 런타임 수정: CJK 2자/라틴 3자 하한 분리 + 조사 스트립 + 전 행 점수화 매칭 + `L[234]/` 회수 + L3/L4 `## ` 블록 단위 추출 + 포인터 탐색/주입 범위 분리 + 폴백 상시 + 무주입 사유 `.ctxdb/.state/*-last-decision` 기록(`{}` 출력계약 유지). 규약: INDEX `L2/L3 경로` 컬럼 + `.ctxdb/keywords.md` 의미매칭 층(hook 차단·비Windows 폴백) + context-saver STEP5 계층 승격(L2→L3→L4, 이월 시 포인터 갱신 의무) + checkpoint에 context-saver 추가 + Session Protocol `ON NEW TOPIC`. 회귀셋 `tests/ctxdb-recall`(18케이스)은 사양만 확정 — 러너·픽스처는 이 레포에 미커밋(별건). Codex 리뷰 review-01 PASS_WITH_FIXES 84% findings 7건 전부 반영 — mixed L2/L3 아카이브 절단·조사 오분해(`전문가`→`전문`)·INDEX 부재 진단 누락·clean clone 러너 실패가 실버그였다. 상세: docs/CHANGELOG_v2.48.md.
 
 ---
 
@@ -388,7 +386,7 @@ State enum: `WIP` · `SPEC_READY` · `HANDOFF_TO_CODEX` · `HANDOFF_TO_CLAUDE` �
 설치 검증:
 - `.claude/skills/*/SKILL.md` 21개 — no-BOM, `---` frontmatter로 시작해야 등록됨
 - `.codex/config.json` skills 배열 21개
-- `pawpad-setup.ps1` STATUS: FROZEN (v2.47 Unified Claude + Codex Distribution)
+- `pawpad-setup.ps1` STATUS: FROZEN (v2.48 Unified Claude + Codex Distribution)
 - setup 종료 시 전역 섀도잉 경고(⚠ ~/.codex/skills 동일 이름 스킬) 안 뜨는지 확인 — 뜨면 안내대로 백업 이동
 - Claude hook: `.claude/settings.json` 에 SessionStart/UserPromptSubmit/PreCompact/Stop + statusLine 등록 (run-hook.ps1 경유, 다음 세션부터 동작)
 - Codex hook: `.codex/hooks.json` (`/hooks` trust 후 동작)
@@ -436,7 +434,7 @@ CLAUDE.md / AGENTS.md      # 에이전트 컨텍스트 (read-only)
 .codex/{config.json,config.toml,hooks.json,hooks/}  # Codex 어댑터 (native hooks)
 .agents/skills/{21}/       # Codex repo skill mirror (DO NOT EDIT)
 docs/HOOK_TESTING.md       # hook 회귀 체크리스트
-pawpad-setup.ps1  # 통합 단일 설치 스크립트 (FROZEN v2.47)
+pawpad-setup.ps1  # 통합 단일 설치 스크립트 (FROZEN v2.48)
 ```
 
 상세는 각 `.claude/skills/{skill}/SKILL.md` 참조.

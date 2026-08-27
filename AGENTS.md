@@ -83,6 +83,7 @@ ON START (agent가 순차 실행):
   5. state=SPEC_READY 또는 spec 있으면 read .claude/pawpad/specs/{feature}.md
   6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT; RECENT 완료이력은 하단·재개 불요 -> 생략, history 시 on-demand)
   7. codemap은 코드 수정 작업 시작 시점에 read — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP+HOT(조망)만 부분읽기(상단). 전체 심볼표는 심볼 필요 시 Grep on-demand (질문/분석 전용 세션은 skip). 등록 심볼<10 & 소스≥30이면 codemap SKILL 초기 부트스트랩 1회 제안
+ON NEW TOPIC (세션 중): 새 주제 등장 + hook 주입 블록(=== PawPad ... Auto Context ===) 부재면 -> .ctxdb/keywords.md 의미매칭 1회로 최소 로드 (hook 차단·비Windows 폴백). 같은 주제 재발동 금지. 규칙: ctxdb-navigator SKILL.
 ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
 ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함) — 실행은 task-done 스킬 체크리스트로(부분 실행/누락 방지; "작업/이슈 종료" 자연어 요청 = task-done 발동)
 ON STOP:         agent가 lane 파일 (state + reason) 갱신

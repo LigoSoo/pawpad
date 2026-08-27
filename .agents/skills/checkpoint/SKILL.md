@@ -42,11 +42,14 @@ LLM 자체 측정 불가. agent가 다음 신호로 추정:
 2. codemap/_index.md 갱신:
    - 신규 심볼 추가
    - HOT 섹션 최신화
-3. _meta.md 갱신 (해당 시):
+3. context-saver 실행 (.ctxdb/L2 저장 + INDEX.md AGENT SYNC 갱신):
+   - lane/codemap만 갱신하고 ctxdb를 빼면 다음 세션이 **키워드로 이 작업을 찾지 못한다**(checkpoint 목적 자체가 무효).
+   - L2 세션 블록 ≤40줄 digest + 신규 도메인/용어면 INDEX·L1 키워드 갱신. 규칙: .claude/skills/context-saver/SKILL.md
+4. _meta.md 갱신 (해당 시):
    - 완료 항목 RECENT에 추가
-4. _wip.md Active Lanes의 updated 필드 갱신
-5. 60% 초과 추정 시 -> agent가 /handoff 권장 (사용자 안내)
-6. 결과:
+5. _wip.md Active Lanes의 updated 필드 갱신
+6. 60% 초과 추정 시 -> agent가 /handoff 권장 (사용자 안내)
+7. 결과:
    - lane 파일이 다음 세션에서 즉시 재개 가능한 상태
    - 새 세션 ON START -> lane 파일 read -> 그대로 이어 작업
 
@@ -54,7 +57,8 @@ LLM 자체 측정 불가. agent가 다음 신호로 추정:
 "Context 약 60% 추정. agent가 정리 권장:
 1. lane 파일 갱신 완료
 2. codemap 최신화
-3. /handoff {to-agent} {feature} 실행 권장 (또는 새 세션 직접 시작)"
+3. .ctxdb/L2 저장(context-saver) 완료
+4. /handoff {to-agent} {feature} 실행 권장 (또는 새 세션 직접 시작)"
 
 ## /checkpoint 와 /handoff 차이
 - /checkpoint : 같은 에이전트 새 세션에서 이어 작업 (저장만, snapshot 없음, owner 유지)
