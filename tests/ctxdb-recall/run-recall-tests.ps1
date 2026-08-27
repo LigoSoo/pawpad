@@ -358,6 +358,46 @@ $cases = @(
         return $f
     }}
 
+    @{ Id = "C19"; Name = "영문 어간 + 한글 조사 (React를)"; Run = {
+        $fx = New-Fixture @{
+            ".ctxdb\INDEX.md"          = New-IndexText @('| 1 | react, 프론트 | L1/domain-front.md | L2/front.md |')
+            ".ctxdb\L1\domain-front.md" = New-L1Text "domain-front.md"
+            ".ctxdb\L2\front.md"       = "# front"
+            ".ctxdb\L2\progress-current.md" = "# progress"
+        }
+        $r = Invoke-Hook $fx "React를 쓰자"
+        $f = @()
+        if ($r.Empty) { $f += "무주입 — 영문 어간이라 받침 계산 불가로 조사 스트립이 중단됨" }
+        if ($r.Status -notmatch "L2/front\.md") { $f += "status에 L2/front.md 없음: $($r.Status)" }
+        return $f
+    }}
+
+    @{ Id = "C20"; Name = "영문 어간 + A형 조사 (Docker에서)"; Run = {
+        $fx = New-Fixture @{
+            ".ctxdb\INDEX.md"          = New-IndexText @('| 1 | docker, 컨테이너 | L1/domain-infra.md | L2/infra.md |')
+            ".ctxdb\L1\domain-infra.md" = New-L1Text "domain-infra.md"
+            ".ctxdb\L2\infra.md"       = "# infra"
+            ".ctxdb\L2\progress-current.md" = "# progress"
+        }
+        $r = Invoke-Hook $fx "Docker에서 확인해줘"
+        $f = @()
+        if ($r.Status -notmatch "L2/infra\.md") { $f += "A형 조사 + 영문 어간 미회수: $($r.Status)" }
+        return $f
+    }}
+
+    @{ Id = "C21"; Name = "영문 어간 + 로 (Flutter로)"; Run = {
+        $fx = New-Fixture @{
+            ".ctxdb\INDEX.md"          = New-IndexText @('| 1 | flutter, 앱 | L1/domain-app.md | L2/app.md |')
+            ".ctxdb\L1\domain-app.md"  = New-L1Text "domain-app.md"
+            ".ctxdb\L2\app.md"         = "# app"
+            ".ctxdb\L2\progress-current.md" = "# progress"
+        }
+        $r = Invoke-Hook $fx "Flutter로 만들자"
+        $f = @()
+        if ($r.Status -notmatch "L2/app\.md") { $f += "Rieul 예외형 조사 + 영문 어간 미회수: $($r.Status)" }
+        return $f
+    }}
+
     @{ Id = "C18"; Name = "Codex pointer 모드 렌더링"; Runtime = "codex"; Run = {
         $fx = New-Fixture @{
             ".ctxdb\INDEX.md"           = New-IndexText @($brandRow4)

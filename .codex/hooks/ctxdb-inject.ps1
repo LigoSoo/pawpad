@@ -128,9 +128,15 @@ function Get-TokenVariants {
         $stem = $Token.Substring(0, $Token.Length - $josa.S.Length)
         if ($stem.Length -lt 2) { continue }
         $jong = Get-Jongseong $stem[$stem.Length - 1]
-        if ($jong -lt 0) { break }
         $ok = $false
-        if ($josa.Form -eq "A") { $ok = $true }
+        if ($jong -lt 0) {
+            # 어간이 한글로 끝나지 않는다 = 영문/숫자 어간 + 한글 조사 (React를, Flutter로, Docker에서).
+            # 받침이 없으니 형태(C/V)를 계산할 수 없고, 실제 조사 선택은 한국어 발음을 따르므로
+            # 코드로 정할 수도 없다. 이 조합에서 뒤에 붙은 한글은 사실상 조사뿐이라 형태 검사를 건너뛴다.
+            # 오분해 위험(전문가->전문)은 한글 어간에서만 생기므로 여기엔 해당하지 않는다.
+            $ok = $true
+        }
+        elseif ($josa.Form -eq "A") { $ok = $true }
         elseif ($josa.Form -eq "C") { $ok = ($jong -ne 0) }
         else { $ok = ($jong -eq 0) -or ($josa.Rieul -and $jong -eq 8) }
         # 형태가 안 맞으면 그 접미사는 조사가 아니라 어간의 일부다. 더 짧은 조사도 시도하지 않는다.

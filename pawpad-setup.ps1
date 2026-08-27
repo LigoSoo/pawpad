@@ -1,5 +1,5 @@
 ﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.48 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.48. v2.47 기반 + ctxdb 키워드 회수 복구 + 계층 성장 규약(스킬 21 불변) — 설치처 실측에서 "프롬프트 키워드로 과거를 부른다"가 사실상 죽어 있었다: 한글 2음절 키워드가 길이 하한 3에 전량 탈락(관측 레포 INDEX 키워드 38%), L1이 자라 포인터가 읽기범위 밖으로 밀리면 무주입인데 진단이 `{}` 하나뿐, 매칭 성공이 폴백을 끄고(가장 관련 있는 프롬프트에서 실패), 이월한 L3는 회수 정규식(`L2/`만)에 안 걸려 영구 회수불가 — 즉 규정대로 이월할수록 장기기억이 사라졌다. 훅 양 런타임 수정: CJK 2자/라틴 3자 하한 분리 + 조사 스트립(원형+어간 양쪽 후보) + 전 행 점수화 매칭(첫 히트 즉시반환 폐기) + `L[234]/` 회수 + L3/L4 `## ` 블록 단위 추출(파일 통째 금지) + L1 포인터 탐색범위와 주입범위 분리 + 폴백 상시 적용 + 무주입 사유 `.ctxdb/.state/{claude|codex}-last-decision` 기록(`{}` 출력계약 유지). 규약: INDEX `L2/L3 경로` 컬럼(포인터를 본문 길이와 분리) + `.ctxdb/keywords.md` 의미매칭 층 신설(agent 전용 — hook 차단·비Windows 폴백, codemap keywords 패턴 이식) + context-saver STEP5 계층 승격(L2 150줄→L3, L3 400줄→L4, L1 60줄/키워드 30개 초과 시 도메인 분할 제안, 이월 시 INDEX·L1 포인터 갱신 의무) + checkpoint 절차 context-saver 누락 보정 + Session Protocol ON NEW TOPIC 폴백. 회귀셋 `tests/ctxdb-recall` 18케이스(toolkit 개발 자산, 배포본 미포함): Claude 17/17(+Codex 전용 1 SKIP)·Codex 18/18, mutation 6/6 검출. Codex exec 교차 리뷰 review-01 PASS_WITH_FIXES 84%(H 0) findings 7건 전건 반영 — mixed L2/L3 아카이브 절단·조사 오분해(전문가→전문)·무주입 진단 불일치·clean clone 러너 실패가 실버그였다. 보고서: docs/CHANGELOG_v2.48.md.
+# STATUS: FROZEN (v2.48. v2.47 기반 + ctxdb 키워드 회수 복구 + 계층 성장 규약(스킬 21 불변) — 설치처 실측에서 "프롬프트 키워드로 과거를 부른다"가 사실상 죽어 있었다: 한글 2음절 키워드가 길이 하한 3에 전량 탈락(관측 레포 INDEX 키워드 38%), L1이 자라 포인터가 읽기범위 밖으로 밀리면 무주입인데 진단이 `{}` 하나뿐, 매칭 성공이 폴백을 끄고(가장 관련 있는 프롬프트에서 실패), 이월한 L3는 회수 정규식(`L2/`만)에 안 걸려 영구 회수불가 — 즉 규정대로 이월할수록 장기기억이 사라졌다. 훅 양 런타임 수정: CJK 2자/라틴 3자 하한 분리 + 조사 스트립(원형+어간 양쪽 후보) + 전 행 점수화 매칭(첫 히트 즉시반환 폐기) + `L[234]/` 회수 + L3/L4 `## ` 블록 단위 추출(파일 통째 금지) + L1 포인터 탐색범위와 주입범위 분리 + 폴백 상시 적용 + 무주입 사유 `.ctxdb/.state/{claude|codex}-last-decision` 기록(`{}` 출력계약 유지). 규약: INDEX `L2/L3 경로` 컬럼(포인터를 본문 길이와 분리) + `.ctxdb/keywords.md` 의미매칭 층 신설(agent 전용 — hook 차단·비Windows 폴백, codemap keywords 패턴 이식) + context-saver STEP5 계층 승격(L2 150줄→L3, L3 400줄→L4, L1 60줄/키워드 30개 초과 시 도메인 분할 제안, 이월 시 INDEX·L1 포인터 갱신 의무) + checkpoint 절차 context-saver 누락 보정 + Session Protocol ON NEW TOPIC 폴백. 회귀셋 `tests/ctxdb-recall` 21케이스(toolkit 개발 자산, 배포본 미포함): Claude 20/20(+Codex 전용 1 SKIP)·Codex 21/21, mutation 6/6 검출. 사후수정#1(버전 불변): 영문 어간+한글 조사(React를/Flutter로/Docker에서) 조사 스트립 실패 수정(훅 4표면) + .gitignore `.ctxdb/L4/` 누락 보정. Codex exec 교차 리뷰 review-01 PASS_WITH_FIXES 84%(H 0) findings 7건 전건 반영 — mixed L2/L3 아카이브 절단·조사 오분해(전문가→전문)·무주입 진단 불일치·clean clone 러너 실패가 실버그였다. 보고서: docs/CHANGELOG_v2.48.md.
 #         이전: v2.47. v2.46 기반 + codemap 초기 부트스트랩 절차 신설(스킬 21 불변) — 설치가 codemap 템플릿만 만들고 기존 코드베이스를 스캔하지 않아, 이미 코드가 쌓인 프로젝트는 백필 없이 방치되던 공백을 메움(실관측: 설치 후 수 주간 1개 도메인만 등록). codemap SKILL에 "## 초기 부트스트랩" 섹션 추가 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START에 1회 제안, 거절 시 재제안 금지) + 스캔범위/등록기준(public 진입점만) + 규모 분기(소스<40 인라인 / >=40 code-delegate 배치 위임, 서브는 _staging에 직접 Write하고 4줄 요약만 반환) + 병합 규율(기존 MAP/HOT/수기 섹션 보존) + 크기 판정(30KB 초과 즉시 Phase B) + 검증 게이트(size cap 전수 + 무작위 심볼 path:line 실측 전건 일치). 부수: Phase B 전환 시 _index.md를 삭제하지 않고 라우팅 스텁으로 남기는 규약 명문화 + Session Protocol step7을 "_root.md 우선, 없으면 _index.md"로 수정(경로 사멸 차단, live+tmpl 4표면). 근거: TeamPitch_2.0 실증 백필(115파일 -> 283 심볼, trim-router 전환, 서브 3배치 위임). 보고서: docs/CHANGELOG_v2.47.md.
 #         이전: v2.46. v2.45 기반 + design 스킬 시각 품질 재설계(스킬 21 불변) — 외부 사양서를 pawpad lean 단일 SKILL.md 구조로 흡수. 최상위 3원칙(Consistency First: 모양·크기·간격은 스케일 토큰에서만 파생 / Intentional Direction: 코드 전 방향 명시+사유 / Anti-slop: 제네릭·불일치 차단) + 2-pass 워크플로우(계획→자기비평→구현→재비평) + 일관성 시스템 5축(간격/크기/모양/정렬/상태, Token-first raw 값 금지) + anti-slop 체크(불일치=AI 티 최우선 정규화, 과용 폰트 회피는 신규 선택 한정, 경계 기본값 3종, 금지 레이아웃/이모지 아이콘/그라디언트 남발) + 정량 assertion(spacing 임의값 0·radius 고유값<=4·컨트롤 높이<=3) + 신규 프로젝트 토큰 부트스트랩 + 선택지 체크박스·3옵션 상한 + 파이프라인 관계 4자 확장(brainstorming/mockup 연결, 외부 문서 게이트 진입 명시). 근거: "AI 티는 화려함이 아니라 불일치" — 적용 전/후 비교 검증(구현 전 사용자 확인) 수행. 보고서: docs/CHANGELOG_v2.46.md.
 #         이전: v2.45. v2.44 기반 + brainstorming 스킬 신규(20→21, prd 번들) — 발산(방향 2-3 대안+추천 1개, 초과 시 상위 3 shortlist) + 누락 스윕(인접기능·저니 워크스루 + 비해피패스 8축 체크리스트) + MoSCoW 스코프 게이트(Won't 명시 의무)를 단일 스킬로 통합. 진입 판정(방향 3요소: 무엇을/누구에게/왜)으로 막연한 아이디어는 발산부터, 구체화된 기획문서는 스윕 직행(+사용자 오버라이드). 파이프라인 brainstorming→clarity→grill-me→to-prd→mockup — clarity 이전 발산 단계 공백 해소, 구현 후반 기능 추가/삭제 churn(누락형)을 기획 단계에서 차단(사용자 실관측 pain). Idea→PRD Routing 판정 4표면(live+tmpl CLAUDE/AGENTS) 동기, 자동제안 dangling 이름 실체화. 보고서: docs/CHANGELOG_v2.45.md.
@@ -2659,9 +2659,15 @@ function Get-TokenVariants { param([string]$Token)
         $stem = $Token.Substring(0, $Token.Length - $josa.S.Length)
         if ($stem.Length -lt 2) { continue }
         $jong = Get-Jongseong $stem[$stem.Length - 1]
-        if ($jong -lt 0) { break }
         $ok = $false
-        if ($josa.Form -eq "A") { $ok = $true }
+        if ($jong -lt 0) {
+            # 어간이 한글로 끝나지 않는다 = 영문/숫자 어간 + 한글 조사 (React를, Flutter로, Docker에서).
+            # 받침이 없으니 형태(C/V)를 계산할 수 없고, 실제 조사 선택은 한국어 발음을 따르므로
+            # 코드로 정할 수도 없다. 이 조합에서 뒤에 붙은 한글은 사실상 조사뿐이라 형태 검사를 건너뛴다.
+            # 오분해 위험(전문가->전문)은 한글 어간에서만 생기므로 여기엔 해당하지 않는다.
+            $ok = $true
+        }
+        elseif ($josa.Form -eq "A") { $ok = $true }
         elseif ($josa.Form -eq "C") { $ok = ($jong -ne 0) }
         else { $ok = ($jong -eq 0) -or ($josa.Rieul -and $jong -eq 8) }
         # 형태가 안 맞으면 그 접미사는 조사가 아니라 어간의 일부다. 더 짧은 조사도 시도하지 않는다.
@@ -3724,9 +3730,15 @@ function Get-TokenVariants {
         $stem = $Token.Substring(0, $Token.Length - $josa.S.Length)
         if ($stem.Length -lt 2) { continue }
         $jong = Get-Jongseong $stem[$stem.Length - 1]
-        if ($jong -lt 0) { break }
         $ok = $false
-        if ($josa.Form -eq "A") { $ok = $true }
+        if ($jong -lt 0) {
+            # 어간이 한글로 끝나지 않는다 = 영문/숫자 어간 + 한글 조사 (React를, Flutter로, Docker에서).
+            # 받침이 없으니 형태(C/V)를 계산할 수 없고, 실제 조사 선택은 한국어 발음을 따르므로
+            # 코드로 정할 수도 없다. 이 조합에서 뒤에 붙은 한글은 사실상 조사뿐이라 형태 검사를 건너뛴다.
+            # 오분해 위험(전문가->전문)은 한글 어간에서만 생기므로 여기엔 해당하지 않는다.
+            $ok = $true
+        }
+        elseif ($josa.Form -eq "A") { $ok = $true }
         elseif ($josa.Form -eq "C") { $ok = ($jong -ne 0) }
         else { $ok = ($jong -eq 0) -or ($josa.Rieul -and $jong -eq 8) }
         # 형태가 안 맞으면 그 접미사는 조사가 아니라 어간의 일부다. 더 짧은 조사도 시도하지 않는다.

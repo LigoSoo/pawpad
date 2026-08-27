@@ -78,7 +78,7 @@ toolkit 원본에서 6종 전부 재확인(`.claude/hooks/ctxdb-inject.ps1`, `.c
 
 ### 2-3. 회귀셋 `tests/ctxdb-recall` (신규, **배포본 미포함**)
 
-toolkit 개발 자산. 픽스처(가짜 설치처) + 18케이스 러너. 설치처에는 넣지 않는다(설치본이 훅을 테스트할 이유가 없다).
+toolkit 개발 자산. 픽스처(가짜 설치처) + 21케이스 러너. 설치처에는 넣지 않는다(설치본이 훅을 테스트할 이유가 없다).
 
 > **이력 정정(2026-08-27)**: 최초 구현·통과는 다른 머신에서 이뤄졌고 산출물이 이 레포에 없었다.
 > 같은 사양(C1~C18)으로 이 머신에서 재구현해 커밋했다. 설계 메모와 검출력 근거는 `tests/ctxdb-recall/README.md`.
@@ -91,7 +91,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tests\ctxdb-recall\run-recal
 C1 한글 2음절 / C2 조사 / C3 라틴 회귀 보존 / C4 무관 주제 무주입+사유 / C5 L1 150행 아래 포인터 /
 C6 매칭 성공 + 포인터 0 → 폴백 / C7 L3 블록 선별(무관 블록 미포함 검증) / C8 다중 히트 우선 / C9·C10 세션 dedupe /
 C11·C12 구 3컬럼 INDEX 호환 / C13 mixed L2/L3에서 아카이브 미절단 / C14 조사 오분해 금지(음성) /
-C15 INDEX 부재 진단 / C16 L4 회수 / C17 60줄 컷 / C18 Codex pointer 모드.
+C15 INDEX 부재 진단 / C16 L4 회수 / C17 60줄 컷 / C18 Codex pointer 모드 /
+C19·C20·C21 영문 어간 + 한글 조사(`React를`·`Docker에서`·`Flutter로`, 사후수정#1).
 
 **비교 기준**: 임베드 대조는 워크트리 EOL이 아니라 **개행 정규화 후 내용 동일성**(또는 Git blob) 기준이다 —
 `core.autocrlf` 때문에 워크트리 표현이 파일마다 다르고, 그것은 배포 산출물의 차이가 아니다.
@@ -117,8 +118,8 @@ C15 INDEX 부재 진단 / C16 L4 회수 / C17 60줄 컷 / C18 Codex pointer 모�
 | 항목 | 결과 |
 |---|---|
 | PSParser | `pawpad-setup.ps1` / 훅 2종 parse errors 0 |
-| 회귀셋 (Claude 훅) | **17/17 PASS** (+Codex 전용 C18 SKIP) |
-| 회귀셋 (Codex 훅) | **18/18 PASS** |
+| 회귀셋 (Claude 훅) | **20/20 PASS** (+Codex 전용 C18 SKIP) — 사후수정#1로 18→21케이스 |
+| 회귀셋 (Codex 훅) | **21/21 PASS** |
 | 회귀 검출력 (mutation) | 수정본에 D-1·D-2·D-3·D-4·D-5·60줄컷을 하나씩 되심어 **6/6 검출**. D-1·D-3은 파급이 넓어 여러 케이스가 동시에 죽으므로, 개별 검출력은 나머지 4종의 targeted mutation(단일 케이스만 실패)이 증명 |
 | 스킬 미러 정합 | self `-Upgrade` 후 emitted==live — 21개 중 변경분 3개(`checkpoint`·`context-saver`·`ctxdb-navigator`) 외 불일치 0 |
 | 자체 배포 | toolkit self `-Upgrade`: 1 created / 77 updated / 4 merged / 17 skipped / **0 failed** |
@@ -140,3 +141,34 @@ C15 INDEX 부재 진단 / C16 L4 회수 / C17 60줄 컷 / C18 Codex pointer 모�
   비Windows에서는 `ON NEW TOPIC` agent 폴백이 회수를 대신한다.
 - **오탐률 미측정**. 하한을 2자로 낮추면 짧은 일반어 오탐이 늘 수 있다. 점수화 매칭이 완충이지만 실사용 관측이 필요하다.
 - **Codex pointer 모드는 C18 1건만 커버**. 나머지 픽스처는 `injectMode: full` 고정 — 렌더링을 벗겨야 회수 로직 자체가 보인다. pointer 렌더링의 세부 변형은 미커버.
+
+---
+
+## 6. 사후수정 #1 (2026-08-27, **버전 불변**)
+
+`/code-review ultra` 교차 리뷰(main → a0bc912, 19파일 +1721/−253) 지적 2건. 둘 다 nit이나 실버그라 반영.
+
+### 6-1. `Get-TokenVariants` — 영문 어간 + 한글 조사에서 스트립 실패
+
+`React를`, `Flutter로`, `Docker에서` 같은 **라틴 어간 + 한글 조사** 조합에서 어간이 후보에 오르지 않았다.
+`Get-Jongseong`이 라틴 문자에 `-1`을 반환하는데 `if ($jong -lt 0) { break }`가 어간 추가 **전에**
+루프를 끊었기 때문이다. 결과적으로 라틴 INDEX 키워드(`react`·`flutter`·`firebase`·`riverpod`)가
+한국어 프롬프트에서 조용히 무매칭 — v2.48이 고치려던 실패 모드와 같은 성격의 사각지대다.
+
+수정: 어간이 한글로 끝나지 않으면 형태(C/V) 검사를 건너뛴다. 받침이 없어 형태를 계산할 수 없고,
+실제 조사 선택은 한국어 발음을 따르므로 코드로 정할 수 없다. 이 조합에서 뒤에 붙은 한글은
+사실상 조사뿐이다. 오분해 위험(`전문가`→`전문`)은 한글 어간 고유의 문제라 영향 없다(C14 PASS 유지).
+
+표면 4곳: 훅 live 2 + `pawpad-setup.ps1` 임베드 2. 회귀 C19·C20·C21 추가 —
+**수정 전 3건 전부 FAIL, 수정 후 PASS**로 검출력 확인.
+
+> 이 결함이 v2.48 회귀셋 18케이스를 통과한 이유: C1·C2는 순수 한글 어간+조사, C14는 한글 어간의
+> 오분해 방지 음성 케이스뿐이었다. **라틴 어간 + 한글 조사 조합이 커버 공백이었다.**
+
+### 6-2. `.gitignore` — `.ctxdb/L4/` 누락
+
+v2.48이 L4를 실저장 계층으로 승격(`context-saver` STEP 5: L3 400줄 초과 → L4 이월)했는데
+ignore 목록은 `L1/L2/L3`까지였다. 이 블록의 목적이 "개인 dogfood 서사를 배포하지 않는다"인데,
+L4가 같은 성격의 데이터를 받는 새 목적지가 되면서 유일한 방어가 비어 있었다.
+`.ctxdb/L4/` 추가 + 주석 문구 동기. (설치처에는 setup이 ctxdb ignore 블록을 쓰지 않으므로 toolkit 자체 1표면.)
+

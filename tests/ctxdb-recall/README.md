@@ -1,4 +1,4 @@
-# tests/ctxdb-recall — ctxdb 회수 훅 회귀셋
+﻿# tests/ctxdb-recall — ctxdb 회수 훅 회귀셋
 
 `ctxdb-inject` 훅(Claude·Codex 동형)이 **프롬프트 키워드로 과거 맥락을 불러오는** 경로를 지킨다.
 
@@ -48,6 +48,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tests\ctxdb-recall\run-recal
 | C16 | L4 회수 | D-3 |
 | C17 | 아카이브 블록 60줄 컷 | — |
 | C18 | Codex pointer 모드 렌더링 | Codex 전용(Claude 훅에서는 SKIP) |
+| C19·C20·C21 | 영문 어간 + 한글 조사 (`React를` / `Docker에서` / `Flutter로`) | 사후수정#1 |
 
 ## 설계 메모
 
