@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <img src="docs/paw-spin.gif" width="340"
        alt="설치 화면에서 1회전하는 PawPad ASCII 로고 — 브랜드 마크를 ASCII로 변환한 16프레임 코인 스핀">
 </p>
@@ -8,7 +8,7 @@
   <sub>Agentic Engineering Toolkit</sub>
 </p>
 
-# PawPad — Agentic Engineering Toolkit (v2.49 FROZEN)
+# PawPad — Agentic Engineering Toolkit (v2.50 FROZEN)
 
 Claude Code ⇄ Codex 하이브리드 협업을 위한 **멀티에이전트 상태관리 + 토큰절약 하니스**.
 하나의 PowerShell 스크립트로 어떤 프로젝트에든 21개 스킬 · PawPad 상태머신 · 양 런타임 자동화 hook · 키워드 컨텍스트 DB · 7축 코드베이스 맵 · 보안 검증 게이트를 설치한다.
@@ -110,7 +110,7 @@ Claude Code ⇄ Codex 하이브리드 협업을 위한 **멀티에이전트 상�
 
 ```
 CLAUDE.md / AGENTS.md            # 에이전트 컨텍스트 (Claude / Codex). 완료 기준(DoD) 8번 = security-check 보안 게이트 포함
-pawpad-setup.ps1     # 통합 단일 설치 스크립트 (FROZEN v2.49, 번들 선택 -Preset/-Bundles + 안내 언어 -Lang, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
+pawpad-setup.ps1     # 통합 단일 설치 스크립트 (FROZEN v2.50, 번들 선택 -Preset/-Bundles + 안내 언어 -Lang, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
 .codex/
 ├── config.json                  # Codex 보조 설정 (skills 21 + context/backup keys)
 ├── config.toml                  # project config layer note
@@ -277,7 +277,7 @@ $j=(Get-Content .claude\settings.json -Raw | ConvertFrom-Json); $j.hooks.PSObjec
 (Get-Content .codex\config.json -Raw | ConvertFrom-Json).skills.Count   # 21
 
 # 스크립트 STATUS
-Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.49 Unified ... FROZEN
+Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.50 Unified ... FROZEN
 ```
 
 설치 후 첫 작업은 보통 `/clarity` 또는 `/resume`로 시작한다.
@@ -288,11 +288,11 @@ Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.49 Unified ... FROZEN
 
 - **처음이면 / 바이브 코딩** → **[`USAGE.md`](USAGE.md)** : 상황별 "이럴 땐 이 스킬" 표 + 흐름 예시 + FAQ
 - **기능 1개 기획→완성→배포** 단계별 워크스루 → **[`GUIDE.md`](GUIDE.md)**
-- 변경 이력: `docs/CHANGELOG_v2.49.md` (이전: v2.18~v2.48)
+- 변경 이력: `docs/CHANGELOG_v2.50.md` (이전: v2.18~v2.49)
 - hook 회귀 체크리스트: `docs/HOOK_TESTING.md`
 - 협업 프로토콜 상세: `.claude/HYBRID.md`
 
 ## 버전 / 변경 정책
 
-`v2.49 FROZEN` (Unified Claude + Codex Distribution). 변경 시 **새 버전 번호 + 변경 보고서 + Codex 리뷰** 절차를 따른다. 동결본을 직접 고치지 않는다.
+`v2.50 FROZEN` (Unified Claude + Codex Distribution). 변경 시 **새 버전 번호 + 변경 보고서 + Codex 리뷰** 절차를 따른다. 동결본을 직접 고치지 않는다.
 기존 설치 환경의 버전 업그레이드는 `-Upgrade` 모드 사용 (툴킷 파일만 갱신, 사용자 데이터 보존).

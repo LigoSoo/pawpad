@@ -1,6 +1,6 @@
-# 프로젝트 설계→완성 워크플로 가이드
+﻿# 프로젝트 설계→완성 워크플로 가이드
 
-이 문서는 PawPad — Agentic Engineering Toolkit(v2.49 FROZEN)를 설치한 프로젝트에서, **하나의 기능/프로젝트를 기획부터 완성·배포까지** 진행하는 전체 절차와 각 단계의 스킬 사용 예시를 설명한다.
+이 문서는 PawPad — Agentic Engineering Toolkit(v2.50 FROZEN)를 설치한 프로젝트에서, **하나의 기능/프로젝트를 기획부터 완성·배포까지** 진행하는 전체 절차와 각 단계의 스킬 사용 예시를 설명한다.
 
 > 설치/배포 방법은 [`README.md`](README.md) 참조. 이 문서는 설치 후 **작업 워크플로** 중심이다.
 > 대상 스택: 프리셋(flutter/node/python/wpf/tauri/electron/avalonia/generic) — 다른 스택도 `CLAUDE.md`의 `<YOUR_*>`만 채우면 동일 절차 적용
@@ -8,6 +8,7 @@
 > 버전 이력: 전체 표는 [PAWPAD_VERSIONS.md](PAWPAD_VERSIONS.md), 버전별 상세는 docs/CHANGELOG_v{N}.md. 아래는 최근 3개만.
 > v2.47: **codemap 초기 부트스트랩 절차 신설**(스킬 21 불변) — 설치는 codemap 템플릿만 만들 뿐 기존 코드베이스를 스캔하지 않아, 이미 코드가 쌓인 프로젝트는 심볼이 비어 있는 채로 시작하고 lookup miss -> 소스 full-scan 경로가 열린다(실관측: 설치 후 수 주간 1개 도메인만 등록). codemap SKILL에 `## 초기 부트스트랩` 추가: ①발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START에 1회 제안, 거절 시 재제안 금지) ②등록 기준(public 진입점만, private 헬퍼·뷰 내부 로직 제외) ③규모 분기(소스<40 인라인 / >=40 `/code-delegate` 배치 위임 — 서브는 `_staging/{batch}.md`에 직접 쓰고 4줄 요약만 반환해 부모 컨텍스트 보호) ④병합 규율(기존 MAP/HOT/수기 섹션 보존) ⑤30KB 초과 시 즉시 Phase B(trim-router) ⑥검증 게이트(size cap 전수 + 무작위 심볼 path:line 실측 전건 일치). 부수로 Phase B 전환 시 `_index.md`를 라우팅 스텁으로 남기는 규약 명문화 + Session Protocol step7이 `_root.md`를 우선 보도록 수정. 상세: docs/CHANGELOG_v2.47.md.
 > v2.48: **ctxdb 키워드 회수 복구 + 계층 성장 규약**(스킬 21 불변) — 설치처 실측 결과 "프롬프트 키워드로 과거를 부른다"가 동작하지 않았다: 한글 2음절 키워드가 길이 하한 3에 전량 탈락(관측 레포 INDEX 키워드 38%), L1이 길어져 포인터가 읽기범위 밖으로 밀리면 조용히 무주입, 매칭 성공이 폴백을 끄고, 이월한 L3는 회수 정규식(`L2/`)에 안 걸려 영구 회수불가(규정대로 이월할수록 장기기억이 사라지는 역설). 훅 양 런타임 수정: CJK 2자/라틴 3자 하한 분리 + 조사 스트립 + 전 행 점수화 매칭 + `L[234]/` 회수 + L3/L4 `## ` 블록 단위 추출 + 포인터 탐색/주입 범위 분리 + 폴백 상시 + 무주입 사유 `.ctxdb/.state/*-last-decision` 기록(`{}` 출력계약 유지). 규약: INDEX `L2/L3 경로` 컬럼 + `.ctxdb/keywords.md` 의미매칭 층(hook 차단·비Windows 폴백) + context-saver STEP5 계층 승격(L2→L3→L4, 이월 시 포인터 갱신 의무) + checkpoint에 context-saver 추가 + Session Protocol `ON NEW TOPIC`. 회귀셋 `tests/ctxdb-recall` 21케이스 커밋(Claude 20/20 +1 SKIP · Codex 21/21, mutation 6/6 검출). 사후수정#1: 영문 어간 + 한글 조사(`React를`) 스트립 실패 수정. Codex 리뷰 review-01 PASS_WITH_FIXES 84% findings 7건 전부 반영 — mixed L2/L3 아카이브 절단·조사 오분해(`전문가`→`전문`)·INDEX 부재 진단 누락·clean clone 러너 실패가 실버그였다. 상세: docs/CHANGELOG_v2.48.md.
+> v2.50: **ctxdb 회수 정밀도**(스킬 21 불변) — v2.48이 남긴 미결 "오탐률 미측정"을 transcript에서 뽑은 **실제 프롬프트 122건**으로 실측했다(`tests/ctxdb-fpr` 리플레이). 결과 **오탐률 7.4% / 정밀도 64%**. 의심하던 **CJK 2자 하한은 무죄**였다 — 하한 3(v2.47)으로 되돌린 대조군에서 off-domain 61건은 판정이 **완전히 동일**했고, toolkit에서 사라지는 8건 중 6건이 정탐이라 순손실이다. 진범은 `Find-L1Match`의 셀 분해가 **공백까지 구분자**로 써서 `점검 프롬프트`가 `점검`+`프롬프트` 두 키워드로 갈라진 것(오탐 9건 중 5건). 수정: 항목 안 공백은 **구(句)**로 취급 — 통째로 있어야 매칭. 검증: 회귀셋 **20/20 유지**(회수 무손실) + 동일 코퍼스 재측정 **오탐 9→4 · 정밀도 64→80% · 오탐률 7.4→3.3%**, 판정이 바뀐 5건은 전부 오탐. 기각안 2종도 실측 폐기(score>=2 하드컷=정탐 절반 소실 / score=1 차등주입=회귀셋 6/20). 상세: docs/CHANGELOG_v2.50.md.
 > v2.49: **codemap size cap 자동 감시**(스킬 21 불변) — cap 규칙은 v2.40(trim-router)부터 있었으나 **집행하는 장치가 없어** 설치처에서 2개월 만에 41개 중 14개가 상한을 넘었다(초과 합 46,168 B). 같은 `stop-check` 훅이 `.ctxdb/L2`는 150줄/2000토큰을 실측해 `[L2 split needed]` 차단 블록을 내는데 **codemap만 대상에서 빠져 있었다** — 커지는 쪽(8턴 checkpoint가 "codemap 갱신"을 재촉)만 자동이고 줄이는 쪽은 아무도 재지 않는 비대칭이 leaf 단조 증가의 원인. 훅 3표면(`.claude/hooks/stop-check.{ps1,sh}` + `.codex/hooks/stop-check.ps1`)에 크기 검사 추가 — cap `_root.md` 2KB / **`_index.md` 30KB**(Phase A flat 상한; 4KB를 걸면 Phase A 저장소가 전량 오탐) / leaf 4KB, 초과 시 `[codemap split needed]` decision:block **세션당 1회**(시그니처 dedupe). 안내는 "하위 leaf로 쪼개고 원본은 **라우팅 스텁**으로 남긴다"(기존 포인터 보존) + `_index.md` 초과면 Phase B 전환. 실측 근거: 설치처 정리로 대표 조회 경로 **41,912 → 7,167 B(-83%)**, dangling 0. 검증 3런타임 **12/12**. 상세: docs/CHANGELOG_v2.49.md.
 
 ---
@@ -389,7 +390,7 @@ State enum: `WIP` · `SPEC_READY` · `HANDOFF_TO_CODEX` · `HANDOFF_TO_CLAUDE` �
 설치 검증:
 - `.claude/skills/*/SKILL.md` 21개 — no-BOM, `---` frontmatter로 시작해야 등록됨
 - `.codex/config.json` skills 배열 21개
-- `pawpad-setup.ps1` STATUS: FROZEN (v2.49 Unified Claude + Codex Distribution)
+- `pawpad-setup.ps1` STATUS: FROZEN (v2.50 Unified Claude + Codex Distribution)
 - setup 종료 시 전역 섀도잉 경고(⚠ ~/.codex/skills 동일 이름 스킬) 안 뜨는지 확인 — 뜨면 안내대로 백업 이동
 - Claude hook: `.claude/settings.json` 에 SessionStart/UserPromptSubmit/PreCompact/Stop + statusLine 등록 (run-hook.ps1 경유, 다음 세션부터 동작)
 - Codex hook: `.codex/hooks.json` (`/hooks` trust 후 동작)
@@ -437,7 +438,7 @@ CLAUDE.md / AGENTS.md      # 에이전트 컨텍스트 (read-only)
 .codex/{config.json,config.toml,hooks.json,hooks/}  # Codex 어댑터 (native hooks)
 .agents/skills/{21}/       # Codex repo skill mirror (DO NOT EDIT)
 docs/HOOK_TESTING.md       # hook 회귀 체크리스트
-pawpad-setup.ps1  # 통합 단일 설치 스크립트 (FROZEN v2.49)
+pawpad-setup.ps1  # 통합 단일 설치 스크립트 (FROZEN v2.50)
 ```
 
 상세는 각 `.claude/skills/{skill}/SKILL.md` 참조.

@@ -1,5 +1,5 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.49 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.49. v2.48 기반 + codemap size cap 자동 감시(스킬 21 불변) — cap 규칙은 v2.40(trim-router)부터 있었으나 집행 장치가 없어 설치처에서 2개월 만에 14/41 파일이 상한을 넘었다(초과 합 46,168 B). 원인은 비대칭이다: 훅 10개 어디에도 크기 검사가 없고 task-done 체크리스트·DoD#5도 미언급이며 codemap SKILL의 검사 절차 포인터(spec codemap-8kb-router.md)는 설치처에 존재하지 않는 파일이었는데, **같은 stop-check 훅이 .ctxdb/L2는 150줄/2000토큰을 실측해 [L2 split needed] 차단 블록을 낸다** — 동일 훅·동일 문제(통째로 읽히므로 크면 절감이 무력화)·동일 해법(분할)인데 codemap만 대상에서 빠져 있었다. 게다가 커지는 쪽은 8턴 checkpoint가 "codemap 갱신"을 재촉해 가속된다. 훅 3표면(.claude/hooks/stop-check.ps1·.sh + .codex/hooks/stop-check.ps1)에 codemap size cap 점검 추가 — cap 3단(_root.md=2048 / **_index.md=30720**(Phase A flat 상한; 4096을 걸면 Phase A 저장소가 전량 오탐한다) / 그외=4096), 초과 파일을 상대경로+bytes/cap으로 수집, 세션별 시그니처 dedupe(claude-codemap-warned / codex-codemap-warned, L2와 별도 state — 섞으면 한쪽 해소가 다른 쪽 경고를 지운다), 초과 시 [codemap split needed] decision:block 1회. 안내는 "하위 leaf로 쪼개고 원본은 라우팅 스텁으로 남긴다"(기존 포인터 보존) + _index.md 초과면 Phase B 전환. codemap SKILL size cap 절의 빈 포인터를 자동 집행·스텁 규약으로 교체(live+미러+임베드 3표면). 근거는 설치처 dblogscope_claude 실측 정리(FAIL 14 -> 0, 대표 조회 경로 41,912 -> 7,167 B = -83%, dangling 0). 검증 12/12 — 3런타임 x 4케이스(초과 감지·같은 세션 dedupe·Phase A _index 20KB 무오탐·_index 35KB 감지), PSParser 0, bash -n OK, live==embed byte 대조. **사후수정#1(버전 불변)**: Phase B(trim-router) 저장소에서 **SessionStart codemap 주입이 조용히 꺼져 있었다** — `session-start` 훅이 `_index.md`만 보는데 Phase B에서 그 파일은 라우팅 스텁이라 심볼 수가 0으로 세어져 auto 판정(임계 60)에 미달했다. v2.47이 Session Protocol step7만 "`_root.md` 우선"으로 고쳐 두고 훅은 그대로였다. 즉 **대형 저장소일수록 조망 주입이 사라지는** 역전이 있었다. 수정(4표면 = live `.ps1`/`.sh` + setup 임베드 2): auto 판정에 "`_root.md` 존재 = 이미 30KB 넘겨 전환한 대형" 단락 추가 + 주입 대상도 `_root.md` 우선. `.codex` 훅은 codemap을 읽지 않아 대상 아님. 검증: 양 런타임에서 `_root.md` 본문(`# ROUTE`) 주입 확인 + `inject skipped` 미발생, PSParser 0, `bash -n` OK, live==embed 5/5. 보고서: docs/CHANGELOG_v2.49.md.
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.50 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.50. v2.49 기반 + ctxdb 회수 정밀도 개선 — 스킬 21 불변. v2.48이 CJK 하한을 2자로 낮추며 남긴 미결 "오탐률 미측정"을 실측했다: transcript에서 뽑은 **실제 프롬프트 122건**을 실 INDEX + 실 훅에 리플레이(tests/ctxdb-fpr) — loaded 25건 중 오탐 9건, **오탐률 7.4% / 정밀도 64%**. **결론은 하한이 무죄**였다: 하한 3(v2.47 동작)으로 되돌린 대조군에서 off-domain 61건은 결과가 **완전히 동일**(2자 하한이 새로 끌어온 무관 프롬프트 0건)이고, toolkit 코퍼스에서 사라지는 8건 중 **6건이 정탐**(로고·랜딩·회전)이라 순손실이다. 진범은 `Find-L1Match`의 키워드 셀 분해였다 — 공백까지 구분자로 써서 INDEX에 `점검 프롬프트`로 등록해도 `점검`·`프롬프트`가 **각각 독립 키워드**가 됐고, 이 프로젝트에서 가장 흔한 낱말인 `프롬프트`만 들어가면 스킬점검 도메인이 걸렸다(오탐 9건 중 5건). 수정: 셀은 콤마/파이프/슬래시로 **항목**을 나누고 항목 안의 공백은 낱말 구분이 아니라 **구(句)**로 취급 — 구는 원문에 통째로 있어야 인정. 훅 4표면(.claude/.codex live + setup 임베드 2). 검증: 회귀셋 `tests/ctxdb-recall` **20/20 유지**(+1 SKIP)로 회수 무손실 확인 + 동일 코퍼스 재측정 **오탐 9->4 · 정밀도 64->80% · 오탐률 7.4->3.3%**, 판정이 바뀐 5건은 **전부 오탐**이고 정탐 변화 0. 기각된 대안 2종도 실측으로 폐기: score>=2 하드컷은 정탐 16->8(절반 소실), score=1 차등주입(L1만)은 회귀셋 **6/20 PASS**로 v2.48의 회수 복구를 되돌린다 — **실 INDEX에서 score=1이 정상 회수의 다수 경로**이기 때문. 남은 오탐 4건은 코드가 아니라 데이터 문제(`테스트`·`스킬`·`home` 같은 일반어 등록, 설치처별 INDEX 정리 대상). 관측 도구 `tests/ctxdb-fpr/`(하네스+추출기+README) 신규 — 배포본 미포함, 코퍼스는 사용자 발화라 gitignore. 보고서: docs/CHANGELOG_v2.50.md.
 #         이전: v2.48. v2.47 기반 + ctxdb 키워드 회수 복구 + 계층 성장 규약(스킬 21 불변) — 설치처 실측에서 "프롬프트 키워드로 과거를 부른다"가 사실상 죽어 있었다: 한글 2음절 키워드가 길이 하한 3에 전량 탈락(관측 레포 INDEX 키워드 38%), L1이 자라 포인터가 읽기범위 밖으로 밀리면 무주입인데 진단이 `{}` 하나뿐, 매칭 성공이 폴백을 끄고(가장 관련 있는 프롬프트에서 실패), 이월한 L3는 회수 정규식(`L2/`만)에 안 걸려 영구 회수불가 — 즉 규정대로 이월할수록 장기기억이 사라졌다. 훅 양 런타임 수정: CJK 2자/라틴 3자 하한 분리 + 조사 스트립(원형+어간 양쪽 후보) + 전 행 점수화 매칭(첫 히트 즉시반환 폐기) + `L[234]/` 회수 + L3/L4 `## ` 블록 단위 추출(파일 통째 금지) + L1 포인터 탐색범위와 주입범위 분리 + 폴백 상시 적용 + 무주입 사유 `.ctxdb/.state/{claude|codex}-last-decision` 기록(`{}` 출력계약 유지). 규약: INDEX `L2/L3 경로` 컬럼(포인터를 본문 길이와 분리) + `.ctxdb/keywords.md` 의미매칭 층 신설(agent 전용 — hook 차단·비Windows 폴백, codemap keywords 패턴 이식) + context-saver STEP5 계층 승격(L2 150줄→L3, L3 400줄→L4, L1 60줄/키워드 30개 초과 시 도메인 분할 제안, 이월 시 INDEX·L1 포인터 갱신 의무) + checkpoint 절차 context-saver 누락 보정 + Session Protocol ON NEW TOPIC 폴백. 회귀셋 `tests/ctxdb-recall` 21케이스(toolkit 개발 자산, 배포본 미포함): Claude 20/20(+Codex 전용 1 SKIP)·Codex 21/21, mutation 6/6 검출. 사후수정#1(버전 불변): 영문 어간+한글 조사(React를/Flutter로/Docker에서) 조사 스트립 실패 수정(훅 4표면) + .gitignore `.ctxdb/L4/` 누락 보정. 사후수정#2(버전 불변): handoff 절차에 codemap 갱신 + context-saver 호출 누락 보정(checkpoint D-8과 동형 — 인수 agent는 새 세션이라 영향이 더 크다). Codex exec 교차 리뷰 review-01 PASS_WITH_FIXES 84%(H 0) findings 7건 전건 반영 — mixed L2/L3 아카이브 절단·조사 오분해(전문가→전문)·무주입 진단 불일치·clean clone 러너 실패가 실버그였다. 보고서: docs/CHANGELOG_v2.48.md.
 #         이전: v2.47. v2.46 기반 + codemap 초기 부트스트랩 절차 신설(스킬 21 불변) — 설치가 codemap 템플릿만 만들고 기존 코드베이스를 스캔하지 않아, 이미 코드가 쌓인 프로젝트는 백필 없이 방치되던 공백을 메움(실관측: 설치 후 수 주간 1개 도메인만 등록). codemap SKILL에 "## 초기 부트스트랩" 섹션 추가 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START에 1회 제안, 거절 시 재제안 금지) + 스캔범위/등록기준(public 진입점만) + 규모 분기(소스<40 인라인 / >=40 code-delegate 배치 위임, 서브는 _staging에 직접 Write하고 4줄 요약만 반환) + 병합 규율(기존 MAP/HOT/수기 섹션 보존) + 크기 판정(30KB 초과 즉시 Phase B) + 검증 게이트(size cap 전수 + 무작위 심볼 path:line 실측 전건 일치). 부수: Phase B 전환 시 _index.md를 삭제하지 않고 라우팅 스텁으로 남기는 규약 명문화 + Session Protocol step7을 "_root.md 우선, 없으면 _index.md"로 수정(경로 사멸 차단, live+tmpl 4표면). 근거: TeamPitch_2.0 실증 백필(115파일 -> 283 심볼, trim-router 전환, 서브 3배치 위임). 보고서: docs/CHANGELOG_v2.47.md.
 #         이전: v2.46. v2.45 기반 + design 스킬 시각 품질 재설계(스킬 21 불변) — 외부 사양서를 pawpad lean 단일 SKILL.md 구조로 흡수. 최상위 3원칙(Consistency First: 모양·크기·간격은 스케일 토큰에서만 파생 / Intentional Direction: 코드 전 방향 명시+사유 / Anti-slop: 제네릭·불일치 차단) + 2-pass 워크플로우(계획→자기비평→구현→재비평) + 일관성 시스템 5축(간격/크기/모양/정렬/상태, Token-first raw 값 금지) + anti-slop 체크(불일치=AI 티 최우선 정규화, 과용 폰트 회피는 신규 선택 한정, 경계 기본값 3종, 금지 레이아웃/이모지 아이콘/그라디언트 남발) + 정량 assertion(spacing 임의값 0·radius 고유값<=4·컨트롤 높이<=3) + 신규 프로젝트 토큰 부트스트랩 + 선택지 체크박스·3옵션 상한 + 파이프라인 관계 4자 확장(brainstorming/mockup 연결, 외부 문서 게이트 진입 명시). 근거: "AI 티는 화려함이 아니라 불일치" — 적용 전/후 비교 검증(구현 전 사용자 확인) 수행. 보고서: docs/CHANGELOG_v2.46.md.
@@ -62,7 +62,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.49"
+$ver = "2.50"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -2742,8 +2742,10 @@ function Get-AgentSyncSummary { param([string[]]$IndexLines)
 
 # INDEX 행: | 우선순위 | 키워드 | L1 경로 | (선택) L2/L3 경로 |
 # 첫 히트 즉시 반환하면 짧은 일반어가 엉뚱한 도메인을 먼저 잡는다 -> 전 행 점수화 후 최다 히트 선택.
-function Find-L1Match { param([string[]]$IndexLines, [string[]]$PromptTokens)
+function Find-L1Match { param([string[]]$IndexLines, [string[]]$PromptTokens, [string]$Prompt = "")
     $promptSet = @{}; foreach ($t in $PromptTokens) { $promptSet[$t] = $true }
+    # 구(句) 매칭용 원문. 공백을 하나로 접어 표기 흔들림을 흡수한다.
+    $promptFlat = ($Prompt.ToLowerInvariant() -replace "\s+", " ")
     $best = $null; $bestScore = 0; $bestPriority = [int]::MaxValue
     foreach ($line in $IndexLines) {
         if ($line -notmatch "^\|\s*(\d+)\s*\|\s*([^|]+)\|\s*(L1/[^|]+?)\s*\|(.*)$") { continue }
@@ -2752,10 +2754,24 @@ function Find-L1Match { param([string[]]$IndexLines, [string[]]$PromptTokens)
         $l1Path = $Matches[3].Trim()
         $refsCell = $Matches[4]
         if ($l1Path -match "domain-sample" -or $keywordsCell -match "AUTH") { continue }
-        $keywords = ($keywordsCell -split "[,\s/|]+") |
-            ForEach-Object { $_.Trim("()[]{} `t`r`n").ToLowerInvariant() } | Where-Object { Test-TokenLength $_ }
+        # 셀은 콤마/파이프/슬래시로 '항목'을 나눈다. 항목 안의 공백은 낱말 구분이 아니라 구(句)다.
+        # 공백까지 구분자로 쓰면 `점검 프롬프트`가 `점검`+`프롬프트` 두 키워드가 되어
+        # 아무 프롬프트에나 "프롬프트"만 있으면 그 도메인이 걸린다 (v2.50 FPR 실측: 오탐 9건 중 5건이 이 경로).
         $score = 0
-        foreach ($keyword in $keywords) { if ($promptSet.ContainsKey($keyword)) { $score++ } }
+        foreach ($entry in ($keywordsCell -split "[,|/]+")) {
+            $entry = $entry.Trim("()[]{} `t`r`n")
+            if (-not $entry) { continue }
+            $words = @(($entry -split "\s+") | ForEach-Object { $_.Trim("()[]{} `t`r`n").ToLowerInvariant() } |
+                Where-Object { Test-TokenLength $_ })
+            if ($words.Count -eq 0) { continue }
+            if ($words.Count -eq 1) {
+                if ($promptSet.ContainsKey($words[0])) { $score++ }
+            } else {
+                # 구는 통째로 있어야 인정. 낱말 하나가 우연히 겹치는 건 근거가 아니다.
+                $phrase = (($entry -replace "\s+", " ")).ToLowerInvariant()
+                if ($promptFlat.Contains($phrase)) { $score++ }
+            }
+        }
         if ($score -gt 0 -and ($score -gt $bestScore -or ($score -eq $bestScore -and $priority -lt $bestPriority))) {
             $best = @{ Keywords = $keywordsCell; L1 = $l1Path; Score = $score; RefsCell = $refsCell }
             $bestScore = $score; $bestPriority = $priority
@@ -2890,7 +2906,7 @@ try {
 
     $indexLines = Get-Content -Path $indexPath -Encoding UTF8
     $tokens = Get-PromptTokens $prompt
-    $match = Find-L1Match $indexLines $tokens
+    $match = Find-L1Match $indexLines $tokens $prompt
     $explicit = Test-ExplicitContextPrompt $prompt
     if (-not $match -and -not $explicit) {
         Save-Decision $root $sessionId ("no-match | tokens=" + @($tokens).Count)
@@ -3852,9 +3868,11 @@ function Get-AgentSyncSummary {
 # INDEX 행: | 우선순위 | 키워드 | L1 경로 | (선택) L2/L3 경로 |
 # 첫 히트 즉시 반환하면 짧은 일반어가 엉뚱한 도메인을 먼저 잡는다 -> 전 행 점수화 후 최다 히트 선택.
 function Find-L1Match {
-    param([string[]]$IndexLines, [string[]]$PromptTokens)
+    param([string[]]$IndexLines, [string[]]$PromptTokens, [string]$Prompt = "")
     $promptSet = @{}
     foreach ($token in $PromptTokens) { $promptSet[$token] = $true }
+    # 구(句) 매칭용 원문. 공백을 하나로 접어 표기 흔들림을 흡수한다.
+    $promptFlat = ($Prompt.ToLowerInvariant() -replace "\s+", " ")
     $best = $null; $bestScore = 0; $bestPriority = [int]::MaxValue
 
     foreach ($line in $IndexLines) {
@@ -3865,13 +3883,23 @@ function Find-L1Match {
         $refsCell = $Matches[4]
         if ($l1Path -match "domain-sample" -or $keywordsCell -match "AUTH") { continue }
 
-        $keywords = ($keywordsCell -split "[,\s/|]+") |
-            ForEach-Object { $_.Trim("()[]{} `t`r`n").ToLowerInvariant() } |
-            Where-Object { Test-TokenLength $_ }
-
+        # 셀은 콤마/파이프/슬래시로 '항목'을 나눈다. 항목 안의 공백은 낱말 구분이 아니라 구(句)다.
+        # 공백까지 구분자로 쓰면 `점검 프롬프트`가 `점검`+`프롬프트` 두 키워드가 되어
+        # 아무 프롬프트에나 "프롬프트"만 있으면 그 도메인이 걸린다 (v2.50 FPR 실측: 오탐 9건 중 5건이 이 경로).
         $score = 0
-        foreach ($keyword in $keywords) {
-            if ($promptSet.ContainsKey($keyword)) { $score++ }
+        foreach ($entry in ($keywordsCell -split "[,|/]+")) {
+            $entry = $entry.Trim("()[]{} `t`r`n")
+            if (-not $entry) { continue }
+            $words = @(($entry -split "\s+") | ForEach-Object { $_.Trim("()[]{} `t`r`n").ToLowerInvariant() } |
+                Where-Object { Test-TokenLength $_ })
+            if ($words.Count -eq 0) { continue }
+            if ($words.Count -eq 1) {
+                if ($promptSet.ContainsKey($words[0])) { $score++ }
+            } else {
+                # 구는 통째로 있어야 인정. 낱말 하나가 우연히 겹치는 건 근거가 아니다.
+                $phrase = (($entry -replace "\s+", " ")).ToLowerInvariant()
+                if ($promptFlat.Contains($phrase)) { $score++ }
+            }
         }
         if ($score -gt 0 -and ($score -gt $bestScore -or ($score -eq $bestScore -and $priority -lt $bestPriority))) {
             $best = @{
@@ -4050,7 +4078,7 @@ try {
 
     $indexLines = Get-Content -Path $indexPath -Encoding UTF8
     $tokens = Get-PromptTokens $prompt
-    $match = Find-L1Match $indexLines $tokens
+    $match = Find-L1Match $indexLines $tokens $prompt
     $explicit = Test-ExplicitContextPrompt $prompt
 
     if (-not $match -and -not $explicit) {
@@ -7909,6 +7937,7 @@ if ($failed -eq 0) {
         Write-Host "  - ctxdb 계층 성장 규약 (v2.48): L2 150줄→L3, L3 400줄→L4 승격 + 이월 시 INDEX·L1 포인터 갱신 의무 + INDEX L2/L3 경로 컬럼 + .ctxdb/keywords.md 의미매칭 층(hook 차단·비Windows 폴백)" -ForegroundColor Cyan
         Write-Host "  - codemap size cap 자동 감시 (v2.49): stop-check 훅이 매 Stop마다 .claude/codemap 파일 크기를 실측해 상한 초과 시 [codemap split needed] 차단 블록 — cap _root 2KB / _index 30KB(Phase A) / leaf 4KB, 세션별 dedupe. 규칙만 있고 집행이 없어 leaf가 단조 증가하던 경로 차단(3런타임 12/12 검증)" -ForegroundColor Cyan
         Write-Host "  - 상세: docs/CHANGELOG_v2.49.md" -ForegroundColor Cyan
+        Write-Host "  - ctxdb 회수 정밀도 (v2.50): INDEX 키워드 셀의 공백을 구분자가 아니라 구(句)로 취급 — `점검 프롬프트`는 통으로 있어야 매칭. 실 프롬프트 122건 리플레이(tests/ctxdb-fpr)로 오탐률 7.4->3.3% / 정밀도 64->80%, 회귀셋 20/20 유지. 상세: docs/CHANGELOG_v2.50.md" -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 21 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review" -ForegroundColor Cyan

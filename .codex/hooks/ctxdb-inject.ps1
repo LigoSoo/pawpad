@@ -194,9 +194,11 @@ function Get-AgentSyncSummary {
 # INDEX 행: | 우선순위 | 키워드 | L1 경로 | (선택) L2/L3 경로 |
 # 첫 히트 즉시 반환하면 짧은 일반어가 엉뚱한 도메인을 먼저 잡는다 -> 전 행 점수화 후 최다 히트 선택.
 function Find-L1Match {
-    param([string[]]$IndexLines, [string[]]$PromptTokens)
+    param([string[]]$IndexLines, [string[]]$PromptTokens, [string]$Prompt = "")
     $promptSet = @{}
     foreach ($token in $PromptTokens) { $promptSet[$token] = $true }
+    # 구(句) 매칭용 원문. 공백을 하나로 접어 표기 흔들림을 흡수한다.
+    $promptFlat = ($Prompt.ToLowerInvariant() -replace "\s+", " ")
     $best = $null; $bestScore = 0; $bestPriority = [int]::MaxValue
 
     foreach ($line in $IndexLines) {
@@ -207,13 +209,23 @@ function Find-L1Match {
         $refsCell = $Matches[4]
         if ($l1Path -match "domain-sample" -or $keywordsCell -match "AUTH") { continue }
 
-        $keywords = ($keywordsCell -split "[,\s/|]+") |
-            ForEach-Object { $_.Trim("()[]{} `t`r`n").ToLowerInvariant() } |
-            Where-Object { Test-TokenLength $_ }
-
+        # 셀은 콤마/파이프/슬래시로 '항목'을 나눈다. 항목 안의 공백은 낱말 구분이 아니라 구(句)다.
+        # 공백까지 구분자로 쓰면 `점검 프롬프트`가 `점검`+`프롬프트` 두 키워드가 되어
+        # 아무 프롬프트에나 "프롬프트"만 있으면 그 도메인이 걸린다 (v2.50 FPR 실측: 오탐 9건 중 5건이 이 경로).
         $score = 0
-        foreach ($keyword in $keywords) {
-            if ($promptSet.ContainsKey($keyword)) { $score++ }
+        foreach ($entry in ($keywordsCell -split "[,|/]+")) {
+            $entry = $entry.Trim("()[]{} `t`r`n")
+            if (-not $entry) { continue }
+            $words = @(($entry -split "\s+") | ForEach-Object { $_.Trim("()[]{} `t`r`n").ToLowerInvariant() } |
+                Where-Object { Test-TokenLength $_ })
+            if ($words.Count -eq 0) { continue }
+            if ($words.Count -eq 1) {
+                if ($promptSet.ContainsKey($words[0])) { $score++ }
+            } else {
+                # 구는 통째로 있어야 인정. 낱말 하나가 우연히 겹치는 건 근거가 아니다.
+                $phrase = (($entry -replace "\s+", " ")).ToLowerInvariant()
+                if ($promptFlat.Contains($phrase)) { $score++ }
+            }
         }
         if ($score -gt 0 -and ($score -gt $bestScore -or ($score -eq $bestScore -and $priority -lt $bestPriority))) {
             $best = @{
@@ -392,7 +404,7 @@ try {
 
     $indexLines = Get-Content -Path $indexPath -Encoding UTF8
     $tokens = Get-PromptTokens $prompt
-    $match = Find-L1Match $indexLines $tokens
+    $match = Find-L1Match $indexLines $tokens $prompt
     $explicit = Test-ExplicitContextPrompt $prompt
 
     if (-not $match -and -not $explicit) {

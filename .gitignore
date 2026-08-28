@@ -1,4 +1,4 @@
-# PawPad Agentic Engineering Toolkit
+﻿# PawPad Agentic Engineering Toolkit
 .claude/pawpad/backup/
 .claude/settings.local.json
 .ctxdb/.state/
@@ -52,3 +52,7 @@
 
 # project glossary (may hold domain memory)
 CONTEXT.md
+
+# ctxdb FPR 리플레이 산출물 — 코퍼스는 실제 사용자 프롬프트 원문이다. 절대 커밋 금지.
+tests/ctxdb-fpr/*.json
+tests/ctxdb-fpr/*.tsv
