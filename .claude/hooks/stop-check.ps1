@@ -221,6 +221,18 @@ if (Test-Path $l2dir) {
     }
 }
 
+# codemap size cap 점검 (_root.md 2KB / _index.md 30KB(Phase A flat) / 그 외 4KB)
+# Phase B leaf는 lookup 때 통째로 읽히므로 초과분이 매 조회에 곱해진다. _index.md에 4KB를 걸면 Phase A가 전부 오탐.
+$cmOver = @()
+$cmDir = ".claude/codemap"
+if (Test-Path $cmDir) {
+    $cmRoot = (Resolve-Path $cmDir).Path
+    Get-ChildItem -Path $cmDir -Filter *.md -File -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+        $rel = $_.FullName.Substring($cmRoot.Length + 1).Replace("\", "/")
+        $cap = if ($rel -eq "_root.md") { 2048 } elseif ($rel -eq "_index.md") { 30720 } else { 4096 }
+        if ($_.Length -gt $cap) { $cmOver += ("{0}({1}B/{2})" -f $rel, $_.Length, $cap) }
+    }
+}
 $needsCheckpoint = ($turn % 8 -eq 0) -and -not ($lastCompactTurn -gt ($turn - 8))
 $needsSplit = ($oversized.Count -gt 0)
 if ($needsSplit) {
@@ -231,12 +243,23 @@ if ($needsSplit) {
     if ($lastSig -eq $sig) { $needsSplit = $false } else { Set-Content -Path $warnPath -Value $sig -Encoding UTF8 }
 }
 
+$needsCmap = ($cmOver.Count -gt 0)
+if ($needsCmap) {
+    $cmSig = $sessionId + "|" + ($cmOver -join "|")
+    $cmWarnPath = Join-Path $stateDir "claude-codemap-warned"
+    $cmLast = ""
+    if (Test-Path $cmWarnPath) { $cmLast = (Get-Content -Path $cmWarnPath -Raw -Encoding UTF8).Trim() }
+    if ($cmLast -eq $cmSig) { $needsCmap = $false } else { Set-Content -Path $cmWarnPath -Value $cmSig -Encoding UTF8 }
+}
 $parts = @()
 if ($needsCheckpoint) {
     $parts += "[checkpoint $turn turns] Update .claude/codemap/_index.md for new/changed symbols + refresh lane/_wip.md (on done: move to wip/done + _meta.md + git commit) + run context-saver to write .ctxdb/L2 and update INDEX.md AGENT SYNC."
 }
 if ($needsSplit) {
     $parts += ("[L2 split needed] " + ($oversized -join ", ") + " : exceeds 150 lines / 2000 tokens -> keyword load still pulls the whole file, defeating token savings. Split old entries into .ctxdb/L3/{name}-YYYY-MM.md or split by domain, then update INDEX/L1 pointers.")
+}
+if ($needsCmap) {
+    $parts += ("[codemap split needed] " + ($cmOver -join ", ") + " : exceeds codemap size cap (_root.md 2KB / _index.md 30KB / others 4KB). Phase B leaves are read whole on lookup, so an oversized leaf is paid on every lookup. Split into .claude/codemap/features/{id}/{subtopic}.md and keep the original file as a routing stub so existing pointers survive; if _index.md is over, switch to Phase B (trim-router). Rule: .claude/skills/codemap/SKILL.md size cap.")
 }
 if ($script:laneClose) {
     $parts += "[lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + git commit). If not done, ignore this and continue."

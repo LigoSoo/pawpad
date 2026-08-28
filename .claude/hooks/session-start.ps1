@@ -32,6 +32,9 @@ function Test-CodemapInject {
     }
     if ($mode -eq "off") { return $false }
     if ($mode -eq "on") { return $true }
+    # Phase B(trim-router)면 이미 30KB를 넘겨 전환한 대형 저장소다. _index.md는 스텁이라
+    # 심볼 수를 세면 0이 나와 주입이 조용히 꺼진다(v2.49 사후수정).
+    if (Test-Path ".claude/codemap/_root.md") { return $true }
     $cm = ".claude/codemap/_index.md"
     if (-not (Test-Path $cm)) { return $false }
     $inIndex = $false; $count = 0
@@ -45,7 +48,8 @@ function Test-CodemapInject {
 
 $out = @()
 if (Test-CodemapInject) {
-    $cm = ".claude/codemap/_index.md"
+    # Phase B면 _root.md(route+MAP+HOT)가 조망이다. 없으면 flat _index.md.
+    $cm = if (Test-Path ".claude/codemap/_root.md") { ".claude/codemap/_root.md" } else { ".claude/codemap/_index.md" }
     if (Test-Path $cm) {
         $out += "=== codemap (symbol registry / HOT) ==="
         $out += (Get-Content $cm -TotalCount 40 -Encoding UTF8)

@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.48 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.48. v2.47 기반 + ctxdb 키워드 회수 복구 + 계층 성장 규약(스킬 21 불변) — 설치처 실측에서 "프롬프트 키워드로 과거를 부른다"가 사실상 죽어 있었다: 한글 2음절 키워드가 길이 하한 3에 전량 탈락(관측 레포 INDEX 키워드 38%), L1이 자라 포인터가 읽기범위 밖으로 밀리면 무주입인데 진단이 `{}` 하나뿐, 매칭 성공이 폴백을 끄고(가장 관련 있는 프롬프트에서 실패), 이월한 L3는 회수 정규식(`L2/`만)에 안 걸려 영구 회수불가 — 즉 규정대로 이월할수록 장기기억이 사라졌다. 훅 양 런타임 수정: CJK 2자/라틴 3자 하한 분리 + 조사 스트립(원형+어간 양쪽 후보) + 전 행 점수화 매칭(첫 히트 즉시반환 폐기) + `L[234]/` 회수 + L3/L4 `## ` 블록 단위 추출(파일 통째 금지) + L1 포인터 탐색범위와 주입범위 분리 + 폴백 상시 적용 + 무주입 사유 `.ctxdb/.state/{claude|codex}-last-decision` 기록(`{}` 출력계약 유지). 규약: INDEX `L2/L3 경로` 컬럼(포인터를 본문 길이와 분리) + `.ctxdb/keywords.md` 의미매칭 층 신설(agent 전용 — hook 차단·비Windows 폴백, codemap keywords 패턴 이식) + context-saver STEP5 계층 승격(L2 150줄→L3, L3 400줄→L4, L1 60줄/키워드 30개 초과 시 도메인 분할 제안, 이월 시 INDEX·L1 포인터 갱신 의무) + checkpoint 절차 context-saver 누락 보정 + Session Protocol ON NEW TOPIC 폴백. 회귀셋 `tests/ctxdb-recall` 21케이스(toolkit 개발 자산, 배포본 미포함): Claude 20/20(+Codex 전용 1 SKIP)·Codex 21/21, mutation 6/6 검출. 사후수정#1(버전 불변): 영문 어간+한글 조사(React를/Flutter로/Docker에서) 조사 스트립 실패 수정(훅 4표면) + .gitignore `.ctxdb/L4/` 누락 보정. Codex exec 교차 리뷰 review-01 PASS_WITH_FIXES 84%(H 0) findings 7건 전건 반영 — mixed L2/L3 아카이브 절단·조사 오분해(전문가→전문)·무주입 진단 불일치·clean clone 러너 실패가 실버그였다. 보고서: docs/CHANGELOG_v2.48.md.
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.49 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.49. v2.48 기반 + codemap size cap 자동 감시(스킬 21 불변) — cap 규칙은 v2.40(trim-router)부터 있었으나 집행 장치가 없어 설치처에서 2개월 만에 14/41 파일이 상한을 넘었다(초과 합 46,168 B). 원인은 비대칭이다: 훅 10개 어디에도 크기 검사가 없고 task-done 체크리스트·DoD#5도 미언급이며 codemap SKILL의 검사 절차 포인터(spec codemap-8kb-router.md)는 설치처에 존재하지 않는 파일이었는데, **같은 stop-check 훅이 .ctxdb/L2는 150줄/2000토큰을 실측해 [L2 split needed] 차단 블록을 낸다** — 동일 훅·동일 문제(통째로 읽히므로 크면 절감이 무력화)·동일 해법(분할)인데 codemap만 대상에서 빠져 있었다. 게다가 커지는 쪽은 8턴 checkpoint가 "codemap 갱신"을 재촉해 가속된다. 훅 3표면(.claude/hooks/stop-check.ps1·.sh + .codex/hooks/stop-check.ps1)에 codemap size cap 점검 추가 — cap 3단(_root.md=2048 / **_index.md=30720**(Phase A flat 상한; 4096을 걸면 Phase A 저장소가 전량 오탐한다) / 그외=4096), 초과 파일을 상대경로+bytes/cap으로 수집, 세션별 시그니처 dedupe(claude-codemap-warned / codex-codemap-warned, L2와 별도 state — 섞으면 한쪽 해소가 다른 쪽 경고를 지운다), 초과 시 [codemap split needed] decision:block 1회. 안내는 "하위 leaf로 쪼개고 원본은 라우팅 스텁으로 남긴다"(기존 포인터 보존) + _index.md 초과면 Phase B 전환. codemap SKILL size cap 절의 빈 포인터를 자동 집행·스텁 규약으로 교체(live+미러+임베드 3표면). 근거는 설치처 dblogscope_claude 실측 정리(FAIL 14 -> 0, 대표 조회 경로 41,912 -> 7,167 B = -83%, dangling 0). 검증 12/12 — 3런타임 x 4케이스(초과 감지·같은 세션 dedupe·Phase A _index 20KB 무오탐·_index 35KB 감지), PSParser 0, bash -n OK, live==embed byte 대조. **사후수정#1(버전 불변)**: Phase B(trim-router) 저장소에서 **SessionStart codemap 주입이 조용히 꺼져 있었다** — `session-start` 훅이 `_index.md`만 보는데 Phase B에서 그 파일은 라우팅 스텁이라 심볼 수가 0으로 세어져 auto 판정(임계 60)에 미달했다. v2.47이 Session Protocol step7만 "`_root.md` 우선"으로 고쳐 두고 훅은 그대로였다. 즉 **대형 저장소일수록 조망 주입이 사라지는** 역전이 있었다. 수정(4표면 = live `.ps1`/`.sh` + setup 임베드 2): auto 판정에 "`_root.md` 존재 = 이미 30KB 넘겨 전환한 대형" 단락 추가 + 주입 대상도 `_root.md` 우선. `.codex` 훅은 codemap을 읽지 않아 대상 아님. 검증: 양 런타임에서 `_root.md` 본문(`# ROUTE`) 주입 확인 + `inject skipped` 미발생, PSParser 0, `bash -n` OK, live==embed 5/5. 보고서: docs/CHANGELOG_v2.49.md.
+#         이전: v2.48. v2.47 기반 + ctxdb 키워드 회수 복구 + 계층 성장 규약(스킬 21 불변) — 설치처 실측에서 "프롬프트 키워드로 과거를 부른다"가 사실상 죽어 있었다: 한글 2음절 키워드가 길이 하한 3에 전량 탈락(관측 레포 INDEX 키워드 38%), L1이 자라 포인터가 읽기범위 밖으로 밀리면 무주입인데 진단이 `{}` 하나뿐, 매칭 성공이 폴백을 끄고(가장 관련 있는 프롬프트에서 실패), 이월한 L3는 회수 정규식(`L2/`만)에 안 걸려 영구 회수불가 — 즉 규정대로 이월할수록 장기기억이 사라졌다. 훅 양 런타임 수정: CJK 2자/라틴 3자 하한 분리 + 조사 스트립(원형+어간 양쪽 후보) + 전 행 점수화 매칭(첫 히트 즉시반환 폐기) + `L[234]/` 회수 + L3/L4 `## ` 블록 단위 추출(파일 통째 금지) + L1 포인터 탐색범위와 주입범위 분리 + 폴백 상시 적용 + 무주입 사유 `.ctxdb/.state/{claude|codex}-last-decision` 기록(`{}` 출력계약 유지). 규약: INDEX `L2/L3 경로` 컬럼(포인터를 본문 길이와 분리) + `.ctxdb/keywords.md` 의미매칭 층 신설(agent 전용 — hook 차단·비Windows 폴백, codemap keywords 패턴 이식) + context-saver STEP5 계층 승격(L2 150줄→L3, L3 400줄→L4, L1 60줄/키워드 30개 초과 시 도메인 분할 제안, 이월 시 INDEX·L1 포인터 갱신 의무) + checkpoint 절차 context-saver 누락 보정 + Session Protocol ON NEW TOPIC 폴백. 회귀셋 `tests/ctxdb-recall` 21케이스(toolkit 개발 자산, 배포본 미포함): Claude 20/20(+Codex 전용 1 SKIP)·Codex 21/21, mutation 6/6 검출. 사후수정#1(버전 불변): 영문 어간+한글 조사(React를/Flutter로/Docker에서) 조사 스트립 실패 수정(훅 4표면) + .gitignore `.ctxdb/L4/` 누락 보정. 사후수정#2(버전 불변): handoff 절차에 codemap 갱신 + context-saver 호출 누락 보정(checkpoint D-8과 동형 — 인수 agent는 새 세션이라 영향이 더 크다). Codex exec 교차 리뷰 review-01 PASS_WITH_FIXES 84%(H 0) findings 7건 전건 반영 — mixed L2/L3 아카이브 절단·조사 오분해(전문가→전문)·무주입 진단 불일치·clean clone 러너 실패가 실버그였다. 보고서: docs/CHANGELOG_v2.48.md.
 #         이전: v2.47. v2.46 기반 + codemap 초기 부트스트랩 절차 신설(스킬 21 불변) — 설치가 codemap 템플릿만 만들고 기존 코드베이스를 스캔하지 않아, 이미 코드가 쌓인 프로젝트는 백필 없이 방치되던 공백을 메움(실관측: 설치 후 수 주간 1개 도메인만 등록). codemap SKILL에 "## 초기 부트스트랩" 섹션 추가 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START에 1회 제안, 거절 시 재제안 금지) + 스캔범위/등록기준(public 진입점만) + 규모 분기(소스<40 인라인 / >=40 code-delegate 배치 위임, 서브는 _staging에 직접 Write하고 4줄 요약만 반환) + 병합 규율(기존 MAP/HOT/수기 섹션 보존) + 크기 판정(30KB 초과 즉시 Phase B) + 검증 게이트(size cap 전수 + 무작위 심볼 path:line 실측 전건 일치). 부수: Phase B 전환 시 _index.md를 삭제하지 않고 라우팅 스텁으로 남기는 규약 명문화 + Session Protocol step7을 "_root.md 우선, 없으면 _index.md"로 수정(경로 사멸 차단, live+tmpl 4표면). 근거: TeamPitch_2.0 실증 백필(115파일 -> 283 심볼, trim-router 전환, 서브 3배치 위임). 보고서: docs/CHANGELOG_v2.47.md.
 #         이전: v2.46. v2.45 기반 + design 스킬 시각 품질 재설계(스킬 21 불변) — 외부 사양서를 pawpad lean 단일 SKILL.md 구조로 흡수. 최상위 3원칙(Consistency First: 모양·크기·간격은 스케일 토큰에서만 파생 / Intentional Direction: 코드 전 방향 명시+사유 / Anti-slop: 제네릭·불일치 차단) + 2-pass 워크플로우(계획→자기비평→구현→재비평) + 일관성 시스템 5축(간격/크기/모양/정렬/상태, Token-first raw 값 금지) + anti-slop 체크(불일치=AI 티 최우선 정규화, 과용 폰트 회피는 신규 선택 한정, 경계 기본값 3종, 금지 레이아웃/이모지 아이콘/그라디언트 남발) + 정량 assertion(spacing 임의값 0·radius 고유값<=4·컨트롤 높이<=3) + 신규 프로젝트 토큰 부트스트랩 + 선택지 체크박스·3옵션 상한 + 파이프라인 관계 4자 확장(brainstorming/mockup 연결, 외부 문서 게이트 진입 명시). 근거: "AI 티는 화려함이 아니라 불일치" — 적용 전/후 비교 검증(구현 전 사용자 확인) 수행. 보고서: docs/CHANGELOG_v2.46.md.
 #         이전: v2.45. v2.44 기반 + brainstorming 스킬 신규(20→21, prd 번들) — 발산(방향 2-3 대안+추천 1개, 초과 시 상위 3 shortlist) + 누락 스윕(인접기능·저니 워크스루 + 비해피패스 8축 체크리스트) + MoSCoW 스코프 게이트(Won't 명시 의무)를 단일 스킬로 통합. 진입 판정(방향 3요소: 무엇을/누구에게/왜)으로 막연한 아이디어는 발산부터, 구체화된 기획문서는 스윕 직행(+사용자 오버라이드). 파이프라인 brainstorming→clarity→grill-me→to-prd→mockup — clarity 이전 발산 단계 공백 해소, 구현 후반 기능 추가/삭제 churn(누락형)을 기획 단계에서 차단(사용자 실관측 pain). Idea→PRD Routing 판정 4표면(live+tmpl CLAUDE/AGENTS) 동기, 자동제안 dangling 이름 실체화. 보고서: docs/CHANGELOG_v2.45.md.
@@ -61,7 +62,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.48"
+$ver = "2.49"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -1525,7 +1526,10 @@ function Update-Gitignore {
 .ctxdb/.state/
 "@
         try {
-            Set-Content -Path $gitignorePath -Value $content -Encoding UTF8 -ErrorAction Stop
+            # BOM 금지: git이 첫 줄을 주석으로 못 읽고 "not a valid attribute name"으로 뱉는다.
+            # PS 5.1의 Set-Content -Encoding UTF8은 BOM을 붙이므로 직접 쓴다.
+            $abs = Join-Path (Get-Location) $gitignorePath
+            [System.IO.File]::WriteAllText($abs, ($content + "`r`n"), (New-Object System.Text.UTF8Encoding $false))
             Write-InstallLog "  CREATED .gitignore" Green
             $script:created++
         } catch {
@@ -2253,6 +2257,9 @@ function Test-CodemapInject {
     }
     if ($mode -eq "off") { return $false }
     if ($mode -eq "on") { return $true }
+    # Phase B(trim-router)면 이미 30KB를 넘겨 전환한 대형 저장소다. _index.md는 스텁이라
+    # 심볼 수를 세면 0이 나와 주입이 조용히 꺼진다(v2.49 사후수정).
+    if (Test-Path ".claude/codemap/_root.md") { return $true }
     $cm = ".claude/codemap/_index.md"
     if (-not (Test-Path $cm)) { return $false }
     $inIndex = $false; $count = 0
@@ -2266,7 +2273,8 @@ function Test-CodemapInject {
 
 $out = @()
 if (Test-CodemapInject) {
-    $cm = ".claude/codemap/_index.md"
+    # Phase B면 _root.md(route+MAP+HOT)가 조망이다. 없으면 flat _index.md.
+    $cm = if (Test-Path ".claude/codemap/_root.md") { ".claude/codemap/_root.md" } else { ".claude/codemap/_index.md" }
     if (Test-Path $cm) {
         $out += "=== codemap (symbol registry / HOT) ==="
         $out += (Get-Content $cm -TotalCount 40 -Encoding UTF8)
@@ -2513,6 +2521,18 @@ if (Test-Path $l2dir) {
     }
 }
 
+# codemap size cap 점검 (_root.md 2KB / _index.md 30KB(Phase A flat) / 그 외 4KB)
+# Phase B leaf는 lookup 때 통째로 읽히므로 초과분이 매 조회에 곱해진다. _index.md에 4KB를 걸면 Phase A가 전부 오탐.
+$cmOver = @()
+$cmDir = ".claude/codemap"
+if (Test-Path $cmDir) {
+    $cmRoot = (Resolve-Path $cmDir).Path
+    Get-ChildItem -Path $cmDir -Filter *.md -File -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+        $rel = $_.FullName.Substring($cmRoot.Length + 1).Replace("\", "/")
+        $cap = if ($rel -eq "_root.md") { 2048 } elseif ($rel -eq "_index.md") { 30720 } else { 4096 }
+        if ($_.Length -gt $cap) { $cmOver += ("{0}({1}B/{2})" -f $rel, $_.Length, $cap) }
+    }
+}
 $needsCheckpoint = ($turn % 8 -eq 0) -and -not ($lastCompactTurn -gt ($turn - 8))
 $needsSplit = ($oversized.Count -gt 0)
 if ($needsSplit) {
@@ -2523,12 +2543,23 @@ if ($needsSplit) {
     if ($lastSig -eq $sig) { $needsSplit = $false } else { Set-Content -Path $warnPath -Value $sig -Encoding UTF8 }
 }
 
+$needsCmap = ($cmOver.Count -gt 0)
+if ($needsCmap) {
+    $cmSig = $sessionId + "|" + ($cmOver -join "|")
+    $cmWarnPath = Join-Path $stateDir "claude-codemap-warned"
+    $cmLast = ""
+    if (Test-Path $cmWarnPath) { $cmLast = (Get-Content -Path $cmWarnPath -Raw -Encoding UTF8).Trim() }
+    if ($cmLast -eq $cmSig) { $needsCmap = $false } else { Set-Content -Path $cmWarnPath -Value $cmSig -Encoding UTF8 }
+}
 $parts = @()
 if ($needsCheckpoint) {
     $parts += "[checkpoint $turn turns] Update .claude/codemap/_index.md for new/changed symbols + refresh lane/_wip.md (on done: move to wip/done + _meta.md + git commit) + run context-saver to write .ctxdb/L2 and update INDEX.md AGENT SYNC."
 }
 if ($needsSplit) {
     $parts += ("[L2 split needed] " + ($oversized -join ", ") + " : exceeds 150 lines / 2000 tokens -> keyword load still pulls the whole file, defeating token savings. Split old entries into .ctxdb/L3/{name}-YYYY-MM.md or split by domain, then update INDEX/L1 pointers.")
+}
+if ($needsCmap) {
+    $parts += ("[codemap split needed] " + ($cmOver -join ", ") + " : exceeds codemap size cap (_root.md 2KB / _index.md 30KB / others 4KB). Phase B leaves are read whole on lookup, so an oversized leaf is paid on every lookup. Split into .claude/codemap/features/{id}/{subtopic}.md and keep the original file as a routing stub so existing pointers survive; if _index.md is over, switch to Phase B (trim-router). Rule: .claude/skills/codemap/SKILL.md size cap.")
 }
 if ($script:laneClose) {
     $parts += "[lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + git commit). If not done, ignore this and continue."
@@ -2988,6 +3019,9 @@ printf '%s\n' "$sid" > ".ctxdb/.state/claude-loaded"
 : > ".ctxdb/.state/claude-retrieval-seen"
 
 cm=".claude/codemap/_index.md"
+cmr=".claude/codemap/_root.md"
+# Phase B(trim-router)면 _root.md가 조망이고 _index.md는 스텁이다(심볼 0 -> 주입이 조용히 꺼진다, v2.49 사후수정).
+[ -f "$cmr" ] && cm="$cmr"
 idx=".ctxdb/INDEX.md"
 # codemap inject 토글 (pawpad-config.json: auto/on/off, auto=INDEX 심볼>=threshold)
 mode="auto"; threshold=60
@@ -3001,6 +3035,7 @@ fi
 inject=0
 if [ "$mode" = "on" ]; then inject=1
 elif [ "$mode" = "off" ]; then inject=0
+elif [ -f "$cmr" ]; then inject=1
 elif [ -f "$cm" ]; then
   count="$(awk '/^# INDEX/{f=1;next} /^# /{f=0} f && NF && $0 !~ /^[[:space:]]*<!--/{c++} END{print c+0}' "$cm")"
   [ "$count" -ge "$threshold" ] && inject=1
@@ -3213,6 +3248,16 @@ oversized="$(find ".ctxdb/L2" -name '*.md' -type f 2>/dev/null | while IFS= read
   fi
 done)"
 
+# codemap size cap (_root.md 2KB / _index.md 30KB(Phase A flat) / 그 외 4KB). Phase B leaf는 통째로 읽힌다.
+cmOver="$(find ".claude/codemap" -name '*.md' -type f 2>/dev/null | while IFS= read -r f; do
+  rel="${f#.claude/codemap/}"
+  cap=4096
+  [ "$rel" = "_root.md" ] && cap=2048
+  [ "$rel" = "_index.md" ] && cap=30720
+  b="$(wc -c < "$f" 2>/dev/null | tr -d ' ')"
+  [ -z "$b" ] && b=0
+  if [ "$b" -gt "$cap" ]; then printf ' %s(%sB/%s)' "$rel" "$b" "$cap"; fi
+done)"
 needCheckpoint=0
 if [ $((turn % 8)) -eq 0 ] && [ "$lastCompact" -le $((turn - 8)) ]; then needCheckpoint=1; fi
 
@@ -3225,12 +3270,23 @@ if [ -n "$oversized" ]; then
   if [ "$last" = "$sig" ]; then needSplit=0; else printf '%s' "$sig" > "$warn"; needSplit=1; fi
 fi
 
+needCmap=0
+if [ -n "$cmOver" ]; then
+  cmsig="$sid|$cmOver"
+  cmwarn="$stateDir/claude-codemap-warned"
+  cmlast=""
+  [ -f "$cmwarn" ] && cmlast="$(cat "$cmwarn" 2>/dev/null)"
+  if [ "$cmlast" = "$cmsig" ]; then needCmap=0; else printf '%s' "$cmsig" > "$cmwarn"; needCmap=1; fi
+fi
 parts=""
 if [ "$needCheckpoint" -eq 1 ]; then
   parts="[checkpoint $turn turns] Update .claude/codemap/_index.md for new/changed symbols + refresh lane/_wip.md (on done: move to wip/done + _meta.md + git commit) + run context-saver to write .ctxdb/L2 and update INDEX.md AGENT SYNC."
 fi
 if [ "$needSplit" -eq 1 ]; then
   parts="$parts [L2 split needed]$oversized : exceeds 150 lines / 2000 tokens -> keyword load still pulls the whole file, defeating token savings. Split old entries into .ctxdb/L3/{name}-YYYY-MM.md or split by domain, then update INDEX/L1 pointers."
+fi
+if [ "$needCmap" -eq 1 ]; then
+  parts="$parts [codemap split needed]$cmOver : exceeds codemap size cap (_root.md 2KB / _index.md 30KB / others 4KB). Phase B leaves are read whole on lookup, so an oversized leaf is paid on every lookup. Split into .claude/codemap/features/{id}/{subtopic}.md and keep the original file as a routing stub so existing pointers survive; if _index.md is over, switch to Phase B (trim-router). Rule: .claude/skills/codemap/SKILL.md size cap."
 fi
 if [ "${laneClose:-0}" -eq 1 ]; then
   parts="$parts [lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + git commit). If not done, ignore this and continue."
@@ -4233,6 +4289,16 @@ try {
         }
     }
 
+    $cmOver = New-Object System.Collections.Generic.List[string]
+    $cmDir = Join-Path $root ".claude/codemap"
+    if (Test-Path $cmDir) {
+        $cmRoot = (Resolve-Path $cmDir).Path
+        Get-ChildItem -Path $cmDir -Filter "*.md" -File -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+            $rel = $_.FullName.Substring($cmRoot.Length + 1).Replace("\", "/")
+            $cap = if ($rel -eq "_root.md") { 2048 } elseif ($rel -eq "_index.md") { 30720 } else { 4096 }
+            if ($_.Length -gt $cap) { $cmOver.Add(("{0}({1}B/{2})" -f $rel, $_.Length, $cap)) }
+        }
+    }
     # PreCompact 중복 가드: 최근 8턴 내 compaction 저장 유도 있었으면 checkpoint 생략
     $lastCompactTurn = -1
     $lcPath = Join-Path $stateDir "codex-last-compact"
@@ -4257,13 +4323,24 @@ try {
         }
     }
 
-    if ($needsCheckpoint -or $needsSplit) {
+    $needsCmap = ($cmOver.Count -gt 0)
+    if ($needsCmap) {
+        $cmSig = $sessionId + "|" + ($cmOver -join "|")
+        $cmWarnPath = Join-Path $stateDir "codex-codemap-warned"
+        $cmLast = ""
+        if (Test-Path $cmWarnPath) { $cmLast = (Get-Content -Path $cmWarnPath -Encoding UTF8 -Raw).Trim() }
+        if ($cmLast -eq $cmSig) { $needsCmap = $false } else { Set-Content -Path $cmWarnPath -Value $cmSig -Encoding UTF8 }
+    }
+    if ($needsCheckpoint -or $needsSplit -or $needsCmap) {
         $reasonParts = New-Object System.Collections.Generic.List[string]
         if ($needsCheckpoint) {
             $reasonParts.Add("Codex checkpoint: $turn turns reached. Run context-saver: append current session summary to .ctxdb/L2, update .ctxdb/INDEX.md Codex row, refresh lane/_wip.md, and update codemap for new symbols.")
         }
         if ($needsSplit) {
             $reasonParts.Add("L2 split needed: " + ($oversized -join ", ") + " exceeds 150 lines or 2000 tokens. Split old entries or route via L1/L3 before continuing.")
+        }
+        if ($needsCmap) {
+            $reasonParts.Add("codemap split needed: " + ($cmOver -join ", ") + " exceeds codemap size cap (_root.md 2KB / _index.md 30KB / others 4KB). Phase B leaves are read whole on lookup. Split into .claude/codemap/features/{id}/{subtopic}.md and keep the original as a routing stub; if _index.md is over, switch to Phase B. Rule: codemap SKILL size cap.")
         }
         Write-Json @{
             decision = "block"
@@ -4938,7 +5015,9 @@ fallback rg: rg -n "kw|Symbol" lib -g "!*.g.dart" -g "!*.freezed.dart" -g "!lib/
 
 ### size cap (완료 게이트)
 root 2KB / keywords·feature 4KB hard cap. 초과 시 split 후 완료.
-검사: .claude/codemap 하위 *.md 각 파일 UTF-8 byte 수가 cap(_root.md=2048, 그외=4096)을 넘으면 FAIL. PowerShell 스크립트는 spec(codemap-8kb-router.md Acceptance) / lane 참조.
+검사: .claude/codemap 하위 *.md 각 파일 byte 수 cap — _root.md=2048 / _index.md=30720(Phase A flat 상한, 초과 시 Phase B 전환) / 그외=4096. 초과 시 FAIL.
+자동 집행(v2.49): stop-check 훅이 매 Stop마다 검사해 [codemap split needed] 차단 블록을 낸다(세션당 시그니처 1회 dedupe, Claude ps1/sh + Codex 3표면). 수동 스크립트 불요.
+분할 시 상위 파일은 삭제하지 말고 라우팅 스텁으로 남긴다 — 다른 leaf·문서가 가리키던 포인터가 그대로 산다.
 
 ## 초기 부트스트랩 (기존 코드베이스에 처음 도입할 때)
 설치는 codemap 템플릿만 만든다. 이미 코드가 쌓인 프로젝트는 **1회 백필**을 해야 lookup이 동작한다. 백필 없이 두면 miss -> 소스 full-scan 경로가 열린 채 운영된다(실관측: 설치 후 수 주간 1개 도메인만 등록된 상태로 방치).
@@ -5304,9 +5383,16 @@ description: Cross-agent state transfer. Use when handing work to another agent 
    - handoff: .claude/pawpad/handoffs/{snapshot 경로}
    - owner: 현재 그대로 유지 (송신자 = 현재 owner)
    - updated: YYYY-MM-DD HH:MM
-6. _meta.md RECENT에 1줄 추가:
+6. codemap 갱신 (.claude/codemap/_index.md):
+   - 이번 작업에서 만들거나 옮긴 심볼 반영 + HOT 최신화 (해당 없으면 "codemap skip" 선언)
+   - 인수 agent는 새 세션이라, codemap이 구본이면 심볼을 못 찾고 소스를 통째로 뒤진다.
+7. context-saver 실행 (.ctxdb/L2 저장 + INDEX.md AGENT SYNC 갱신):
+   - snapshot은 이 작업 한 건의 인계장이고, ctxdb는 인수 agent가 **키워드로 과거를 부르는 경로**다. 둘은 대체재가 아니다.
+   - "snapshot에 다 썼으니 생략"은 안 된다 — 인수 agent의 ON START는 snapshot을 읽기 전에 ctxdb부터 탄다.
+   - 규칙: .claude/skills/context-saver/SKILL.md (승격 임계 초과 시 이월 + 포인터 갱신까지)
+8. _meta.md RECENT에 1줄 추가:
    "YYYY-MM-DD: HANDOFF {feature} {from}->{to}. {reason}"
-7. (선택) git commit
+9. (선택) git commit
 
 ## 실행 절차 - 수신 측 (인수 agent, ON START 후)
 1. _wip.md Active Lanes에서 state=HANDOFF_TO_(자기) 발견
@@ -7819,9 +7905,10 @@ if ($failed -eq 0) {
         Write-Host "  - design 스킬 시각 품질 재설계 (v2.46): 최상위 3원칙(일관성 우선·의도된 방향·anti-slop) + 일관성 5축 스케일(토큰 파생 강제, 임의값 금지) + 정량 체크(radius<=4·컨트롤 높이<=3·spacing 임의값 0) + 2-pass 워크플로우 — 'AI 티=불일치' 차단 (스킬 21 불변)" -ForegroundColor Cyan
         Write-Host "  - codemap 초기 부트스트랩 (v2.47): 기존 코드베이스 도입 시 1회 백필 절차 규격화 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START 1회 제안) + 규모 분기(소스>=40이면 code-delegate 배치 위임, 서브는 staging에 직접 쓰고 4줄 요약만 반환) + 30KB 초과 즉시 trim-router + 검증 게이트(size cap 전수 + 심볼 path:line 실측 대조). Phase B 전환 시 _index.md=라우팅 스텁 규약, step7 _root.md 우선 (스킬 21 불변)" -ForegroundColor Cyan
         Write-Host "  - 설치 배너 로고 교체 (v2.47 Addendum): 손으로 그린 블록문자 발바닥 -> 실제 브랜드 마크(docs/icon.png) 기반 ASCII 변환 — alpha coverage 샘플링(luma cut 0.35)으로 패드의 >_ 프롬프트를 구멍으로 보존, cos(theta) 가로 압축 16프레임 사전 렌더. 설치 시 ESC[24A 커서 되감기로 1회전(2.88s) 후 0도 정착, 비ANSI/-ShowLog/리다이렉트/저창높이는 정지 1장 (버전 불변, 기능 변화 없음)" -ForegroundColor Cyan
-        Write-Host "  - ctxdb 키워드 회수 복구 (v2.48): 한글 2음절 키워드 인식(길이 하한 CJK 2/라틴 3 분리) + 조사 스트립 + 점수화 매칭 + L3/L4 블록 단위 회수 + 폴백 상시 + 무주입 사유 기록 — 프롬프트 키워드로 과거 맥락을 부르는 경로 복구 (회귀셋 18케이스, Codex 교차리뷰 반영)" -ForegroundColor Cyan
+        Write-Host "  - ctxdb 키워드 회수 복구 (v2.48): 한글 2음절 키워드 인식(길이 하한 CJK 2/라틴 3 분리) + 조사 스트립 + 점수화 매칭 + L3/L4 블록 단위 회수 + 폴백 상시 + 무주입 사유 기록 — 프롬프트 키워드로 과거 맥락을 부르는 경로 복구 (회귀셋 21케이스, Codex 교차리뷰 + 사후수정#1 반영)" -ForegroundColor Cyan
         Write-Host "  - ctxdb 계층 성장 규약 (v2.48): L2 150줄→L3, L3 400줄→L4 승격 + 이월 시 INDEX·L1 포인터 갱신 의무 + INDEX L2/L3 경로 컬럼 + .ctxdb/keywords.md 의미매칭 층(hook 차단·비Windows 폴백)" -ForegroundColor Cyan
-        Write-Host "  - 상세: docs/CHANGELOG_v2.48.md" -ForegroundColor Cyan
+        Write-Host "  - codemap size cap 자동 감시 (v2.49): stop-check 훅이 매 Stop마다 .claude/codemap 파일 크기를 실측해 상한 초과 시 [codemap split needed] 차단 블록 — cap _root 2KB / _index 30KB(Phase A) / leaf 4KB, 세션별 dedupe. 규칙만 있고 집행이 없어 leaf가 단조 증가하던 경로 차단(3런타임 12/12 검증)" -ForegroundColor Cyan
+        Write-Host "  - 상세: docs/CHANGELOG_v2.49.md" -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 21 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review" -ForegroundColor Cyan

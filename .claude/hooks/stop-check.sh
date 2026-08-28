@@ -181,6 +181,16 @@ oversized="$(find ".ctxdb/L2" -name '*.md' -type f 2>/dev/null | while IFS= read
   fi
 done)"
 
+# codemap size cap (_root.md 2KB / _index.md 30KB(Phase A flat) / 그 외 4KB). Phase B leaf는 통째로 읽힌다.
+cmOver="$(find ".claude/codemap" -name '*.md' -type f 2>/dev/null | while IFS= read -r f; do
+  rel="${f#.claude/codemap/}"
+  cap=4096
+  [ "$rel" = "_root.md" ] && cap=2048
+  [ "$rel" = "_index.md" ] && cap=30720
+  b="$(wc -c < "$f" 2>/dev/null | tr -d ' ')"
+  [ -z "$b" ] && b=0
+  if [ "$b" -gt "$cap" ]; then printf ' %s(%sB/%s)' "$rel" "$b" "$cap"; fi
+done)"
 needCheckpoint=0
 if [ $((turn % 8)) -eq 0 ] && [ "$lastCompact" -le $((turn - 8)) ]; then needCheckpoint=1; fi
 
@@ -193,12 +203,23 @@ if [ -n "$oversized" ]; then
   if [ "$last" = "$sig" ]; then needSplit=0; else printf '%s' "$sig" > "$warn"; needSplit=1; fi
 fi
 
+needCmap=0
+if [ -n "$cmOver" ]; then
+  cmsig="$sid|$cmOver"
+  cmwarn="$stateDir/claude-codemap-warned"
+  cmlast=""
+  [ -f "$cmwarn" ] && cmlast="$(cat "$cmwarn" 2>/dev/null)"
+  if [ "$cmlast" = "$cmsig" ]; then needCmap=0; else printf '%s' "$cmsig" > "$cmwarn"; needCmap=1; fi
+fi
 parts=""
 if [ "$needCheckpoint" -eq 1 ]; then
   parts="[checkpoint $turn turns] Update .claude/codemap/_index.md for new/changed symbols + refresh lane/_wip.md (on done: move to wip/done + _meta.md + git commit) + run context-saver to write .ctxdb/L2 and update INDEX.md AGENT SYNC."
 fi
 if [ "$needSplit" -eq 1 ]; then
   parts="$parts [L2 split needed]$oversized : exceeds 150 lines / 2000 tokens -> keyword load still pulls the whole file, defeating token savings. Split old entries into .ctxdb/L3/{name}-YYYY-MM.md or split by domain, then update INDEX/L1 pointers."
+fi
+if [ "$needCmap" -eq 1 ]; then
+  parts="$parts [codemap split needed]$cmOver : exceeds codemap size cap (_root.md 2KB / _index.md 30KB / others 4KB). Phase B leaves are read whole on lookup, so an oversized leaf is paid on every lookup. Split into .claude/codemap/features/{id}/{subtopic}.md and keep the original file as a routing stub so existing pointers survive; if _index.md is over, switch to Phase B (trim-router). Rule: .claude/skills/codemap/SKILL.md size cap."
 fi
 if [ "${laneClose:-0}" -eq 1 ]; then
   parts="$parts [lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + git commit). If not done, ignore this and continue."

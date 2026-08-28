@@ -12,6 +12,9 @@ printf '%s\n' "$sid" > ".ctxdb/.state/claude-loaded"
 : > ".ctxdb/.state/claude-retrieval-seen"
 
 cm=".claude/codemap/_index.md"
+cmr=".claude/codemap/_root.md"
+# Phase B(trim-router)면 _root.md가 조망이고 _index.md는 스텁이다(심볼 0 -> 주입이 조용히 꺼진다, v2.49 사후수정).
+[ -f "$cmr" ] && cm="$cmr"
 idx=".ctxdb/INDEX.md"
 # codemap inject 토글 (pawpad-config.json: auto/on/off, auto=INDEX 심볼>=threshold)
 mode="auto"; threshold=60
@@ -25,6 +28,7 @@ fi
 inject=0
 if [ "$mode" = "on" ]; then inject=1
 elif [ "$mode" = "off" ]; then inject=0
+elif [ -f "$cmr" ]; then inject=1
 elif [ -f "$cm" ]; then
   count="$(awk '/^# INDEX/{f=1;next} /^# /{f=0} f && NF && $0 !~ /^[[:space:]]*<!--/{c++} END{print c+0}' "$cm")"
   [ "$count" -ge "$threshold" ] && inject=1

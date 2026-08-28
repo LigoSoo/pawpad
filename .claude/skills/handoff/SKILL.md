@@ -45,9 +45,16 @@ description: Cross-agent state transfer. Use when handing work to another agent 
    - handoff: .claude/pawpad/handoffs/{snapshot 경로}
    - owner: 현재 그대로 유지 (송신자 = 현재 owner)
    - updated: YYYY-MM-DD HH:MM
-6. _meta.md RECENT에 1줄 추가:
+6. codemap 갱신 (.claude/codemap/_index.md):
+   - 이번 작업에서 만들거나 옮긴 심볼 반영 + HOT 최신화 (해당 없으면 "codemap skip" 선언)
+   - 인수 agent는 새 세션이라, codemap이 구본이면 심볼을 못 찾고 소스를 통째로 뒤진다.
+7. context-saver 실행 (.ctxdb/L2 저장 + INDEX.md AGENT SYNC 갱신):
+   - snapshot은 이 작업 한 건의 인계장이고, ctxdb는 인수 agent가 **키워드로 과거를 부르는 경로**다. 둘은 대체재가 아니다.
+   - "snapshot에 다 썼으니 생략"은 안 된다 — 인수 agent의 ON START는 snapshot을 읽기 전에 ctxdb부터 탄다.
+   - 규칙: .claude/skills/context-saver/SKILL.md (승격 임계 초과 시 이월 + 포인터 갱신까지)
+8. _meta.md RECENT에 1줄 추가:
    "YYYY-MM-DD: HANDOFF {feature} {from}->{to}. {reason}"
-7. (선택) git commit
+9. (선택) git commit
 
 ## 실행 절차 - 수신 측 (인수 agent, ON START 후)
 1. _wip.md Active Lanes에서 state=HANDOFF_TO_(자기) 발견

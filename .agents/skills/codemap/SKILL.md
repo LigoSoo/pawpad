@@ -97,7 +97,9 @@ fallback rg: rg -n "kw|Symbol" lib -g "!*.g.dart" -g "!*.freezed.dart" -g "!lib/
 
 ### size cap (완료 게이트)
 root 2KB / keywords·feature 4KB hard cap. 초과 시 split 후 완료.
-검사: .claude/codemap 하위 *.md 각 파일 UTF-8 byte 수가 cap(_root.md=2048, 그외=4096)을 넘으면 FAIL. PowerShell 스크립트는 spec(codemap-8kb-router.md Acceptance) / lane 참조.
+검사: .claude/codemap 하위 *.md 각 파일 byte 수 cap — _root.md=2048 / _index.md=30720(Phase A flat 상한, 초과 시 Phase B 전환) / 그외=4096. 초과 시 FAIL.
+자동 집행(v2.49): stop-check 훅이 매 Stop마다 검사해 [codemap split needed] 차단 블록을 낸다(세션당 시그니처 1회 dedupe, Claude ps1/sh + Codex 3표면). 수동 스크립트 불요.
+분할 시 상위 파일은 삭제하지 말고 라우팅 스텁으로 남긴다 — 다른 leaf·문서가 가리키던 포인터가 그대로 산다.
 
 ## 초기 부트스트랩 (기존 코드베이스에 처음 도입할 때)
 설치는 codemap 템플릿만 만든다. 이미 코드가 쌓인 프로젝트는 **1회 백필**을 해야 lookup이 동작한다. 백필 없이 두면 miss -> 소스 full-scan 경로가 열린 채 운영된다(실관측: 설치 후 수 주간 1개 도메인만 등록된 상태로 방치).
