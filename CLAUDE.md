@@ -107,7 +107,7 @@ ACTIVE EVERY RESPONSE. Off: "normal mode"
 -> Full rules: .claude/skills/caveman/SKILL.md
 
 ### Active Skills 표시 (매 응답 최상단 1줄)
-형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`, `design`, `mockup lo/hi`, `review`.
+형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming r2/3`, `design`, `mockup lo/hi`, `review`.
 caveman 항상 포함. off 시 라인에 `normal mode (caveman 압축 off)`로 표기(자기설명). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.
 
 ### Retrieval 표시 (탐색 수행 응답만, Active Skills 라인 아래 1줄)

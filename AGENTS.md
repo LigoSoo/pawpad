@@ -122,7 +122,7 @@ Pattern: [대상] [동작] [이유]. [다음 단계].
 ACTIVE EVERY RESPONSE.
 
 ### Active Skills 표시 (매 응답 최상단 1줄)
-형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming`, `design`, `mockup lo/hi`, `review`.
+형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming r2/3`, `design`, `mockup lo/hi`, `review`.
 스킬 없으면 생략 가능. ON START는 📂 ctxdb 라인 아래.
 
 ### Retrieval 표시 (탐색 수행 응답만, Active Skills 라인 아래 1줄)
