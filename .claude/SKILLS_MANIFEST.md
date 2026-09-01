@@ -25,7 +25,7 @@
 | **lean-code** | `.claude/skills/lean-code/` | LLM 코딩 안티패턴 (참조, 구 karpathy). 실제 강제는 CLAUDE.md/AGENTS.md `Coding Principles` |
 | **feature-architecture** | `.claude/skills/feature-architecture/` | feature-first 구조 규율 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Architecture Principles` |
 | **clarity** | `.claude/skills/clarity/` | 요청 모호도 분석 (5차원 스코어링) + PASS 후 접근법 게이트 (2-3 대안 + 추천 1개) |
-| **design** | `.claude/skills/design/` | UI/UX 설계 게이트 (토큰+레이아웃+원칙, 반응형) |
+| **design** | `.claude/skills/design/` | UI/UX 설계 게이트 (제품 원형→토큰→3영역 레이아웃→상태 전수, references/ on-demand) |
 | **ctxdb-navigator** | `.claude/skills/ctxdb-navigator/` | 키워드 depth 컨텍스트 최소 로드 (토큰 절약) |
 | **security-check** | `.claude/skills/security-check/` | 보안 검증 게이트 (secrets/취약점/설정/PawPad 산출물, 🔴 시 BLOCK) |
 | **context-saver** | `.claude/skills/context-saver/` | 세션 작업 .ctxdb/L2 저장 + AGENT SYNC 갱신 |

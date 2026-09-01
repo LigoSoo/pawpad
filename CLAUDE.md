@@ -122,7 +122,7 @@ caveman 항상 포함. off 시 라인에 `normal mode (caveman 압축 off)`로 �
 - brainstorming 종결 후: →clarity.
 - clarity PASS 후: grill-me 신호(결정 상호의존·트레이드오프 연쇄·스택/아키텍처/스키마 비가역) 있으면 →grill-me, 없으면 →to-prd.
 - grill-me 종결 후: →to-prd.
-- UI/화면 기획 시: design(토큰/레이아웃 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
+- UI/화면 기획 시: design(원형/토큰/레이아웃/상태 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
 ### 외부 문서 구현 진입 게이트
 사용자가 외부 문서(첨부 md/spec/기획서 경로)를 참조해 구현을 요청하면 — 문서 존재 ≠ 게이트 통과:
 1. clarity 채점 **의무**: 코딩 시작 전 문서 기준 모호도 블록 1회 출력. PASS(≤임계값)면 질문 없이 바로 진행(마찰 최소), BLOCK이면 재질문 라운드. 규칙: clarity SKILL 외부 문서 모드.

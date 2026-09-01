@@ -153,7 +153,7 @@ ACTIVE EVERY RESPONSE.
 - brainstorming 종결 후: →clarity.
 - clarity PASS 후: grill-me 신호(결정 상호의존·트레이드오프 연쇄·스택/아키텍처/스키마 비가역) 있으면 →grill-me, 없으면 →to-prd.
 - grill-me 종결 후: →to-prd.
-- UI/화면 기획 시: design(토큰/레이아웃 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
+- UI/화면 기획 시: design(원형/토큰/레이아웃/상태 게이트) + mockup(PRD-tree→단일 HTML 시각화, lo/hi-fi) 추천.
 ### 외부 문서 구현 진입 게이트
 외부 문서(첨부 md/spec/기획서 경로) 참조 구현 요청 시 — 문서 존재 ≠ 게이트 통과: ① clarity 채점 **의무**(코딩 전 문서 기준 모호도 블록 1회, PASS면 무질문 진행·BLOCK이면 재질문. clarity SKILL 외부 문서 모드) ② UI/화면 포함 시 design 1회 추천 ③ 코딩 진입 시 code-delegate 1회 권장(외부 참조 문서 = written 설계 인정). phase 분해·task 저장만으로 게이트 건너뛰기 금지.
 ### 자동제안 (단계 경계)
