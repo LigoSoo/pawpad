@@ -99,7 +99,8 @@
                    "viewer-apply",
                    "ctxdb-navigator",
                    "context-saver",
-                   "security-check"
+                   "security-check",
+                   "device-qa"
                ],
     "backup":  {
                    "trigger":  "setup-script -Force",

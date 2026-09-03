@@ -134,7 +134,7 @@ agent가 흐름 중 다음 시점에 다음 스킬 또는 목업을 **1회 추�
 - PRD/PRD-tree 생성·갱신 직후 → mockup 추천(통합 4탭 검토는 /mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 로 반영).
 - brainstorming/clarity/grill-me/to-prd 종료 시 → 다음 단계 스킬 추천.
 - 매 응답 판단 X(과추천 방지). 거절 시 같은 산출물 버전엔 재제안 X → 다음 단계 경계까지 침묵.
-- 추천 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming. 나머지(resume·codemap·security-check·checkpoint·handoff·context-saver·task-done 등)는 Session Protocol/DoD/hook이 트리거 → 자동제안 제외(이중 트리거 방지).
+- 추천 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming. 나머지(resume·codemap·security-check·checkpoint·handoff·context-saver·task-done·device-qa 등)는 Session Protocol/DoD/hook이 트리거 → 자동제안 제외(이중 트리거 방지).
 - 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료(DoD) 직전 + 고위험·배포본 영향이면 → `/review` 1회 권장(강제 X, 저비용 문서형 라운드트립). 광범위·맹점우려·설치 스크립트 변경은 codex exec 자율 리뷰로 에스컬레이션.
 - 코딩 위임 제안(구현 진입 경계): SPEC_READY 또는 written 설계(외부 첨부/참조 문서 포함) 직후 코딩 진입 시 → `/code-delegate` 1회 권장(강제 X). 사용자 선택 모델의 코딩 서브에이전트로 위임해 부모 컨텍스트·토큰 절감(written 설계 없으면 제안 안 함, 이점 반감).
 ### 선택지 질문 = 체크박스

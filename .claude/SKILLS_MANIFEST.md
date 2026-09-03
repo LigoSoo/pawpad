@@ -1,6 +1,6 @@
 ﻿# Skills Manifest
 
-프로젝트에 설치된 모든 스킬 목록. (21개)
+프로젝트에 설치된 모든 스킬 목록. (22개)
 
 > **환경별 활성 방식**
 > - Claude Code: `/skill` slash 호출 + description 자동 트리거 둘 다 지원.
@@ -43,6 +43,7 @@
 | **review** | `.claude/skills/review/` | 문서형 크로스에이전트/세션 리뷰 라운드트립 (codex exec 보완·저토큰, request 직접검증 체크리스트) |
 | **code-delegate** | `.claude/skills/code-delegate/` | 코딩 단계 서브에이전트 위임 (사용자 선택 모델, spec/lane 포인터 전달, 요약 반환 — 부모 컨텍스트·토큰 절감) |
 | **viewer-apply** | `.claude/skills/viewer-apply/` | 뷰어 데이터 JSON(src/viewer/*.json)을 읽어 스팩 동기 (남은 항목 spec 생성/갱신, 삭제 항목 제거/아카이브, confirm·비파괴, mockup viewer 모드와 짝) |
+| **device-qa** | `.claude/skills/device-qa/` | 기기 QA 실행 프로토콜 (검증 채널 우선순위: 자동화 테스트→로그/시스템→앱 DB→uiautomator dump→축소 스크린샷, 스크린샷 예산제·안전 가드 — 이미지 재전송 토큰 폭증 차단) |
 
 ---
 
@@ -58,6 +59,7 @@
 /lean-code       # 원칙 확인
 /design          # UI/UX 설계 게이트 (화면 구현 직전)
 /security-check  # 보안 검증 게이트 (커밋/핸드오프/완료 직전)
+/device-qa       # 기기 QA 실행 프로토콜 (실기기/에뮬 연결 상태에서 착수 시)
 ```
 
 ### 협업/기획

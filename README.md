@@ -11,7 +11,7 @@
 # PawPad — Agentic Engineering Toolkit (v2.51 FROZEN)
 
 Claude Code ⇄ Codex 하이브리드 협업을 위한 **멀티에이전트 상태관리 + 토큰절약 하니스**.
-하나의 PowerShell 스크립트로 어떤 프로젝트에든 21개 스킬 · PawPad 상태머신 · 양 런타임 자동화 hook · 키워드 컨텍스트 DB · 7축 코드베이스 맵 · 보안 검증 게이트를 설치한다.
+하나의 PowerShell 스크립트로 어떤 프로젝트에든 22개 스킬 · PawPad 상태머신 · 양 런타임 자동화 hook · 키워드 컨텍스트 DB · 7축 코드베이스 맵 · 보안 검증 게이트를 설치한다.
 
 > **단일 통합 배포본**: `pawpad-setup.ps1` 하나가 Claude Code + Codex 양쪽 hook을 설치한다 (per-agent 변형 없음).
 > 대상 스택은 프리셋(flutter/node/python/wpf/tauri/electron/avalonia/generic) 선택 — `CLAUDE.md`/`AGENTS.md`의 `<YOUR_*>`만 채우면 어떤 스택에든 적용.
@@ -112,11 +112,11 @@ Claude Code ⇄ Codex 하이브리드 협업을 위한 **멀티에이전트 상�
 CLAUDE.md / AGENTS.md            # 에이전트 컨텍스트 (Claude / Codex). 완료 기준(DoD) 8번 = security-check 보안 게이트 포함
 pawpad-setup.ps1     # 통합 단일 설치 스크립트 (FROZEN v2.51, 번들 선택 -Preset/-Bundles + 안내 언어 -Lang, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
 .codex/
-├── config.json                  # Codex 보조 설정 (skills 21 + context/backup keys)
+├── config.json                  # Codex 보조 설정 (skills 22 + context/backup keys)
 ├── config.toml                  # project config layer note
 ├── hooks.json                   # Codex lifecycle hook router (SessionStart/UserPromptSubmit/PreCompact/Stop)
 └── hooks/{*.ps1,*.sh}           # Codex native hooks (cwd 상위탐색 self-location)
-.agents/skills/{21}/SKILL.md     # Codex repo skill mirror (.claude/skills 단일소스, DO NOT EDIT 헤더)
+.agents/skills/{22}/SKILL.md     # Codex repo skill mirror (.claude/skills 단일소스, DO NOT EDIT 헤더)
 .gitignore                       # backup / .ctxdb/.state 등 자동 등록
 docs/HOOK_TESTING.md             # hook 회귀 방지 체크리스트 (event/runtime별 출력 계약)
 .claude/
@@ -130,8 +130,8 @@ docs/HOOK_TESTING.md             # hook 회귀 방지 체크리스트 (event/run
 │   ├── stop-check.ps1           # Stop: 8턴 체크포인트 + L2 분할 품질강제
 │   └── statusline.ps1           # ctx 사용%(예: ctx 31% (62k/200k)) + .sh wrapper들
 ├── HYBRID.md                    # 협업 프로토콜 (Decision Placement Matrix · Verification Evidence)
-├── SKILLS_MANIFEST.md           # 스킬 카탈로그 (21)
-├── skills/{21}/SKILL.md         # 스킬 정의 (no-BOM, --- frontmatter)
+├── SKILLS_MANIFEST.md           # 스킬 카탈로그 (22)
+├── skills/{22}/SKILL.md         # 스킬 정의 (no-BOM, --- frontmatter)
 ├── codemap/_index.md            # 심볼 위치 레지스트리
 └── pawpad/
     ├── _wip.md                  # active lane router
@@ -154,7 +154,7 @@ docs/HOOK_TESTING.md             # hook 회귀 방지 체크리스트 (event/run
 
 ---
 
-## 스킬 21개
+## 스킬 22개
 
 ### Core — 상태/코드
 | 스킬 | 용도 |
@@ -184,6 +184,7 @@ docs/HOOK_TESTING.md             # hook 회귀 방지 체크리스트 (event/run
 | `/code-delegate` | 코딩 단계 서브에이전트 위임. 모델 선택 → spec/lane 포인터 전달 → 서브에이전트 코딩 → 요약 반환. 부모(Opus) 컨텍스트·토큰 절감 (Claude Code 주력) |
 | `/checkpoint` | 컨텍스트 50~60% 롤오버 게이트 (lane/codemap/meta 저장) |
 | `/handoff` | 다른 에이전트/세션 인수인계 (snapshot + owner 이전) |
+| `/device-qa` | **기기 QA 실행 프로토콜** (qa 번들) — 검증 채널 우선순위(자동화 테스트→logcat/dumpsys→앱 DB→uiautomator dump→**축소 스크린샷**) + 스크린샷 예산제(세션 8장, 읽기 전 32% 축소) + 안전 가드. 이미지가 이후 모든 호출에 재전송돼 사용 한도를 태우는 사고 차단 |
 
 > 스킬은 PowerShell 명령이 아니라 **instruction**. 에이전트가 SKILL.md 절차를 따라 파일을 읽고 쓴다.
 
@@ -267,14 +268,14 @@ agent 교체     → /handoff codex {feature} → (Codex) /resume 인수 (owner 
 ## 설치 검증
 
 ```powershell
-# 스킬 21개 frontmatter (no-BOM, --- 로 시작)
-(Get-ChildItem .claude\skills -Directory).Count   # 21
+# 스킬 22개 frontmatter (no-BOM, --- 로 시작)
+(Get-ChildItem .claude\skills -Directory).Count   # 22
 
 # hook 등록 확인 (5종 = hooks 4 + statusLine, forward-slash)
 $j=(Get-Content .claude\settings.json -Raw | ConvertFrom-Json); $j.hooks.PSObject.Properties.Name; if($j.statusLine){'statusLine'}
 
-# Codex skills 배열 21
-(Get-Content .codex\config.json -Raw | ConvertFrom-Json).skills.Count   # 21
+# Codex skills 배열 22
+(Get-Content .codex\config.json -Raw | ConvertFrom-Json).skills.Count   # 22
 
 # 스크립트 STATUS
 Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.51 Unified ... FROZEN

@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.51 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.51. v2.50 기반 + design 스킬 원형 기반 재설계 — 스킬 21 불변. 기존 design은 최상위 원칙이 "AI 티 = 불일치"(일관성)라 **일관되게 틀린 위계**를 통과시켰다: 토큰이 전부 스케일 파생이어도 모든 카드가 같은 크기이고 주 CTA가 보조 행동에 파묻히면 정량 체크는 전부 녹색이다. v2.51은 그 위에 **위계 정합**을 1순위로 얹는다 — 화면은 3초 안에 "지금 어떤 상태 / 다음에 뭘 하나 / 그러면 뭘 얻나"에 답하고 그 순서가 시각 위계와 일치해야 한다. 절차도 4단계→**6단계**: (1) **제품 원형 분류**(7문항 + 게임 5문항) → (2) 의미 기반 토큰(색 정의 순서 고정·다크 재정의 6항) → (3) **3영역 레이아웃**(상태/맥락/행동) → (4) 일관성 5축 → (5) **상태 전수 12종**(기존 4종에서 확장 — 부분 데이터·권한 거부·오프라인 포함) → (6) anti-slop + 원칙 8 + 정량 6 + 최악조건 10. 패키징은 `SKILL.md`(코어) + **`references/` 3파일 신규**(archetypes 16,943 B / tokens 6,937 B / checklists 9,747 B)로 쪼개 해당 원형 카드 1~2개만 on-demand read — 게임 만들 때 앱 규칙을 읽지 않는다. 원형 **16종**: 앱·도구 A1~A7(과업완료·발견중심·반복실행·지속상태·습관형성·조건탐색·**관측진단**) + 게임 G1~G9(콘텐츠중심미니멀·코지시스템·에디토리얼미니멀·상태반응·액션로비·진행루프·태스크중심·원버튼진행·고밀도라이브서비스). 게임 축은 토큰에 economy/rarity가 **추가**되고 checklists에 컴포넌트 9종 필수 상태·배지 정책·안티패턴 9종이 붙는다. 미러는 `SKILL.md`만 복사하므로 references 참조는 mockup의 `spec-viewer.html` 선례대로 `.claude/skills/design/references/` **절대 경로**로 적었다. 검증: live==embed **4/4 byte-equal** · PSParser 0 · 설치처 메인 화면 적용 목업으로 3초3질문 1/3→3/3 · 동일 강조도 주 CTA 9→1 · **신규 토큰 0건**. 보고서: docs/CHANGELOG_v2.51.md. 사후수정#1(2026-09-01, 버전 불변): 배포본 빌드 베이스가 v2.50 Addendum(brainstorming 왕복 라운드) 이전이라 임베드·첨자가 회귀 — 해당 SKILL 임베드 + CLAUDE/AGENTS 템플릿 첨자 2를 복원(design 변경분 무영향).
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.52 (Unified Claude + Codex Distribution, PowerShell)
+# STATUS: FROZEN (v2.52. v2.51 기반 + device-qa 스킬 신규(21→22, 새 qa 번들 = full 전용) — 기기 QA에서 스크린샷 루프가 5시간 사용 한도를 한 세션에 태우는 사고를 차단한다(설치처 TodayQuest 2026-09-02 실측: PNG 98장 생성·약 50장 read). 읽은 이미지는 이후 모든 도구 호출에 재전송되므로 비용이 `이미지 수 × 남은 호출 수`로 누적되고, QA는 도구 호출이 가장 많은 작업이라 이 곱이 최대가 된다. **위임(qa-delegate)은 기각** — 서브 컨텍스트도 같은 한도를 먹으므로 비용이 숨을 뿐이다. 대신 검증 채널 우선순위를 고정한다: 기기 자동화 테스트(integration_test/am instrument) → logcat/dumpsys → 앱 DB → uiautomator dump → **축소 스크린샷**(기본 32%) → 원본. 편입 전 에뮬레이터 실측(Android 16 / 1080x2400 / Flutter 앱)으로 원안 결함 6건을 수정했다: ①원안 1순위였던 `uiautomator dump`가 Flutter 홈에서 `could not get idle state` **12/12 실패**(plain 6 + --compressed 6, 애니메이션 스케일 0에서도. 네이티브 설정 앱·런처는 성공) → dump를 4순위로 내리고 **화면 1회 프로브** 후 불가면 축소 스크린샷으로 전환 ②성공한 dump도 Flutter Text가 안 올라와 앱 문자열 0건 → 기대 문자열 부재 시 판정 근거 불가 명시 ③Git Bash가 기기 경로 `/sdcard/x.xml`을 `/Files/Git/sdcard/...`로 변환해 **옛 파일을 읽어 다른 화면으로 PASS**가 나던 경로 → 기기 경로 `//` 규칙 + dump 전 옛 파일 삭제 ④에이전트 Bash 도구는 호출 간 변수·함수를 보존하지 않음 → 스니펫 자기완결 규율(원안의 `D=<serial>`·`dump()` 헬퍼는 다음 호출에서 소멸) ⑤`integration_test` 채널 누락 → 1순위로 신설 ⑥"크롭·축소" 지시에 명령이 없어 원본을 read하던 경로 → .NET 리사이즈 스니펫 제공(실측 1,476→354 토큰, 판독성 유지). 실측 단가표를 스킬 본문에 포함: grep 어서션 ~10 / dump 필터 ~250 / 축소샷 ~354 / 원본샷 ~1,476 / **dump 원문 ~8,000**(스크린샷의 5배 — 원문 투입 금지가 🔴 규칙). 미검증: 노트8(Android 9) dump 거동, 실패 원인의 Flutter 애니메이션 특정(정황). 보고서: docs/CHANGELOG_v2.52.md.)
+#         이전: v2.51. v2.50 기반 + design 스킬 원형 기반 재설계 — 스킬 21 불변. 기존 design은 최상위 원칙이 "AI 티 = 불일치"(일관성)라 **일관되게 틀린 위계**를 통과시켰다: 토큰이 전부 스케일 파생이어도 모든 카드가 같은 크기이고 주 CTA가 보조 행동에 파묻히면 정량 체크는 전부 녹색이다. v2.51은 그 위에 **위계 정합**을 1순위로 얹는다 — 화면은 3초 안에 "지금 어떤 상태 / 다음에 뭘 하나 / 그러면 뭘 얻나"에 답하고 그 순서가 시각 위계와 일치해야 한다. 절차도 4단계→**6단계**: (1) **제품 원형 분류**(7문항 + 게임 5문항) → (2) 의미 기반 토큰(색 정의 순서 고정·다크 재정의 6항) → (3) **3영역 레이아웃**(상태/맥락/행동) → (4) 일관성 5축 → (5) **상태 전수 12종**(기존 4종에서 확장 — 부분 데이터·권한 거부·오프라인 포함) → (6) anti-slop + 원칙 8 + 정량 6 + 최악조건 10. 패키징은 `SKILL.md`(코어) + **`references/` 3파일 신규**(archetypes 16,943 B / tokens 6,937 B / checklists 9,747 B)로 쪼개 해당 원형 카드 1~2개만 on-demand read — 게임 만들 때 앱 규칙을 읽지 않는다. 원형 **16종**: 앱·도구 A1~A7(과업완료·발견중심·반복실행·지속상태·습관형성·조건탐색·**관측진단**) + 게임 G1~G9(콘텐츠중심미니멀·코지시스템·에디토리얼미니멀·상태반응·액션로비·진행루프·태스크중심·원버튼진행·고밀도라이브서비스). 게임 축은 토큰에 economy/rarity가 **추가**되고 checklists에 컴포넌트 9종 필수 상태·배지 정책·안티패턴 9종이 붙는다. 미러는 `SKILL.md`만 복사하므로 references 참조는 mockup의 `spec-viewer.html` 선례대로 `.claude/skills/design/references/` **절대 경로**로 적었다. 검증: live==embed **4/4 byte-equal** · PSParser 0 · 설치처 메인 화면 적용 목업으로 3초3질문 1/3→3/3 · 동일 강조도 주 CTA 9→1 · **신규 토큰 0건**. 보고서: docs/CHANGELOG_v2.51.md. 사후수정#1(2026-09-01, 버전 불변): 배포본 빌드 베이스가 v2.50 Addendum(brainstorming 왕복 라운드) 이전이라 임베드·첨자가 회귀 — 해당 SKILL 임베드 + CLAUDE/AGENTS 템플릿 첨자 2를 복원(design 변경분 무영향).
 #         이전: v2.48. v2.47 기반 + ctxdb 키워드 회수 복구 + 계층 성장 규약(스킬 21 불변) — 설치처 실측에서 "프롬프트 키워드로 과거를 부른다"가 사실상 죽어 있었다: 한글 2음절 키워드가 길이 하한 3에 전량 탈락(관측 레포 INDEX 키워드 38%), L1이 자라 포인터가 읽기범위 밖으로 밀리면 무주입인데 진단이 `{}` 하나뿐, 매칭 성공이 폴백을 끄고(가장 관련 있는 프롬프트에서 실패), 이월한 L3는 회수 정규식(`L2/`만)에 안 걸려 영구 회수불가 — 즉 규정대로 이월할수록 장기기억이 사라졌다. 훅 양 런타임 수정: CJK 2자/라틴 3자 하한 분리 + 조사 스트립(원형+어간 양쪽 후보) + 전 행 점수화 매칭(첫 히트 즉시반환 폐기) + `L[234]/` 회수 + L3/L4 `## ` 블록 단위 추출(파일 통째 금지) + L1 포인터 탐색범위와 주입범위 분리 + 폴백 상시 적용 + 무주입 사유 `.ctxdb/.state/{claude|codex}-last-decision` 기록(`{}` 출력계약 유지). 규약: INDEX `L2/L3 경로` 컬럼(포인터를 본문 길이와 분리) + `.ctxdb/keywords.md` 의미매칭 층 신설(agent 전용 — hook 차단·비Windows 폴백, codemap keywords 패턴 이식) + context-saver STEP5 계층 승격(L2 150줄→L3, L3 400줄→L4, L1 60줄/키워드 30개 초과 시 도메인 분할 제안, 이월 시 INDEX·L1 포인터 갱신 의무) + checkpoint 절차 context-saver 누락 보정 + Session Protocol ON NEW TOPIC 폴백. 회귀셋 `tests/ctxdb-recall` 21케이스(toolkit 개발 자산, 배포본 미포함): Claude 20/20(+Codex 전용 1 SKIP)·Codex 21/21, mutation 6/6 검출. 사후수정#1(버전 불변): 영문 어간+한글 조사(React를/Flutter로/Docker에서) 조사 스트립 실패 수정(훅 4표면) + .gitignore `.ctxdb/L4/` 누락 보정. 사후수정#2(버전 불변): handoff 절차에 codemap 갱신 + context-saver 호출 누락 보정(checkpoint D-8과 동형 — 인수 agent는 새 세션이라 영향이 더 크다). Codex exec 교차 리뷰 review-01 PASS_WITH_FIXES 84%(H 0) findings 7건 전건 반영 — mixed L2/L3 아카이브 절단·조사 오분해(전문가→전문)·무주입 진단 불일치·clean clone 러너 실패가 실버그였다. 보고서: docs/CHANGELOG_v2.48.md.
 #         이전: v2.47. v2.46 기반 + codemap 초기 부트스트랩 절차 신설(스킬 21 불변) — 설치가 codemap 템플릿만 만들고 기존 코드베이스를 스캔하지 않아, 이미 코드가 쌓인 프로젝트는 백필 없이 방치되던 공백을 메움(실관측: 설치 후 수 주간 1개 도메인만 등록). codemap SKILL에 "## 초기 부트스트랩" 섹션 추가 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START에 1회 제안, 거절 시 재제안 금지) + 스캔범위/등록기준(public 진입점만) + 규모 분기(소스<40 인라인 / >=40 code-delegate 배치 위임, 서브는 _staging에 직접 Write하고 4줄 요약만 반환) + 병합 규율(기존 MAP/HOT/수기 섹션 보존) + 크기 판정(30KB 초과 즉시 Phase B) + 검증 게이트(size cap 전수 + 무작위 심볼 path:line 실측 전건 일치). 부수: Phase B 전환 시 _index.md를 삭제하지 않고 라우팅 스텁으로 남기는 규약 명문화 + Session Protocol step7을 "_root.md 우선, 없으면 _index.md"로 수정(경로 사멸 차단, live+tmpl 4표면). 근거: TeamPitch_2.0 실증 백필(115파일 -> 283 심볼, trim-router 전환, 서브 3배치 위임). 보고서: docs/CHANGELOG_v2.47.md.
 #         이전: v2.46. v2.45 기반 + design 스킬 시각 품질 재설계(스킬 21 불변) — 외부 사양서를 pawpad lean 단일 SKILL.md 구조로 흡수. 최상위 3원칙(Consistency First: 모양·크기·간격은 스케일 토큰에서만 파생 / Intentional Direction: 코드 전 방향 명시+사유 / Anti-slop: 제네릭·불일치 차단) + 2-pass 워크플로우(계획→자기비평→구현→재비평) + 일관성 시스템 5축(간격/크기/모양/정렬/상태, Token-first raw 값 금지) + anti-slop 체크(불일치=AI 티 최우선 정규화, 과용 폰트 회피는 신규 선택 한정, 경계 기본값 3종, 금지 레이아웃/이모지 아이콘/그라디언트 남발) + 정량 assertion(spacing 임의값 0·radius 고유값<=4·컨트롤 높이<=3) + 신규 프로젝트 토큰 부트스트랩 + 선택지 체크박스·3옵션 상한 + 파이프라인 관계 4자 확장(brainstorming/mockup 연결, 외부 문서 게이트 진입 명시). 근거: "AI 티는 화려함이 아니라 불일치" — 적용 전/후 비교 검증(구현 전 사용자 확인) 수행. 보고서: docs/CHANGELOG_v2.46.md.
@@ -23,14 +24,14 @@
 #         - Codex native hooks: /hooks trust 후 ctxdb/codemap 최소 로드 + checkpoint continuation.
 #         이전: v2.17 statusLine/ctxdb/codemap(FROZEN). 보고서: docs/CHANGELOG_v2.17.md.
 #         변경 시 새 버전 번호 + 변경 보고서 + Codex 리뷰 절차 따를 것.
-# Usage: .\pawpad-setup.ps1 [-Stack <flutter|node|python|wpf|tauri|electron|avalonia|generic>] [-Force | -Upgrade] [-ShowLog] [-Preset <lean|standard|full>] [-Bundles <prd,ui,delegate,review>] [-Lang <en|ko>]
+# Usage: .\pawpad-setup.ps1 [-Stack <flutter|node|python|wpf|tauri|electron|avalonia|generic>] [-Force | -Upgrade] [-ShowLog] [-Preset <lean|standard|full>] [-Bundles <prd,ui,delegate,review,qa>] [-Lang <en|ko>]
 #        -Stack/-Preset/-Lang 생략 시 대화형 프롬프트(Enter=generic/full/ko). pwsh로 Mac/Linux에서도 실행 가능.
 #
 # 한 번에 모든 것을 세팅합니다:
 # - CLAUDE.md, AGENTS.md (Context files, 하이브리드 프로토콜 반영)
 # - .claude/settings.json (Claude Code hooks: SessionStart 자동주입 + Stop decision:block)
 # - .claude/hooks/* (session-start.{ps1,sh}, stop-check.{ps1,sh}, statusline.{ps1,sh} - 크로스플랫폼 자동화/상태줄)
-# - .claude/skills/* (resume, task-done, codemap, codebase-map, caveman, lean-code, feature-architecture, brainstorming, clarity, handoff, checkpoint, grill-me, to-prd, design, mockup, review, code-delegate, viewer-apply, ctxdb-navigator, context-saver, security-check)
+# - .claude/skills/* (resume, task-done, codemap, codebase-map, caveman, lean-code, feature-architecture, brainstorming, clarity, handoff, checkpoint, grill-me, to-prd, design, mockup, review, code-delegate, viewer-apply, ctxdb-navigator, context-saver, security-check, device-qa)
 # - .agents/skills/* (Codex repo skill mirror, .claude/skills 단일 소스에서 재생성)
 # - .claude/pawpad/* (_wip router, wip/lanes, wip/done, handoffs/, specs/, decisions/)
 # - .claude/codemap/_index.md
@@ -62,7 +63,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.51"
+$ver = "2.52"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -691,7 +692,7 @@ $TR = @{
     ko = @{
         stackPrompt = "스택 선택 (Enter=generic):"; stackOpts = "  1) flutter   2) node   3) python   4) wpf   5) tauri   6) electron   7) avalonia   8) generic"
         inputNumName = "번호 또는 이름"; unknownStack = "알 수 없는 스택 '{0}' -> generic 사용"
-        bundlePrompt = "스킬 번들 선택 (Enter=full 전체 설치):"; bundleOpts = "  1) lean (Core 12)   2) standard (Core+PRD+위임+리뷰 17)   3) full (전체 20)"
+        bundlePrompt = "스킬 번들 선택 (Enter=full 전체 설치):"; bundleOpts = "  1) lean (Core 12)   2) standard (Core+PRD+위임+리뷰 18)   3) full (전체 22)"
         unknownPreset = "알 수 없는 preset '{0}' -> full 사용"; bundleLine = "번들 설치: {0} = {1} 스킬 (제거 {2}: {3})"
         coreOnly = "Core 전용"; corePlus = "Core + "
         complete = "프로젝트 초기화 완료 (PawPad v{0})"; failed = "{0} 개 항목 실패. 권한 확인 후 다시 시도하세요."
@@ -715,7 +716,7 @@ $TR = @{
     en = @{
         stackPrompt = "Select stack (Enter=generic):"; stackOpts = "  1) flutter   2) node   3) python   4) wpf   5) tauri   6) electron   7) avalonia   8) generic"
         inputNumName = "number or name"; unknownStack = "Unknown stack '{0}' -> using generic"
-        bundlePrompt = "Select skill bundles (Enter=full):"; bundleOpts = "  1) lean (Core 12)   2) standard (Core+PRD+delegate+review 17)   3) full (all 20)"
+        bundlePrompt = "Select skill bundles (Enter=full):"; bundleOpts = "  1) lean (Core 12)   2) standard (Core+PRD+delegate+review 18)   3) full (all 22)"
         unknownPreset = "Unknown preset '{0}' -> using full"; bundleLine = "Bundles: {0} = {1} skills (removed {2}: {3})"
         coreOnly = "Core only"; corePlus = "Core + "
         complete = "Project initialized (PawPad v{0})"; failed = "{0} item(s) failed. Check permissions and retry."
@@ -780,9 +781,9 @@ if ($validStacks -notcontains $Stack) {
 }
 
 # ── Bundle 선택 (선택 번들 설치, v2.39) ──────────────────────────────────────────
-# Core 12 항상 설치. Optional 번들: prd / ui / delegate / review. ui·delegate는 prd 의존(자동 포함).
-$validBundles = @('prd', 'ui', 'delegate', 'review')
-$bundlePresets = @{ lean = @(); standard = @('prd', 'delegate', 'review'); full = @('prd', 'ui', 'delegate', 'review') }
+# Core 12 항상 설치. Optional 번들: prd / ui / delegate / review / qa. ui·delegate는 prd 의존(자동 포함). qa는 독립(기기 QA 프로토콜).
+$validBundles = @('prd', 'ui', 'delegate', 'review', 'qa')
+$bundlePresets = @{ lean = @(); standard = @('prd', 'delegate', 'review'); full = @('prd', 'ui', 'delegate', 'review', 'qa') }
 $script:bundleSelected = @()
 $script:bundleMode = 'full'
 if ($Preset) {
@@ -1768,7 +1769,7 @@ agent가 흐름 중 다음 시점에 다음 스킬 또는 목업을 **1회 추�
 - PRD/PRD-tree 생성·갱신 직후 → mockup 추천(통합 4탭 검토는 /mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 로 반영).
 - brainstorming/clarity/grill-me/to-prd 종료 시 → 다음 단계 스킬 추천.
 - 매 응답 판단 X(과추천 방지). 거절 시 같은 산출물 버전엔 재제안 X → 다음 단계 경계까지 침묵.
-- 추천 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming. 나머지(resume·codemap·security-check·checkpoint·handoff·context-saver·task-done 등)는 Session Protocol/DoD/hook이 트리거 → 자동제안 제외(이중 트리거 방지).
+- 추천 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming. 나머지(resume·codemap·security-check·checkpoint·handoff·context-saver·task-done·device-qa 등)는 Session Protocol/DoD/hook이 트리거 → 자동제안 제외(이중 트리거 방지).
 - 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료(DoD) 직전 + 고위험·배포본 영향이면 → ``/review`` 1회 권장(강제 X, 저비용 문서형 라운드트립). 광범위·맹점우려·설치 스크립트 변경은 codex exec 자율 리뷰로 에스컬레이션.
 - 코딩 위임 제안(구현 진입 경계): SPEC_READY 또는 written 설계(외부 첨부/참조 문서 포함) 직후 코딩 진입 시 → ``/code-delegate`` 1회 권장(강제 X). 사용자 선택 모델의 코딩 서브에이전트로 위임해 부모 컨텍스트·토큰 절감(written 설계 없으면 제안 안 함, 이점 반감).
 ### 선택지 질문 = 체크박스
@@ -1917,7 +1918,7 @@ state 마커: HANDOFF_TO_CODEX(Claude→Codex), HANDOFF_TO_CLAUDE(Codex→Claude
 ### 외부 문서 구현 진입 게이트
 외부 문서(첨부 md/spec/기획서 경로) 참조 구현 요청 시 — 문서 존재 ≠ 게이트 통과: ① clarity 채점 **의무**(코딩 전 문서 기준 모호도 블록 1회, PASS면 무질문 진행·BLOCK이면 재질문. clarity SKILL 외부 문서 모드) ② UI/화면 포함 시 design 1회 추천 ③ 코딩 진입 시 code-delegate 1회 권장(외부 참조 문서 = written 설계 인정). phase 분해·task 저장만으로 게이트 건너뛰기 금지.
 ### 자동제안 (단계 경계)
-다음 시점에 다음 스킬 또는 목업 1회 추천(강제 X): PRD/PRD-tree 갱신 직후→mockup(통합 4탭=/mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 반영), brainstorming/clarity/grill-me/to-prd 종료 시→다음 스킬. 매 응답 판단 X. 거절 시 다음 단계 경계까지 침묵. 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming(나머지는 Checkpoint/hook 트리거 → 제외). 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료 직전 고위험·배포본 영향이면 /review 권장(강제 X); 광범위·맹점우려·설치 스크립트는 codex exec 에스컬레이션. 코딩 위임 제안(구현 진입 경계): SPEC_READY/written 설계(외부 첨부/참조 문서 포함) 직후 코딩 진입 시 /code-delegate 1회 권장(강제 X, 선택 모델 서브에이전트 위임으로 부모 컨텍스트·토큰 절감; 설계 미작성 시 제안 X).
+다음 시점에 다음 스킬 또는 목업 1회 추천(강제 X): PRD/PRD-tree 갱신 직후→mockup(통합 4탭=/mockup viewer; 뷰어 결정 저장 통지 시 /viewer-apply 반영), brainstorming/clarity/grill-me/to-prd 종료 시→다음 스킬. 매 응답 판단 X. 거절 시 다음 단계 경계까지 침묵. 대상 한정: clarity·grill-me·to-prd·design·mockup·brainstorming(나머지는 Checkpoint/hook/기기연결 트리거 → 제외, device-qa 포함). 리뷰 제안(구현완료 경계): 코드/배포본 변경 완료 직전 고위험·배포본 영향이면 /review 권장(강제 X); 광범위·맹점우려·설치 스크립트는 codex exec 에스컬레이션. 코딩 위임 제안(구현 진입 경계): SPEC_READY/written 설계(외부 첨부/참조 문서 포함) 직후 코딩 진입 시 /code-delegate 1회 권장(강제 X, 선택 모델 서브에이전트 위임으로 부모 컨텍스트·토큰 절감; 설계 미작성 시 제안 X).
 ### 선택지 질문 = 체크박스
 스킬 진행 여부 무관, 사용자 결정 필요한 선택지 N개 질문은 AskUserQuestion(체크박스)로 — 추천 1개 첫 옵션 + "(추천)" 표기 + description 근거, 선택지 밖 답은 기본 "Other" 자유 입력(선택지 생략·산문 대체 금지). 자유서술·수치는 텍스트로.
 
@@ -7592,6 +7593,161 @@ Instruction skill. agent가 JSON read 후 spec/lane 동기. 삭제 반영(spec �
 - to-prd(PRD→specs 초기 생성)와 보완: viewer-apply는 뷰어 편집분을 스팩에 반영.
 '@
 
+# -- Skills: device-qa (기기 QA 실행 프로토콜, v2.52 신규) --
+Write-FileContent ".claude\skills\device-qa\SKILL.md" -NoBom @'
+---
+name: device-qa
+description: 실기기/에뮬 QA 실행 프로토콜. 화면을 이미지로 읽지 않고 텍스트(자동화 테스트·logcat/dumpsys·앱 DB·uiautomator dump)로 검증해 토큰 폭증을 막는다. 기기를 연결해 QA를 돌릴 때, device-qa-queue 항목을 소진할 때, "실기기 테스트"/"기기 QA" 요청 시 사용. 긴 QA는 선택적으로 서브에이전트에 위임.
+---
+# Device-QA Skill — 기기 QA 실행 프로토콜
+
+## 목적
+기기 QA를 **싸게, 재현 가능하게, 사고 없이** 돌린다. 결과는 lane `Verification Evidence`에 바로 붙는 형식으로 낸다.
+
+## 왜 토큰이 타나
+- 읽은 이미지 1장은 **그 뒤의 모든 도구 호출에 다시 실려 나간다** → 비용이 `이미지 수 × 남은 호출 수`로 누적. 캐시는 단가를 낮출 뿐 이 형태를 바꾸지 않는다.
+- 화면→탭→화면 루프 50회면 이 항이 세션 비용의 거의 전부다. (2026-09-02 노트8 QA 실측: PNG 98장 생성·약 50장 read → 5시간 한도 소진)
+- 🔴 **서브에이전트 위임은 이 항을 줄이지 않는다** — 부모 컨텍스트에서 치울 뿐 같은 양이 서브 안에서 탄다. 위임은 프로토콜을 지킨 뒤의 선택지다.
+- 진짜 지렛대: **판정을 셸에서 끝내고 결과 줄만 컨텍스트에 들이는 것**.
+
+### 실측 단가 (2026-09-03, emulator 1080x2400)
+| 컨텍스트에 들이는 것 | 실측 | 추정 토큰 |
+|---|---|---|
+| `grep -c` 어서션 1건 | 1줄 | ~10 |
+| dump에서 text만 필터 | 479 B / 21줄 | ~250 |
+| 스크린샷 **32% 축소**(346x768) | 84 KB | ~354 |
+| 스크린샷 원본(→706x1568로 리사이즈됨) | 217 KB | ~1,476 |
+| 🔴 dump **원문** 투입 | 29,356 B | ~8,000 |
+
+→ 절감은 dump를 쓰는 행위가 아니라 **걸러내는 행위**에서 나온다. XML 원문을 들이면 스크린샷보다 **5배 비싸다**.
+
+## 트리거
+/device-qa [항목]  또는 기기 연결 상태에서 QA 착수 시
+- 코드 변경 후 검증: 먼저 `adb devices`. 붙어 있으면 직접 빌드·설치·QA, 없으면 `device-qa-queue.md`에 적재.
+- queue 소진 세션, 사용자 "실기기 테스트/기기 QA" 요청.
+
+## 검증 채널 우선순위 (위에서부터 시도)
+| 순위 | 채널 | 쓰는 곳 | 비용 | 신뢰도 |
+|---|---|---|---|---|
+| 1 | **기기 자동화 테스트** (`flutter test integration_test/`, `am instrument`) | 흐름·상태·계산 결과. 반복 실행이 필요한 회귀 | 매우 낮음 | 높음(결정적) |
+| 2 | `logcat --pid` / `dumpsys` + grep | 진동·알림·네트워크·광고 로드 실패 코드·예외 | 매우 낮음 | 높음 |
+| 3 | 앱 DB 직접 조회 | 지급/차감·카운터·상태 행 | 낮음 | 높음 |
+| 4 | `uiautomator dump` + grep | 화면 라벨·값·활성 여부·요소 좌표(bounds) | 매우 낮음 | **가변 — 프로브 필요** |
+| 5 | **축소 스크린샷**(기본 32%) | 위로 판정 안 되는 것 전부 | 중간 | 높음 |
+| 6 | 원본 스크린샷 | 색 정밀·1px 잘림 등 축소본으로 못 보는 것만 | 매우 높음 | 높음 |
+
+🔴 1~4로 판정 가능한 것을 5·6으로 하지 않는다. "라벨이 맞는지"는 4번, "그 라벨이 잘렸는지"는 5번, "색이 맞는지"는 6번.
+
+### 4번(dump)은 무조건 되는 채널이 아니다 — 첫 화면에서 프로브 1회
+```sh
+# 대상 화면에서 3회까지. 3회 다 실패하면 이 앱에서 dump는 포기하고 5번으로 간다.
+for i in 1 2 3; do adb -s <serial> shell uiautomator dump //sdcard/ui.xml 2>&1 | tail -1; sleep 3; done
+```
+- 실측(2026-09-03, Flutter 앱 홈): `ERROR: could not get idle state.` **12/12 실패**(plain 6 + `--compressed` 6, 애니메이션 스케일 0에서도). 같은 기기의 네이티브 설정 앱·런처는 **성공**.
+- 원인 계열: 화면에 **상시 애니메이션**이 있으면 UiAutomator가 idle을 못 잡는다(Flutter/Compose/게임 UI에서 흔하다). `--compressed`도 해결 못 한다.
+- 성공해도 **Flutter는 Text 위젯이 안 올라올 수 있다** — 실측에서 25노드 중 앱 문자열 0건, `content-desc`의 내비 라벨만 나왔다. **얻은 노드에 기대 문자열이 없으면 dump가 성공해도 판정 근거로 쓰지 않는다.**
+- 판정 결과는 `device-qa-queue.md` 헤더에 1줄로 남긴다(`dump: 사용가능 | 불가(사유)`). 매 화면 재시도 금지.
+
+## 절차
+### 1) 어서션 먼저 (화면 보기 전)
+검증 항목을 **기대 문자열/조건 목록**으로 적는다. QA는 이 목록을 채우는 일이 된다.
+```
+[ ] 홈 카드 배지  == "2/4단계"        (dump | 축소샷)
+[ ] 정답 진동     OneShot{40}          (dumpsys vibrator)
+[ ] 보상 지급     points +15           (앱 DB)
+[ ] 그룹 완료 흐름                     (integration_test)
+```
+채널을 항목마다 미리 적는다. 적을 채널이 5·6밖에 없는 항목이 절반을 넘으면 **자동화 테스트로 내릴 수 있는지 먼저 검토**한다.
+
+### 2) 기기 준비 (매번)
+```sh
+adb devices -l                                   # serial 확인
+adb -s <serial> shell settings put system screen_off_timeout 1800000   # 화면 꺼지면 탭이 통째로 유실된다
+adb -s <serial> shell getprop persist.sys.timezone; adb -s <serial> shell date   # 2기기면 시각 정렬
+adb -s <serial> shell settings put global window_animation_scale 0      # 전이 애니메이션만 꺼진다(앱 내부 애니메이션은 안 꺼짐)
+adb -s <serial> shell am force-stop <pkg>        # 콜드 스타트(resume이면 router redirect 미적용)
+```
+빌드·설치는 **명시적으로**: `flutter build apk --debug [--dart-define=...]` → `adb -s <serial> install -r -t <apk>`
+(`flutter install`은 재컴파일을 건너뛰고 옛 apk를 깔 수 있다)
+
+### 3) 셸 규율 (이걸 어기면 절감이 사라지거나 오탐이 난다)
+- 🔴 **스니펫은 자기완결로 쓴다.** 에이전트 Bash 도구는 호출 간에 **변수·함수를 보존하지 않는다**(cwd만 유지). serial·패키지는 매 호출에 다시 쓴다. `D=...`/`dump()` 같은 헬퍼 정의는 다음 호출에서 소멸한다.
+- 🔴 **Windows(Git Bash) 기기 경로는 `//` 로 시작한다.** `/sdcard/x.xml`은 `/Files/Git/sdcard/x.xml`로 변환돼 **다른 경로에 쓰인다**(실측). 그 뒤 `cat /sdcard/x.xml`은 **이전 세션이 남긴 옛 파일**을 읽어 **다른 화면으로 PASS**가 난다. 로컬 경로는 그대로 두고 **기기 경로만** `//`.
+- 🔴 **덤프 원문을 컨텍스트에 넣지 않는다.** `cat`·Read 금지. 파일로 받아 `grep`/`grep -c`/`grep -q`만 통과시킨다.
+- 매 dump 전 **옛 파일을 지운다**(`adb shell rm -f //sdcard/ui.xml`). 파일이 남아 있으면 실패가 성공으로 위장된다.
+
+### 4) 화면 읽기 = 텍스트 덤프 (프로브 통과 시)
+```sh
+adb -s <serial> shell rm -f //sdcard/ui.xml
+adb -s <serial> shell uiautomator dump //sdcard/ui.xml 2>&1 | tail -1     # "dumped to" 확인 필수
+adb -s <serial> exec-out cat //sdcard/ui.xml > ui.xml                     # 로컬로만 내린다
+grep -c '2/4단계' ui.xml                                                   # 어서션 1건 = 출력 1줄
+grep -o 'text="[^"]*"' ui.xml | sed 's/text="//;s/"$//' | grep -v '^$'     # 화면 글자만 (필요할 때만)
+grep -o 'content-desc="[^"]*"' ui.xml | sed 's/content-desc="//;s/"$//' | grep -v '^$'   # Flutter는 여기 있는 경우가 많다
+```
+- 탭 좌표도 여기서 나온다: 해당 노드의 `bounds="[x1,y1][x2,y2]"` 중심 → 스크린샷 없이 정확한 탭.
+- 겹침 판정은 두 노드의 bounds 사각형 교차로 계산한다(눈대중보다 엄밀).
+
+### 5) 시스템 사실은 logcat/dumpsys로
+```sh
+adb -s <serial> shell dumpsys vibrator | sed -n '/Previous vibrations/,/Extra/p' | grep <pkg>   # 삼성 One UI
+adb -s <serial> shell dumpsys vibrator_manager | grep -i vibration                              # 최신 AOSP
+adb -s <serial> logcat -d --pid=$(adb -s <serial> shell pidof <pkg> | tr -d '\r') -t 200 | grep -icE "exception|failed"
+```
+(진동은 에뮬에서 관측 불가, 실기기에서는 길이·시각까지 로그로 확정된다)
+
+### 6) 데이터는 앱 DB로
+DB를 직접 읽고/심는다. push는 `/data/local/tmp` 경유(Git Bash면 `//data/local/tmp`). 심은 QA 행은 **검증 후 원복**하고 실제 발생분은 보존한다. 타이머·제한이 판독 왕복보다 길면 DB에서 값을 조정해 QA하고 원복한다.
+
+### 7) 스크린샷은 예산제 + 축소 필수
+- **세션당 상한 8장**(초과하려면 사유를 남긴다). 매 스텝 확인용으로 찍지 않는다.
+- 🔴 **읽기 전에 축소한다.** 기본 32%(1080x2400 → 346x768). 실측 1,476 → 354 토큰이고 화면 글자는 그대로 읽힌다. 원본 read는 색 정밀·미세 잘림 확인에만.
+```sh
+adb -s <serial> exec-out screencap -p > shot.png
+```
+```powershell
+# 축소 (ImageMagick 없이, .NET)
+Add-Type -AssemblyName System.Drawing
+$i=[System.Drawing.Image]::FromFile("$PWD\shot.png"); $w=[int]($i.Width*0.32); $h=[int]($i.Height*0.32)
+$b=New-Object System.Drawing.Bitmap $w,$h; $g=[System.Drawing.Graphics]::FromImage($b)
+$g.InterpolationMode='HighQualityBicubic'; $g.DrawImage($i,0,0,$w,$h)
+$b.Save("$PWD\shot_s.png",[System.Drawing.Imaging.ImageFormat]::Png); $g.Dispose(); $b.Dispose(); $i.Dispose()
+```
+- 축소본만 read한다. 특정 영역만 필요하면 그 영역만 crop해서 더 줄인다.
+- QA 종료 시 스크린샷 파일 삭제(근거는 문서에 글로 남긴다).
+
+## 안전 가드 (사고 이력 반영)
+- 🔴 **블라인드 연속 탭 금지.** 한 번에 여러 탭을 쏘려면 그 사이에 다이얼로그가 뜰 수 없음이 확실해야 한다.
+- 🔴 **탭 금지 라벨**: `계정 삭제`, `데이터 초기화`, `로그아웃`, `전체 삭제`, 결제/구독 확정 — 좌표가 겹칠 수 있는 화면에서는 라벨을 먼저 확인하고 누른다.
+- 사용자 데이터를 지우는 조작(`pm clear`, 계정 전환, DB 삭제)은 **먼저 물어본다**. 무엇이 사라지는지 한 줄로 알린다.
+- 화면이 꺼진 채 쏜 탭은 전부 유실된다 → 긴 루프 전후로 `dumpsys power | grep mWakefulness` 확인.
+- 에뮬은 AdMob 자동 테스트 기기(등록 불필요)이고 진동 관측이 불가하다 → 광고 스킵 5초·진동 체감은 실기기 전용.
+
+## 위임 모드 (선택)
+QA가 길고(20스텝+) 부모 컨텍스트를 지켜야 할 때만. **위 프로토콜을 지킨다는 전제**로만 의미가 있다.
+1. 서브에이전트에 넘길 것 = (a) 어서션 목록 (b) 기기 serial·패키지·빌드 명령 (c) 이 SKILL 경로 (d) 안전 가드 요약
+2. 반환 형식 = 항목별 `PASS/FAIL + 근거 문자열 1줄`. 스크린샷·XML 원문 반환 금지.
+3. lane 기록·DoD 판정은 부모가 한다.
+- ⚠️ 위임해도 총 토큰은 크게 안 준다. 파괴적 조작 권한은 서브에 주지 않는다(사용자 확인이 필요한 조작은 부모로 올린다).
+
+## 산출물 (lane Verification Evidence 형식)
+```
+### {날짜} — {기기 모델·serial 앞 6자}, {빌드 종류/플래그}
+- 🟢 {항목}: {근거 문자열 또는 로그 한 줄} ({채널})
+- 🔴 {항목}: {관측값} ≠ {기대값} → {후속}
+- 🔧 QA 데이터: 심은 행 {N}건 원복 완료 / 스크린샷 {N}장(축소 {N}·원본 {N}, 사유)
+```
+queue 항목은 `device-qa-queue.md`에서 `[x] + 날짜`로 마감한다.
+
+## DoD 연동
+- 코드 변경 QA면 lane `## Verification Evidence`에 위 형식 1블록. 분석전용은 `not applicable`.
+- QA가 결함을 잡으면 그 자리에서 고치지 말고 **결함 목록을 먼저 남긴다**(수정은 별도 사이클, 재검증 포함).
+- 관련: `.claude/pawpad/device-qa-queue.md`(항목 적재) · `task-done`(마감) · `security-check`(코드 변경 시).
+
+## 다른 플랫폼
+명령은 Android/adb 전제지만 **구조는 플랫폼 무관**이다 — 자동화 테스트 우선 → 로그/시스템 → 데이터 → 접근성 트리 → 축소 이미지. iOS는 `xcrun simctl` + accessibility, 웹은 DOM 텍스트/셀렉터, 데스크톱은 접근성 트리로 같은 순서가 성립한다. 다른 플랫폼에서 실사용이 생기면 그때 채널 표만 갈아 끼운다.
+'@
+
 # ── Codex repo skill mirror (.claude/skills -> .agents/skills) ────────────────
 Step-Begin "Codex skill mirror"
 $sourceSkillRoot = ".claude\skills"
@@ -8290,7 +8446,7 @@ PowerShell hook을 stdin 주입으로 단독 검증:
 Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 # Skills Manifest
 
-프로젝트에 설치된 모든 스킬 목록. (21개)
+프로젝트에 설치된 모든 스킬 목록. (22개)
 
 > **환경별 활성 방식**
 > - Claude Code: `/skill` slash 호출 + description 자동 트리거 둘 다 지원.
@@ -8333,6 +8489,7 @@ Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 | **review** | `.claude/skills/review/` | 문서형 크로스에이전트/세션 리뷰 라운드트립 (codex exec 보완·저토큰, request 직접검증 체크리스트) |
 | **code-delegate** | `.claude/skills/code-delegate/` | 코딩 단계 서브에이전트 위임 (사용자 선택 모델, spec/lane 포인터 전달, 요약 반환 — 부모 컨텍스트·토큰 절감) |
 | **viewer-apply** | `.claude/skills/viewer-apply/` | 뷰어 데이터 JSON(src/viewer/*.json)을 읽어 스팩 동기 (남은 항목 spec 생성/갱신, 삭제 항목 제거/아카이브, confirm·비파괴, mockup viewer 모드와 짝) |
+| **device-qa** | `.claude/skills/device-qa/` | 기기 QA 실행 프로토콜 (검증 채널 우선순위: 자동화 테스트→로그/시스템→앱 DB→uiautomator dump→축소 스크린샷, 스크린샷 예산제·안전 가드 — 이미지 재전송 토큰 폭증 차단) |
 
 ---
 
@@ -8348,6 +8505,7 @@ Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 /lean-code       # 원칙 확인
 /design          # UI/UX 설계 게이트 (화면 구현 직전)
 /security-check  # 보안 검증 게이트 (커밋/핸드오프/완료 직전)
+/device-qa       # 기기 QA 실행 프로토콜 (실기기/에뮬 연결 상태에서 착수 시)
 ```
 
 ### 협업/기획
@@ -8486,7 +8644,8 @@ $($p.StackInfo)
     "viewer-apply",
     "ctxdb-navigator",
     "context-saver",
-    "security-check"
+    "security-check",
+    "device-qa"
   ],
   "backup": {
     "trigger": "setup-script -Force",
@@ -8559,7 +8718,7 @@ Update-Gitattributes
 # 전체 설치 후 미선택 번들 정리(가산적). docs/config/manifest dangling 0 유지.
 if ($script:bundleMode -eq 'custom') {
     $bpCore = @('resume', 'task-done', 'ctxdb-navigator', 'checkpoint', 'context-saver', 'handoff', 'codemap', 'codebase-map', 'caveman', 'lean-code', 'feature-architecture', 'security-check')
-    $bpMap = [ordered]@{ prd = @('brainstorming', 'clarity', 'grill-me', 'to-prd'); ui = @('design', 'mockup', 'viewer-apply'); delegate = @('code-delegate'); review = @('review') }
+    $bpMap = [ordered]@{ prd = @('brainstorming', 'clarity', 'grill-me', 'to-prd'); ui = @('design', 'mockup', 'viewer-apply'); delegate = @('code-delegate'); review = @('review'); qa = @('device-qa') }
     $bpAll = @($bpCore); foreach ($k in $bpMap.Keys) { $bpAll += $bpMap[$k] }
     $bpDeps = @{ ui = @('prd'); delegate = @('prd') }
     $sel = @($script:bundleSelected)
@@ -8658,7 +8817,7 @@ if ($failed -eq 0) {
     Write-Host ($L.complete -f $ver) -ForegroundColor Green
     Write-Host ""
     if ($Lang -eq 'ko') {
-        Write-Host "v$ver 누적 (21 스킬 + hook + .ctxdb + codemap + codebase-map + security-check):" -ForegroundColor Cyan
+        Write-Host "v$ver 누적 (22 스킬 + hook + .ctxdb + codemap + codebase-map + security-check):" -ForegroundColor Cyan
         Write-Host "  - Stack 프리셋: $Stack (flutter|node|python|wpf|tauri|electron|avalonia|generic 중 -Stack로 선택)" -ForegroundColor Cyan
         Write-Host "  - 크로스플랫폼 hook: Windows=.ps1 / Unix=.sh (설치 OS 자동 선택)" -ForegroundColor Cyan
         Write-Host "  - statusLine: Claude Code 매 턴 컨텍스트 윈도우 사용량(%) 표시" -ForegroundColor Cyan
@@ -8672,7 +8831,7 @@ if ($failed -eq 0) {
         Write-Host "  - 설치 UI: 회전 paw 배너 + 진행 바 live 1줄 갱신 + 실측 체크리스트 (-ShowLog로 파일 상세 로그)" -ForegroundColor Cyan
         Write-Host "  - lean-code: 과설계/범위이탈 방지 원칙 스킬 (구 karpathy, v2.25 rename + 병합 마이그레이션)" -ForegroundColor Cyan
         Write-Host "  - feature-architecture: feature-first 구조 규율 스킬 (CLAUDE/AGENTS Architecture Principles 강제)" -ForegroundColor Cyan
-        Write-Host "  - 번들 선택: -Preset lean|standard|full 또는 -Bundles prd,ui,delegate,review (미지정 시 대화형, Enter=full)" -ForegroundColor Cyan
+        Write-Host "  - 번들 선택: -Preset lean|standard|full 또는 -Bundles prd,ui,delegate,review,qa (미지정 시 대화형, Enter=full)" -ForegroundColor Cyan
         Write-Host "  - 안내 언어: -Lang en|ko (사람 안내 메시지만, 스킬/문서는 단일 소스 무변경)" -ForegroundColor Cyan
         Write-Host "  - codemap trim-router: 대규모 codemap을 _root+keywords+features leaf로 분할(cap 2/4KB, 통째읽기 사고 봉쇄, grep 성능 불변)" -ForegroundColor Cyan
         Write-Host "  - analyze hook fix (v2.40 보강): -File 스크립트(analyze.ps1/analyze.sh) 실행 → Git Bash 디스패치 호환 + 진단 결과 stderr 재전송(exit 2/0 정규화)로 agent가 실제 분석 내용 수신" -ForegroundColor Cyan
@@ -8691,9 +8850,10 @@ if ($failed -eq 0) {
         Write-Host "  - 상세: docs/CHANGELOG_v2.49.md" -ForegroundColor Cyan
         Write-Host "  - ctxdb 회수 정밀도 (v2.50): INDEX 키워드 셀의 공백을 구분자가 아니라 구(句)로 취급 — `점검 프롬프트`는 통으로 있어야 매칭. 실 프롬프트 122건 리플레이(tests/ctxdb-fpr)로 오탐률 7.4->3.3% / 정밀도 64->80%, 회귀셋 20/20 유지. 상세: docs/CHANGELOG_v2.50.md" -ForegroundColor Cyan
         Write-Host "  - design 스킬 원형 기반 재설계 (v2.51): 최상위 원칙에 위계 정합을 1순위로 추가 — 화면은 3초 안에 지금 상태/다음 행동/기대 결과에 답하고 그 순서가 시각 위계와 일치해야 한다(일관성은 2순위). 절차 4->6단계(제품 원형 분류 -> 의미 기반 토큰 -> 3영역 레이아웃 -> 일관성 5축 -> 상태 전수 12종 -> anti-slop/원칙8/정량6/최악조건10). references/ 3파일 신규(archetypes/tokens/checklists)로 원형 카드 1~2개만 on-demand read. 원형 16종 = 앱/도구 A1~A7 + 게임 G1~G9. 사후보강#1: 게임용 재질(material) 5층 축 + 스킨 분리 + 그래픽 컨셉 게이트(게임이면 컨셉을 사용자에게 물어 확정, 컨셉은 스킨 토큰만 교체). 상세: docs/CHANGELOG_v2.51.md" -ForegroundColor Cyan
+        Write-Host "  - device-qa 스킬 신규 (v2.52): 기기 QA 실행 프로토콜 (21->22, qa 번들 = full 전용). 검증 채널 우선순위(자동화 테스트 -> logcat/dumpsys -> 앱 DB -> uiautomator dump -> 축소 스크린샷) + 스크린샷 예산제(세션 8장, 읽기 전 32% 축소) + 셸 규율(자기완결 스니펫/Git Bash 기기경로 // /덤프 원문 금지) + 안전 가드. 근거: 스크린샷 루프로 5시간 한도 소진 실측. 상세: docs/CHANGELOG_v2.52.md" -ForegroundColor Cyan
     } else {
-        Write-Host "v${ver}: 21 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
-        Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review" -ForegroundColor Cyan
+        Write-Host "v${ver}: 22 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
+        Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review,qa" -ForegroundColor Cyan
         Write-Host "  - cross-platform hooks (.ps1/.sh), statusLine, Codex adapter, -Upgrade (preserves user data)" -ForegroundColor Cyan
         Write-Host "  - codemap / codebase-map / .ctxdb context DB / security-check gate (DoD)" -ForegroundColor Cyan
         Write-Host "  - analyze hook now runs via -File script + forwards diagnostics to stderr (exit 2/0 normalized)" -ForegroundColor Cyan
@@ -8725,7 +8885,7 @@ if (-not $Force -and -not $Upgrade) {
     Write-Host $L.forceHint1 -ForegroundColor DarkGray
     Write-Host $L.forceHint2 -ForegroundColor DarkGray
     Write-Host $L.forceHint3 -ForegroundColor DarkGray
-    Write-Host "options: -Preset lean|standard|full  -Bundles prd,ui,delegate,review  -Lang en|ko" -ForegroundColor DarkGray
+    Write-Host "options: -Preset lean|standard|full  -Bundles prd,ui,delegate,review,qa  -Lang en|ko" -ForegroundColor DarkGray
     Write-Host ""
 }
 
