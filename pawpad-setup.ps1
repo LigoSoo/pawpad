@@ -1886,9 +1886,11 @@ ON 8턴/60% CONTEXT:
   - 공통: 60% 시 /checkpoint -> 필요시 /handoff {to-agent} {feature}
 
 ## Codex 주의 (native hook adapter)
-- ``.agents/skills/*/SKILL.md`` = Codex skill mirror (Claude ``.claude/skills/*``와 동일 절차). hook은 ``.codex/hooks.json`` 정의, ``/hooks``로 review/trust해야 자동 실행. ``.codex/config.toml``은 안내 주석만.
+- ``.agents/skills/*/SKILL.md``는 setup 생성본이다. 기본은 Claude 미러, ``code-delegate``는 Codex 전용 실행 절차를 사용한다. hook은 ``.codex/hooks.json`` 정의, ``/hooks``로 review/trust해야 자동 실행. ``.codex/config.toml``은 안내 주석만.
+- PowerShell 텍스트 읽기는 ``Get-Content -Encoding UTF8`` 사용. 재읽기는 파일 변경·컨텍스트 유실·새 범위가 필요할 때만 한다. 현재 컨텍스트에 온전히 읽은 SKILL.md는 재사용한다.
+- hook full 본문으로 이미 받은 범위는 재read하지 않는다. pointer는 지정 범위만 읽고, 같은 내용이 현재 컨텍스트에 있으면 재사용한다. 출력 잘림·인코딩 오류가 있으면 누락 범위만 정상 인코딩으로 다시 읽는다.
 - SessionStart: ``.ctxdb/.state/codex-turn-count``·``codex-loaded`` reset.
-- UserPromptSubmit: INDEX keyword 매칭 → L1<=1/L2<=2 로드(session dedupe). injectMode(pawpad-config.json ctxdb): pointer(기본)=read 지시만 주입→**agent 즉시 read 필수**, full=본문. codemap HOT/match 추가(codemap.inject auto/on/off). explicit fallback(progress-current)은 재개 의도어만.
+- UserPromptSubmit: INDEX keyword 매칭 → L1<=1/L2<=2 로드(session dedupe). injectMode(pawpad-config.json ctxdb): pointer(기본)=지정 범위를 현재 컨텍스트에 확보(없으면 즉시 read), full=본문. codemap HOT/match 추가(codemap.inject auto/on/off). explicit fallback(progress-current)은 재개 의도어만.
 - PreCompact: compaction 직전 context-saver + ``codex-last-compact`` 기록(Stop 8턴과 중복 방지). Stop: ``codex-turn-count`` 카운트, 8턴/L2 초과 시 context-saver 요구.
 - ``.codex/hooks/*.sh``는 ``pwsh`` 필요; 부재 시 ctxdb-inject skip·나머지 ``{}`` 반환. ``turn-count``=Claude 전용, Codex=``codex-turn-count``.
 - hook 미신뢰/비활성 시 수동: ctxdb 로드(step0 INDEX read) + 저장(8턴/종료/60% context-saver) + codemap(read+갱신).
@@ -7749,6 +7751,39 @@ queue 항목은 `device-qa-queue.md`에서 `[x] + 날짜`로 마감한다.
 '@
 
 # ── Codex repo skill mirror (.claude/skills -> .agents/skills) ────────────────
+# Codex 전용 예외는 여기서 생성한다. Claude 스킬 본문과 설치 결과는 유지한다.
+$codexCodeDelegateSkill = @'
+---
+name: code-delegate
+description: Delegate a bounded coding task in Codex using the user's chosen model and reasoning effort, an independent context, and a concise result for parent review.
+---
+# DO NOT EDIT: generated from the Codex code-delegate template in pawpad-setup.ps1.
+# Code-Delegate — Codex 코딩 위임
+
+## 진입
+`/code-delegate [model] [effort]`. written spec과 독립적으로 구현 가능한 범위가 있을 때 사용한다. 잦은 설계 협의가 필요하면 위임보다 명세를 먼저 좁힌다. 위임은 부모 컨텍스트를 분리하지만 부모·하위 합산 토큰이나 구독 한도 절감을 보장하지 않는다.
+
+## 모델·추론 강도
+- model과 reasoning effort는 각각 사용자 지정값을 사용한다. 하나라도 없으면 빠진 값만 묻고 시작을 기다린다. 이미 명시한 값은 재질문하지 않는다.
+- 선택지는 현재 런타임이 지원하는 값만 제시하고, 가능한 질문 도구를 사용한다. 선택 UI가 없으면 짧은 텍스트 질문으로 받는다. 모델 목록·기본 effort를 고정 가정하지 않는다.
+- 실제 spawn 도구 스키마에 맞춰 두 값을 명시한다(지원 시 `model`, `reasoning_effort`). 부모 설정 상속이나 런타임 기본값에 맡기지 않는다. 지정값을 지원하지 않으면 임의 대체하지 말고 사용자에게 알린다.
+- native spawn/설정 지정이 불가능하면 사용자가 선택한 설정의 별도 세션으로 spec을 인계하는 방법을 안내한다. 지원하지 않는 도구를 만들어 호출하지 않는다.
+
+## 전달·실행
+- 독립 컨텍스트로 시작한다(지원 시 `fork_turns: none`). spec/lane/codemap 경로와 필요한 절, 구현 범위·완료 기준·반환 형식을 전달한다. 전체 대화나 문서 본문을 복제하지 않는다.
+- 시작 응답이나 접근 가능한 세션 메타데이터에서 실제 model/effort를 한 번 확인한다. 확인 수단이 없으면 미확인으로 기록한다. 불일치하면 하위 작업을 중단하고 원인을 확인한다. 검증만을 위한 전체 로그 재조회는 피한다.
+- 하위는 전달된 작업에 필요한 파일과 규칙을 읽고 구현·검증한다. 기획 게이트를 이미 통과한 범위는 새 모호점이 생겼을 때만 재검토한다. lane/codemap/_meta 갱신과 최종 DoD 판정은 부모 담당임을 전달한다.
+
+## 대기·피드백
+- 런타임의 완료 알림/대기를 우선한다. polling만 가능하면 허용 범위 내에서 불필요하게 짧은 간격을 피하고 상위 진행 보고 규칙을 지킨다. 새 정보 없는 상태 조회·대기 메시지를 반복하지 않는다.
+- 부모가 독립적인 작업을 할 때도 하위와 같은 파일을 동시에 수정하지 않는다. 사용자 상태 요청·새 결과·오류가 오면 필요한 확인을 한다.
+- 수정 피드백은 같은 하위에 모아 보낸다. 실행 중 메시지와 종료 후 재개 도구를 구분하고, 자동으로 새 하위를 계속 만들지 않는다.
+
+## 반환·부모 검토
+- 변경 경로, 핵심 결정, 완료 기준별 완료/미완, 실행한 검증과 결과, 남은 결함을 짧게 반환한다. 코드·로그 전문은 반환하지 않는다.
+- 부모는 핵심 동작과 미완 항목을 검토한다. 필요하면 관련 파일만 읽고, 변경·실패·검증 공백이 있을 때 추가 검증한다. 스킬 적용을 이유로 프로젝트의 품질·보안·완료 기준을 생략하지 않는다.
+- 비용 비교 시 부모와 하위를 함께 보고 input/cached input/output을 구분한다. 캐시나 reasoning을 이중 합산하지 않고, 컨텍스트 크기와 누적 사용량을 구분한다.
+'@
 Step-Begin "Codex skill mirror"
 $sourceSkillRoot = ".claude\skills"
 $codexSkillRoot = ".agents\skills"
@@ -7758,6 +7793,10 @@ if (Test-Path $sourceSkillRoot) {
         $sourceSkill = Join-Path $skillDir.FullName "SKILL.md"
         if (-not (Test-Path $sourceSkill)) { continue }
         $rawSkill = Get-Content -Path $sourceSkill -Encoding UTF8 -Raw
+        if ($skillDir.Name -eq 'code-delegate') {
+            Write-FileContent (Join-Path (Join-Path $codexSkillRoot $skillDir.Name) "SKILL.md") $codexCodeDelegateSkill -NoBom
+            continue
+        }
         $mirrorHeader = "# DO NOT EDIT: generated from .claude/skills/$($skillDir.Name)/SKILL.md by pawpad-setup.ps1.`n"
         if ($rawSkill -match "(?s)\A---\s*.*?\s*---\s*") {
             $frontmatter = $Matches[0]

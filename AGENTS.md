@@ -94,9 +94,11 @@ ON 8턴/60% CONTEXT:
   - 공통: 60% 시 /checkpoint -> 필요시 /handoff {to-agent} {feature}
 
 ## Codex 주의 (native hook adapter)
-- `.agents/skills/*/SKILL.md` = Codex skill mirror (Claude `.claude/skills/*`와 동일 절차). hook은 `.codex/hooks.json` 정의, `/hooks`로 review/trust해야 자동 실행. `.codex/config.toml`은 안내 주석만.
+- `.agents/skills/*/SKILL.md`는 setup 생성본이다. 기본은 Claude 미러, `code-delegate`는 Codex 전용 실행 절차를 사용한다. hook은 `.codex/hooks.json` 정의, `/hooks`로 review/trust해야 자동 실행. `.codex/config.toml`은 안내 주석만.
+- PowerShell 텍스트 읽기는 `Get-Content -Encoding UTF8` 사용. 재읽기는 파일 변경·컨텍스트 유실·새 범위가 필요할 때만 한다. 현재 컨텍스트에 온전히 읽은 SKILL.md는 재사용한다.
+- hook full 본문으로 이미 받은 범위는 재read하지 않는다. pointer는 지정 범위만 읽고, 같은 내용이 현재 컨텍스트에 있으면 재사용한다. 출력 잘림·인코딩 오류가 있으면 누락 범위만 정상 인코딩으로 다시 읽는다.
 - SessionStart: `.ctxdb/.state/codex-turn-count`·`codex-loaded` reset.
-- UserPromptSubmit: INDEX keyword 매칭 → L1<=1/L2<=2 로드(session dedupe). injectMode(pawpad-config.json ctxdb): pointer(기본)=read 지시만 주입→**agent 즉시 read 필수**, full=본문. codemap HOT/match 추가(codemap.inject auto/on/off). explicit fallback(progress-current)은 재개 의도어만.
+- UserPromptSubmit: INDEX keyword 매칭 → L1<=1/L2<=2 로드(session dedupe). injectMode(pawpad-config.json ctxdb): pointer(기본)=지정 범위를 현재 컨텍스트에 확보(없으면 즉시 read), full=본문. codemap HOT/match 추가(codemap.inject auto/on/off). explicit fallback(progress-current)은 재개 의도어만.
 - PreCompact: compaction 직전 context-saver + `codex-last-compact` 기록(Stop 8턴과 중복 방지). Stop: `codex-turn-count` 카운트, 8턴/L2 초과 시 context-saver 요구.
 - `.codex/hooks/*.sh`는 `pwsh` 필요; 부재 시 ctxdb-inject skip·나머지 `{}` 반환. `turn-count`=Claude 전용, Codex=`codex-turn-count`.
 - hook 미신뢰/비활성 시 수동: ctxdb 로드(step0 INDEX read) + 저장(8턴/종료/60% context-saver) + codemap(read+갱신).

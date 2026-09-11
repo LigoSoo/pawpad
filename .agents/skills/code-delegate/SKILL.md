@@ -1,57 +1,30 @@
 ---
 name: code-delegate
-description: Coding-phase subagent delegation gate. Use when moving from design to coding to spawn a coding subagent on a user-chosen model, passing the written spec/lane by pointer, so the parent (Opus) context stays lean and token cost drops. Subagent returns a concise summary for parent feedback.
+description: Delegate a bounded coding task in Codex using the user's chosen model and reasoning effort, an independent context, and a concise result for parent review.
 ---
-# DO NOT EDIT: generated from .claude/skills/code-delegate/SKILL.md by pawpad-setup.ps1.
-# Code-Delegate Skill - 코딩 서브에이전트 위임 게이트
+# DO NOT EDIT: generated from the Codex code-delegate template in pawpad-setup.ps1.
+# Code-Delegate — Codex 코딩 위임
 
-## 목적
-기획·구조 설계는 상위 에이전트(고추론·대용량 컨텍스트, 예: Opus 4.8)로 진행하고, 코딩은 사용자가 고른 모델의 서브에이전트에 위임한다. 코딩 반복이 서브에이전트의 독립 context에서 일어나 부모 컨텍스트는 린하게 유지되고 토큰 비용도 준다.
+## 진입
+`/code-delegate [model] [effort]`. written spec과 독립적으로 구현 가능한 범위가 있을 때 사용한다. 잦은 설계 협의가 필요하면 위임보다 명세를 먼저 좁힌다. 위임은 부모 컨텍스트를 분리하지만 부모·하위 합산 토큰이나 구독 한도 절감을 보장하지 않는다.
 
-## 핵심 원리 (왜 절감되나)
-- 서브에이전트는 독립 context window. 부모는 (전달 프롬프트 + 서브의 최종 메시지)만 흡수한다. 파일 read/write와 도구 호출 수십 회는 전부 서브 context에 격리된다.
-- 모델 선택: 복잡 코딩은 상위 모델, 단순·반복 코딩은 하위 모델(Sonnet/Haiku)로 토큰·컨텍스트 절약.
-- 효과: 부모가 30%선을 유지 → 코딩으로 60%까지 치솟는 것 방지 → checkpoint/handoff 빈도 감소.
+## 모델·추론 강도
+- model과 reasoning effort는 각각 사용자 지정값을 사용한다. 하나라도 없으면 빠진 값만 묻고 시작을 기다린다. 이미 명시한 값은 재질문하지 않는다.
+- 선택지는 현재 런타임이 지원하는 값만 제시하고, 가능한 질문 도구를 사용한다. 선택 UI가 없으면 짧은 텍스트 질문으로 받는다. 모델 목록·기본 effort를 고정 가정하지 않는다.
+- 실제 spawn 도구 스키마에 맞춰 두 값을 명시한다(지원 시 `model`, `reasoning_effort`). 부모 설정 상속이나 런타임 기본값에 맡기지 않는다. 지정값을 지원하지 않으면 임의 대체하지 말고 사용자에게 알린다.
+- native spawn/설정 지정이 불가능하면 사용자가 선택한 설정의 별도 세션으로 spec을 인계하는 방법을 안내한다. 지원하지 않는 도구를 만들어 호출하지 않는다.
 
-## 트리거
-/code-delegate [모델]  또는 구현 경계 자동제안
-- 자동제안: 설계 완료 후 코딩 전환 경계(SPEC_READY 또는 written 설계 직후)에서 1회 위임 제안(강제 X). 거절 시 인라인 코딩.
-- 수동: /code-delegate (모델 미지정 시 선택지 제공).
+## 전달·실행
+- 독립 컨텍스트로 시작한다(지원 시 `fork_turns: none`). spec/lane/codemap 경로와 필요한 절, 구현 범위·완료 기준·반환 형식을 전달한다. 전체 대화나 문서 본문을 복제하지 않는다.
+- 시작 응답이나 접근 가능한 세션 메타데이터에서 실제 model/effort를 한 번 확인한다. 확인 수단이 없으면 미확인으로 기록한다. 불일치하면 하위 작업을 중단하고 원인을 확인한다. 검증만을 위한 전체 로그 재조회는 피한다.
+- 하위는 전달된 작업에 필요한 파일과 규칙을 읽고 구현·검증한다. 기획 게이트를 이미 통과한 범위는 새 모호점이 생겼을 때만 재검토한다. lane/codemap/_meta 갱신과 최종 DoD 판정은 부모 담당임을 전달한다.
 
-## 위임 적합성 게이트 (선행 판정)
-아래 충족 시에만 위임 권장:
-1. written 설계 존재 — 구현 계획이 spec(.claude/pawpad/specs/{feature}.md) 또는 lane에 적혀 있다. 사용자가 참조시킨 외부 문서(첨부 md/spec/기획서)도 written 설계로 인정 — 이 경우 문서 경로를 포인터로 전달. 대화에만 있으면 dump 필요 -> 이점 반감(경고).
-2. 코딩 단계 — 기획/구조 결정 완료, 실제 파일 변경 단계.
-3. 격리 가능 — 부모와 잦은 상호작용이 불필요한 독립 범위.
-미충족 시(설계 미작성/탐색 단계/고도 상호작용) 위임 비권장, 인라인 진행 안내.
+## 대기·피드백
+- 런타임의 완료 알림/대기를 우선한다. polling만 가능하면 허용 범위 내에서 불필요하게 짧은 간격을 피하고 상위 진행 보고 규칙을 지킨다. 새 정보 없는 상태 조회·대기 메시지를 반복하지 않는다.
+- 부모가 독립적인 작업을 할 때도 하위와 같은 파일을 동시에 수정하지 않는다. 사용자 상태 요청·새 결과·오류가 오면 필요한 확인을 한다.
+- 수정 피드백은 같은 하위에 모아 보낸다. 실행 중 메시지와 종료 후 재개 도구를 구분하고, 자동으로 새 하위를 계속 만들지 않는다.
 
-## 실행 절차 (Claude Code 주력)
-1. 위임 적합성 게이트 판정. 부적합이면 사유 + 인라인 권장.
-2. 모델 선택 — AskUserQuestion(체크박스), 작업 복잡도 기준 추천 1개 first:
-   - 복잡/대규모 -> opus (추천 예시), 일반 코딩 -> sonnet, 단순/반복 -> haiku
-   - 추천 1개 표시 + 근거(복잡도). 선택지 규칙은 CLAUDE.md 준수.
-3. 서브에이전트 spawn — Agent 도구:
-   - model = 선택 모델
-   - 프롬프트 = (a) spec/lane/codemap 포인터 read 지시(경로 명시, 본문 dump 아님) + (b) 작업 범위·완료기준 + (c) 반환 형식 지시(4번)
-4. 반환 형식 (서브에이전트에 명시) — 부모 린 유지:
-   - 변경 파일 경로 목록
-   - 핵심 구현 결정 요약
-   - 검증 상태(analyze/test/security 결과)
-   - 전체 코드 dump 금지. 부모가 필요 시 특정 파일만 요청.
-5. 피드백 루프 — 결과 검토 후 수정 필요 시: SendMessage로 같은 서브 이어가기(context 유지) 또는 피드백 포함 신규 dispatch.
-6. lane/DoD는 부모 소유 — 서브는 코딩만. lane 갱신·codemap·_meta·완료 판정은 부모가 한다.
-
-## 런타임
-- Claude Code (주력): Agent(Task) 도구 model 오버라이드 지원(opus/sonnet/haiku/fable). 위 절차 그대로.
-- Codex (폴백): per-call 모델 선택 메커니즘이 달라 자동 모델-핀 미보장. 대안 안내 — 사용자가 원하는 모델로 별도 Codex 세션을 띄우고 spec/lane read 후 코딩. 스킬은 이 안내만 제공.
-
-## 비용/컨텍스트 메모
-- 컨텍스트 절감은 과금 방식과 무관하게 확실(서브 격리).
-- 토큰 비용: API 과금이면 달러 직접 절감, 구독(Pro/Max)이면 rate-limit 여유로 환산.
-- 한계: 부모는 매 반환을 흡수하므로 다회 피드백이면 부모도 누적 증가(단 코딩 본체가 격리되어 여전히 이득). 반환 요약 유지가 핵심.
-
-## 기존 스킬과 관계
-- handoff = 작업 인계(owner 이전, 다른 에이전트/세션). code-delegate = 부모 유지 + 코딩만 서브 위임(owner 불변). 별개.
-- to-prd/SPEC_READY = 위임 전제(written 설계) 공급원.
-- 목적은 checkpoint/handoff 빈도 감소.
-
+## 반환·부모 검토
+- 변경 경로, 핵심 결정, 완료 기준별 완료/미완, 실행한 검증과 결과, 남은 결함을 짧게 반환한다. 코드·로그 전문은 반환하지 않는다.
+- 부모는 핵심 동작과 미완 항목을 검토한다. 필요하면 관련 파일만 읽고, 변경·실패·검증 공백이 있을 때 추가 검증한다. 스킬 적용을 이유로 프로젝트의 품질·보안·완료 기준을 생략하지 않는다.
+- 비용 비교 시 부모와 하위를 함께 보고 input/cached input/output을 구분한다. 캐시나 reasoning을 이중 합산하지 않고, 컨텍스트 크기와 누적 사용량을 구분한다.
