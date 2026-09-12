@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.52 (Unified Claude + Codex Distribution, PowerShell)
-# STATUS: FROZEN (v2.52. v2.51 기반 + device-qa 스킬 신규(21→22, 새 qa 번들 = full 전용) — 기기 QA에서 스크린샷 루프가 5시간 사용 한도를 한 세션에 태우는 사고를 차단한다(설치처 TodayQuest 2026-09-02 실측: PNG 98장 생성·약 50장 read). 읽은 이미지는 이후 모든 도구 호출에 재전송되므로 비용이 `이미지 수 × 남은 호출 수`로 누적되고, QA는 도구 호출이 가장 많은 작업이라 이 곱이 최대가 된다. **위임(qa-delegate)은 기각** — 서브 컨텍스트도 같은 한도를 먹으므로 비용이 숨을 뿐이다. 대신 검증 채널 우선순위를 고정한다: 기기 자동화 테스트(integration_test/am instrument) → logcat/dumpsys → 앱 DB → uiautomator dump → **축소 스크린샷**(기본 32%) → 원본. 편입 전 에뮬레이터 실측(Android 16 / 1080x2400 / Flutter 앱)으로 원안 결함 6건을 수정했다: ①원안 1순위였던 `uiautomator dump`가 Flutter 홈에서 `could not get idle state` **12/12 실패**(plain 6 + --compressed 6, 애니메이션 스케일 0에서도. 네이티브 설정 앱·런처는 성공) → dump를 4순위로 내리고 **화면 1회 프로브** 후 불가면 축소 스크린샷으로 전환 ②성공한 dump도 Flutter Text가 안 올라와 앱 문자열 0건 → 기대 문자열 부재 시 판정 근거 불가 명시 ③Git Bash가 기기 경로 `/sdcard/x.xml`을 `/Files/Git/sdcard/...`로 변환해 **옛 파일을 읽어 다른 화면으로 PASS**가 나던 경로 → 기기 경로 `//` 규칙 + dump 전 옛 파일 삭제 ④에이전트 Bash 도구는 호출 간 변수·함수를 보존하지 않음 → 스니펫 자기완결 규율(원안의 `D=<serial>`·`dump()` 헬퍼는 다음 호출에서 소멸) ⑤`integration_test` 채널 누락 → 1순위로 신설 ⑥"크롭·축소" 지시에 명령이 없어 원본을 read하던 경로 → .NET 리사이즈 스니펫 제공(실측 1,476→354 토큰, 판독성 유지). 실측 단가표를 스킬 본문에 포함: grep 어서션 ~10 / dump 필터 ~250 / 축소샷 ~354 / 원본샷 ~1,476 / **dump 원문 ~8,000**(스크린샷의 5배 — 원문 투입 금지가 🔴 규칙). 미검증: 노트8(Android 9) dump 거동, 실패 원인의 Flutter 애니메이션 특정(정황). 보고서: docs/CHANGELOG_v2.52.md.)
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.53 (Claude-first Distribution, opt-in Codex, PowerShell)
+# STATUS: FROZEN (v2.53. v2.52 기반 + **Codex 표면 기본 미설치(opt-in)** — 스킬 22 불변, Claude 산출물 바이트 불변. 사용자 요구: "Codex에서 현재 스킬을 사용하는 건 불안하다". 기본 설치는 Claude 전용이고 Codex 표면 4종(AGENTS.md / .agents/skills 미러 / .codex/config.json / .codex/config.toml·hooks.json·hooks/*)은 `-WithCodex` 지정 시에만 생성한다. 부분 제외는 기각했다 — AGENTS.md 본문과 config.json의 skills 배열이 .agents/skills 경로를 다수 참조하므로 A만 빼면 죽은 경로가 남는다. **기존 설치는 자동 감지로 계속 갱신**한다(AGENTS.md / .agents/skills / .codex/config.json / .codex/hooks.json 중 하나라도 있으면 on): -Upgrade가 사용자 자산을 말없이 지우지 않는 기존 규율과 같은 방향이고, 이 때문에 기본값 변경이 기존 설치처의 동작을 바꾸지 않는다. 진행 바 단계는 29 -> 25로 줄고(Codex 4단계 제외) 체크리스트도 그만큼 사라진다. 전역 Codex 스킬 섀도잉 경고도 Codex 표면 설치 시에만 발화한다. Claude 측(CLAUDE.md/.claude/skills/.claude/hooks)은 **한 바이트도 바뀌지 않는다** — 스킬 본문의 "CLAUDE.md/AGENTS.md가 강제" 같은 산문은 그대로 두었다(조건부 텍스트로 만들면 두 모드의 스킬 바이트가 갈라져 live==embed 대조와 회귀 테스트가 무의미해진다). 보고서: docs/CHANGELOG_v2.53.md.)
+#         이전: v2.52. v2.51 기반 + device-qa 스킬 신규(21→22, 새 qa 번들 = full 전용) — 기기 QA에서 스크린샷 루프가 5시간 사용 한도를 한 세션에 태우는 사고를 차단한다(설치처 TodayQuest 2026-09-02 실측: PNG 98장 생성·약 50장 read). 읽은 이미지는 이후 모든 도구 호출에 재전송되므로 비용이 `이미지 수 × 남은 호출 수`로 누적되고, QA는 도구 호출이 가장 많은 작업이라 이 곱이 최대가 된다. **위임(qa-delegate)은 기각** — 서브 컨텍스트도 같은 한도를 먹으므로 비용이 숨을 뿐이다. 대신 검증 채널 우선순위를 고정한다: 기기 자동화 테스트(integration_test/am instrument) → logcat/dumpsys → 앱 DB → uiautomator dump → **축소 스크린샷**(기본 32%) → 원본. 편입 전 에뮬레이터 실측(Android 16 / 1080x2400 / Flutter 앱)으로 원안 결함 6건을 수정했다: ①원안 1순위였던 `uiautomator dump`가 Flutter 홈에서 `could not get idle state` **12/12 실패**(plain 6 + --compressed 6, 애니메이션 스케일 0에서도. 네이티브 설정 앱·런처는 성공) → dump를 4순위로 내리고 **화면 1회 프로브** 후 불가면 축소 스크린샷으로 전환 ②성공한 dump도 Flutter Text가 안 올라와 앱 문자열 0건 → 기대 문자열 부재 시 판정 근거 불가 명시 ③Git Bash가 기기 경로 `/sdcard/x.xml`을 `/Files/Git/sdcard/...`로 변환해 **옛 파일을 읽어 다른 화면으로 PASS**가 나던 경로 → 기기 경로 `//` 규칙 + dump 전 옛 파일 삭제 ④에이전트 Bash 도구는 호출 간 변수·함수를 보존하지 않음 → 스니펫 자기완결 규율(원안의 `D=<serial>`·`dump()` 헬퍼는 다음 호출에서 소멸) ⑤`integration_test` 채널 누락 → 1순위로 신설 ⑥"크롭·축소" 지시에 명령이 없어 원본을 read하던 경로 → .NET 리사이즈 스니펫 제공(실측 1,476→354 토큰, 판독성 유지). 실측 단가표를 스킬 본문에 포함: grep 어서션 ~10 / dump 필터 ~250 / 축소샷 ~354 / 원본샷 ~1,476 / **dump 원문 ~8,000**(스크린샷의 5배 — 원문 투입 금지가 🔴 규칙). 미검증: 노트8(Android 9) dump 거동, 실패 원인의 Flutter 애니메이션 특정(정황). 보고서: docs/CHANGELOG_v2.52.md.)
 #         이전: v2.51. v2.50 기반 + design 스킬 원형 기반 재설계 — 스킬 21 불변. 기존 design은 최상위 원칙이 "AI 티 = 불일치"(일관성)라 **일관되게 틀린 위계**를 통과시켰다: 토큰이 전부 스케일 파생이어도 모든 카드가 같은 크기이고 주 CTA가 보조 행동에 파묻히면 정량 체크는 전부 녹색이다. v2.51은 그 위에 **위계 정합**을 1순위로 얹는다 — 화면은 3초 안에 "지금 어떤 상태 / 다음에 뭘 하나 / 그러면 뭘 얻나"에 답하고 그 순서가 시각 위계와 일치해야 한다. 절차도 4단계→**6단계**: (1) **제품 원형 분류**(7문항 + 게임 5문항) → (2) 의미 기반 토큰(색 정의 순서 고정·다크 재정의 6항) → (3) **3영역 레이아웃**(상태/맥락/행동) → (4) 일관성 5축 → (5) **상태 전수 12종**(기존 4종에서 확장 — 부분 데이터·권한 거부·오프라인 포함) → (6) anti-slop + 원칙 8 + 정량 6 + 최악조건 10. 패키징은 `SKILL.md`(코어) + **`references/` 3파일 신규**(archetypes 16,943 B / tokens 6,937 B / checklists 9,747 B)로 쪼개 해당 원형 카드 1~2개만 on-demand read — 게임 만들 때 앱 규칙을 읽지 않는다. 원형 **16종**: 앱·도구 A1~A7(과업완료·발견중심·반복실행·지속상태·습관형성·조건탐색·**관측진단**) + 게임 G1~G9(콘텐츠중심미니멀·코지시스템·에디토리얼미니멀·상태반응·액션로비·진행루프·태스크중심·원버튼진행·고밀도라이브서비스). 게임 축은 토큰에 economy/rarity가 **추가**되고 checklists에 컴포넌트 9종 필수 상태·배지 정책·안티패턴 9종이 붙는다. 미러는 `SKILL.md`만 복사하므로 references 참조는 mockup의 `spec-viewer.html` 선례대로 `.claude/skills/design/references/` **절대 경로**로 적었다. 검증: live==embed **4/4 byte-equal** · PSParser 0 · 설치처 메인 화면 적용 목업으로 3초3질문 1/3→3/3 · 동일 강조도 주 CTA 9→1 · **신규 토큰 0건**. 보고서: docs/CHANGELOG_v2.51.md. 사후수정#1(2026-09-01, 버전 불변): 배포본 빌드 베이스가 v2.50 Addendum(brainstorming 왕복 라운드) 이전이라 임베드·첨자가 회귀 — 해당 SKILL 임베드 + CLAUDE/AGENTS 템플릿 첨자 2를 복원(design 변경분 무영향).
 #         이전: v2.48. v2.47 기반 + ctxdb 키워드 회수 복구 + 계층 성장 규약(스킬 21 불변) — 설치처 실측에서 "프롬프트 키워드로 과거를 부른다"가 사실상 죽어 있었다: 한글 2음절 키워드가 길이 하한 3에 전량 탈락(관측 레포 INDEX 키워드 38%), L1이 자라 포인터가 읽기범위 밖으로 밀리면 무주입인데 진단이 `{}` 하나뿐, 매칭 성공이 폴백을 끄고(가장 관련 있는 프롬프트에서 실패), 이월한 L3는 회수 정규식(`L2/`만)에 안 걸려 영구 회수불가 — 즉 규정대로 이월할수록 장기기억이 사라졌다. 훅 양 런타임 수정: CJK 2자/라틴 3자 하한 분리 + 조사 스트립(원형+어간 양쪽 후보) + 전 행 점수화 매칭(첫 히트 즉시반환 폐기) + `L[234]/` 회수 + L3/L4 `## ` 블록 단위 추출(파일 통째 금지) + L1 포인터 탐색범위와 주입범위 분리 + 폴백 상시 적용 + 무주입 사유 `.ctxdb/.state/{claude|codex}-last-decision` 기록(`{}` 출력계약 유지). 규약: INDEX `L2/L3 경로` 컬럼(포인터를 본문 길이와 분리) + `.ctxdb/keywords.md` 의미매칭 층 신설(agent 전용 — hook 차단·비Windows 폴백, codemap keywords 패턴 이식) + context-saver STEP5 계층 승격(L2 150줄→L3, L3 400줄→L4, L1 60줄/키워드 30개 초과 시 도메인 분할 제안, 이월 시 INDEX·L1 포인터 갱신 의무) + checkpoint 절차 context-saver 누락 보정 + Session Protocol ON NEW TOPIC 폴백. 회귀셋 `tests/ctxdb-recall` 21케이스(toolkit 개발 자산, 배포본 미포함): Claude 20/20(+Codex 전용 1 SKIP)·Codex 21/21, mutation 6/6 검출. 사후수정#1(버전 불변): 영문 어간+한글 조사(React를/Flutter로/Docker에서) 조사 스트립 실패 수정(훅 4표면) + .gitignore `.ctxdb/L4/` 누락 보정. 사후수정#2(버전 불변): handoff 절차에 codemap 갱신 + context-saver 호출 누락 보정(checkpoint D-8과 동형 — 인수 agent는 새 세션이라 영향이 더 크다). Codex exec 교차 리뷰 review-01 PASS_WITH_FIXES 84%(H 0) findings 7건 전건 반영 — mixed L2/L3 아카이브 절단·조사 오분해(전문가→전문)·무주입 진단 불일치·clean clone 러너 실패가 실버그였다. 보고서: docs/CHANGELOG_v2.48.md.
 #         이전: v2.47. v2.46 기반 + codemap 초기 부트스트랩 절차 신설(스킬 21 불변) — 설치가 codemap 템플릿만 만들고 기존 코드베이스를 스캔하지 않아, 이미 코드가 쌓인 프로젝트는 백필 없이 방치되던 공백을 메움(실관측: 설치 후 수 주간 1개 도메인만 등록). codemap SKILL에 "## 초기 부트스트랩" 섹션 추가 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START에 1회 제안, 거절 시 재제안 금지) + 스캔범위/등록기준(public 진입점만) + 규모 분기(소스<40 인라인 / >=40 code-delegate 배치 위임, 서브는 _staging에 직접 Write하고 4줄 요약만 반환) + 병합 규율(기존 MAP/HOT/수기 섹션 보존) + 크기 판정(30KB 초과 즉시 Phase B) + 검증 게이트(size cap 전수 + 무작위 심볼 path:line 실측 전건 일치). 부수: Phase B 전환 시 _index.md를 삭제하지 않고 라우팅 스텁으로 남기는 규약 명문화 + Session Protocol step7을 "_root.md 우선, 없으면 _index.md"로 수정(경로 사멸 차단, live+tmpl 4표면). 근거: TeamPitch_2.0 실증 백필(115파일 -> 283 심볼, trim-router 전환, 서브 3배치 위임). 보고서: docs/CHANGELOG_v2.47.md.
@@ -24,23 +25,25 @@
 #         - Codex native hooks: /hooks trust 후 ctxdb/codemap 최소 로드 + checkpoint continuation.
 #         이전: v2.17 statusLine/ctxdb/codemap(FROZEN). 보고서: docs/CHANGELOG_v2.17.md.
 #         변경 시 새 버전 번호 + 변경 보고서 + Codex 리뷰 절차 따를 것.
-# Usage: .\pawpad-setup.ps1 [-Stack <flutter|node|python|wpf|tauri|electron|avalonia|generic>] [-Force | -Upgrade] [-ShowLog] [-Preset <lean|standard|full>] [-Bundles <prd,ui,delegate,review,qa>] [-Lang <en|ko>]
+# Usage: .\pawpad-setup.ps1 [-Stack <flutter|node|python|wpf|tauri|electron|avalonia|generic>] [-Force | -Upgrade] [-ShowLog] [-Preset <lean|standard|full>] [-Bundles <prd,ui,delegate,review,qa>] [-Lang <en|ko>] [-WithCodex]
 #        -Stack/-Preset/-Lang 생략 시 대화형 프롬프트(Enter=generic/full/ko). pwsh로 Mac/Linux에서도 실행 가능.
 #
 # 한 번에 모든 것을 세팅합니다:
-# - CLAUDE.md, AGENTS.md (Context files, 하이브리드 프로토콜 반영)
+# - CLAUDE.md (Context file, 하이브리드 프로토콜 반영) | AGENTS.md는 -WithCodex 시에만
 # - .claude/settings.json (Claude Code hooks: SessionStart 자동주입 + Stop decision:block)
 # - .claude/hooks/* (session-start.{ps1,sh}, stop-check.{ps1,sh}, statusline.{ps1,sh} - 크로스플랫폼 자동화/상태줄)
 # - .claude/skills/* (resume, task-done, codemap, codebase-map, caveman, lean-code, feature-architecture, brainstorming, clarity, handoff, checkpoint, grill-me, to-prd, design, mockup, review, code-delegate, viewer-apply, ctxdb-navigator, context-saver, security-check, device-qa)
-# - .agents/skills/* (Codex repo skill mirror, .claude/skills 단일 소스에서 재생성)
+# - .agents/skills/* (Codex repo skill mirror, .claude/skills 단일 소스에서 재생성) -- -WithCodex 시에만
 # - .claude/pawpad/* (_wip router, wip/lanes, wip/done, handoffs/, specs/, decisions/)
 # - .claude/codemap/_index.md
 # - .ctxdb/* (키워드 depth 컨텍스트 DB: INDEX/L1/L2, 토큰 절약 lazy-load)
 # - .claude/HYBRID.md (Claude Code <-> Codex 협업)
-# - .codex/config.json (보조 설정. projectName 자동 추출)
-# - .codex/config.toml, .codex/hooks.json, .codex/hooks/* (Codex native lifecycle hooks)
+# - .codex/config.json (보조 설정. projectName 자동 추출) -- -WithCodex 시에만
+# - .codex/config.toml, .codex/hooks.json, .codex/hooks/* (Codex native lifecycle hooks) -- -WithCodex 시에만
 # - .gitignore (PawPad backup 디렉토리 제외)
 #
+# -WithCodex : Codex 표면 설치(AGENTS.md + .agents/skills + .codex/*). 기본은 Claude 전용.
+#              이미 Codex 산출물이 있는 기존 설치는 자동 감지되어 지정 없이도 계속 갱신된다.
 # -Force : 기존 파일 덮어쓰기 (기본: 기존 파일 건너뜀)
 # -Upgrade : 기존 설치 업그레이드. 툴킷 소유 파일만 갱신(UPDATED), 사용자 데이터 보존(SKIP),
 #            혼합 파일(CLAUDE/AGENTS/settings/config.json)은 툴킷 섹션·키만 자동 병합(MERGED).
@@ -56,14 +59,14 @@
 # 실행 정책 오류 시:
 #   Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
-param([switch]$Force, [switch]$Upgrade, [string]$Stack = "", [switch]$ShowLog, [string]$Preset = "", [string]$Bundles = "", [string]$Lang = "")
+param([switch]$Force, [switch]$Upgrade, [string]$Stack = "", [switch]$ShowLog, [string]$Preset = "", [string]$Bundles = "", [string]$Lang = "", [switch]$WithCodex)
 
 if ($Force -and $Upgrade) {
     Write-Host "ERROR: -Force와 -Upgrade는 동시 지정 불가. 하나만 선택하세요." -ForegroundColor Red
     exit 1
 }
 
-$ver = "2.52"
+$ver = "2.53"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -72,6 +75,17 @@ $merged = 0
 $mergePending = @()
 $today = Get-Date -Format "yyyy-MM-dd"
 $projectName = Split-Path (Get-Location) -Leaf
+
+# ── Codex 표면 설치 여부 (v2.53) ─────────────────────────────────────────────────
+# 기본은 Claude 전용. Codex 표면(AGENTS.md / .agents/skills / .codex/*)은 -WithCodex 지정 시에만 설치한다.
+# 예외: 이미 Codex 산출물이 깔린 기존 설치는 자동 감지해 계속 갱신한다(-Upgrade가 사용자 자산을 말없이 지우지 않는 규율).
+$script:installCodex = [bool]$WithCodex
+$script:codexDetected = $false
+if (-not $script:installCodex) {
+    foreach ($probe in @('AGENTS.md', '.agents\skills', '.codex\config.json', '.codex\hooks.json')) {
+        if (Test-Path $probe) { $script:installCodex = $true; $script:codexDetected = $true; break }
+    }
+}
 
 function ConvertTo-ForwardSlashPath {
     param([Parameter(Mandatory = $true)][string]$Path)
@@ -597,7 +611,8 @@ function Show-PawBanner {
 }
 
 # 진행 단계: Step-Begin 호출 수와 $stepTotal 일치 유지 (불일치 시 % 표시만 어긋남, 동작 무관)
-$script:stepTotal = 29
+# Codex 표면 4단계(AGENTS.md / Codex native adapter / Codex skill mirror / Codex config.json)는 미설치 시 제외.
+$script:stepTotal = if ($script:installCodex) { 29 } else { 25 }
 $script:stepIndex = 0
 $script:stepResults = @()
 $script:currentStep = $null
@@ -696,6 +711,9 @@ $TR = @{
         unknownPreset = "알 수 없는 preset '{0}' -> full 사용"; bundleLine = "번들 설치: {0} = {1} 스킬 (제거 {2}: {3})"
         coreOnly = "Core 전용"; corePlus = "Core + "
         complete = "프로젝트 초기화 완료 (PawPad v{0})"; failed = "{0} 개 항목 실패. 권한 확인 후 다시 시도하세요."
+        codexOff = "  - Codex 표면 미설치 (Claude 전용 기본값). 필요 시 -WithCodex: AGENTS.md + .agents/skills + .codex/*"
+        codexOn = "  - Codex 표면 설치됨 (-WithCodex): AGENTS.md + .agents/skills mirror + .codex/hooks.json (/hooks trust 필요)"
+        codexKept = "  - Codex 표면 기존 설치 감지 -> 계속 갱신 (기본값은 Claude 전용. 신규 설치에는 -WithCodex 필요)"
         genericNote1 = "[generic] CLAUDE.md / AGENTS.md / config.json 의 <YOUR_*> 플레이스홀더를 실제 값으로 채우세요."
         genericNote2 = "          (analyze 명령 미지정 -> PostToolUse 자동검사 hook은 생략됨)"
         nextSteps = "다음 단계:"
@@ -720,6 +738,9 @@ $TR = @{
         unknownPreset = "Unknown preset '{0}' -> using full"; bundleLine = "Bundles: {0} = {1} skills (removed {2}: {3})"
         coreOnly = "Core only"; corePlus = "Core + "
         complete = "Project initialized (PawPad v{0})"; failed = "{0} item(s) failed. Check permissions and retry."
+        codexOff = "  - Codex surface not installed (Claude-only default). Use -WithCodex for AGENTS.md + .agents/skills + .codex/*"
+        codexOn = "  - Codex surface installed (-WithCodex): AGENTS.md + .agents/skills mirror + .codex/hooks.json (/hooks trust required)"
+        codexKept = "  - Existing Codex surface detected -> kept up to date (default is Claude-only; new installs need -WithCodex)"
         genericNote1 = "[generic] Fill <YOUR_*> placeholders in CLAUDE.md / AGENTS.md / config.json with real values."
         genericNote2 = "          (no analyze command set -> PostToolUse auto-check hook skipped)"
         nextSteps = "Next steps:"
@@ -1795,7 +1816,7 @@ caveman 항상 포함. off 시 라인에 ``normal mode (caveman 압축 off)``로
 Write-FileContent "CLAUDE.md" $tmplClaudeMd
 
 # ── AGENTS.md ─────────────────────────────────────────────────────────────────
-Step-Begin "AGENTS.md"
+if ($script:installCodex) { Step-Begin "AGENTS.md" }
 $tmplAgentsMd = @"
 # AGENTS.md
 # Tool: OpenAI Codex Agent | Stack: $($p.Label)
@@ -1948,7 +1969,7 @@ ACTIVE EVERY RESPONSE.
 - [ ] context 60% 추정 초과 시 /handoff 또는 /checkpoint 실행했나?
 - [ ] 핸드오프 인수 시 owner를 자기 이름으로 변경했나?
 "@
-Write-FileContent "AGENTS.md" $tmplAgentsMd
+if ($script:installCodex) { Write-FileContent "AGENTS.md" $tmplAgentsMd }
 
 # ── settings.json (OS 감지 + 스택별 analyze 조건부) ───────────────────────────
 Step-Begin "settings + pawpad-config"
@@ -3552,6 +3573,7 @@ printf '%s' "$out"
 '@
 
 # ── Codex native adapter: config + hooks ─────────────────────────────────────
+if ($script:installCodex) {
 Step-Begin "Codex native adapter"
 Write-FileContent -NoBom ".codex\config.toml" @'
 # Project hook definitions live in .codex/hooks.json.
@@ -4460,6 +4482,7 @@ fi
 
 printf '%s\n' '{}'
 '@
+}
 
 # ── .ctxdb: 키워드 depth 컨텍스트 DB (토큰 절약 lazy-load) ──────────────────────
 Step-Begin "ctxdb (context DB)"
@@ -4593,8 +4616,10 @@ Canonical 7축 고수준 코드베이스 맵. 스킬 정의: .claude/skills/code
 "@
 
 Write-FileContent ".ctxdb\.state\turn-count" "0"
+if ($script:installCodex) {
 Write-FileContent ".ctxdb\.state\codex-turn-count" "session:manual`nturn:0"
 Write-FileContent ".ctxdb\.state\codex-loaded" "manual"
+}
 Write-FileContent ".ctxdb\VERSION" "1.0.0"
 
 # ── Skills: ctxdb-navigator (세션시작 키워드 최소 로드) ────────────────────────
@@ -7750,6 +7775,7 @@ queue 항목은 `device-qa-queue.md`에서 `[x] + 날짜`로 마감한다.
 명령은 Android/adb 전제지만 **구조는 플랫폼 무관**이다 — 자동화 테스트 우선 → 로그/시스템 → 데이터 → 접근성 트리 → 축소 이미지. iOS는 `xcrun simctl` + accessibility, 웹은 DOM 텍스트/셀렉터, 데스크톱은 접근성 트리로 같은 순서가 성립한다. 다른 플랫폼에서 실사용이 생기면 그때 채널 표만 갈아 끼운다.
 '@
 
+if ($script:installCodex) {
 # ── Codex repo skill mirror (.claude/skills -> .agents/skills) ────────────────
 # Codex 전용 예외는 여기서 생성한다. Claude 스킬 본문과 설치 결과는 유지한다.
 $codexCodeDelegateSkill = @'
@@ -7815,6 +7841,7 @@ if (Test-Path $sourceSkillRoot) {
     if ($mirrorCount -lt $skillDirs.Count) {
         Write-InstallLog "  WARNING mirror 불완전 ($mirrorCount/$($skillDirs.Count)) - .agents/skills 쓰기 실패 여부 위 FAILED 라벨 확인" Yellow -Always
     }
+}
 }
 
 # ── PawPad: _wip.md (SPEC_READY 추가) ────────────────────────────────────────────
@@ -8589,7 +8616,7 @@ Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 '@
 
 # ── .codex/config.json (보조 설정, 동적 projectName) ──────────────────────────
-Step-Begin "Codex config.json"
+if ($script:installCodex) { Step-Begin "Codex config.json" }
 $tmplCodexConfigJson = @"
 {
   "_comment": "보조 설정. Codex 자동 로드 보장 없음. 핵심 규칙은 AGENTS.md / .claude/HYBRID.md 참조.",
@@ -8701,7 +8728,7 @@ $($p.StackInfo)
   }
 }
 "@
-Write-FileContent ".codex\config.json" $tmplCodexConfigJson -NoBom
+if ($script:installCodex) { Write-FileContent ".codex\config.json" $tmplCodexConfigJson -NoBom }
 
 # ── -Upgrade: 혼합 파일 병합 (툴킷 영역만 갱신, 사용자 영역 보존) ────────────────
 if ($Upgrade -and $mergePending.Count -gt 0) {
@@ -8860,7 +8887,6 @@ if ($failed -eq 0) {
         Write-Host "  - Stack 프리셋: $Stack (flutter|node|python|wpf|tauri|electron|avalonia|generic 중 -Stack로 선택)" -ForegroundColor Cyan
         Write-Host "  - 크로스플랫폼 hook: Windows=.ps1 / Unix=.sh (설치 OS 자동 선택)" -ForegroundColor Cyan
         Write-Host "  - statusLine: Claude Code 매 턴 컨텍스트 윈도우 사용량(%) 표시" -ForegroundColor Cyan
-        Write-Host "  - Codex native adapter: .agents/skills mirror + .codex/hooks.json (/hooks trust 필요)" -ForegroundColor Cyan
         Write-Host "  - codemap: 위치+시그니처+역할 1줄 + MAP 조망 (파일 안 열고 파악)" -ForegroundColor Cyan
         Write-Host "  - .ctxdb 키워드 depth DB + context-saver 키워드 자동 갱신" -ForegroundColor Cyan
         Write-Host "  - codebase-map: 7축 고수준 맵(.claude/pawpad/codebase/) + digest-only 주입" -ForegroundColor Cyan
@@ -8890,10 +8916,11 @@ if ($failed -eq 0) {
         Write-Host "  - ctxdb 회수 정밀도 (v2.50): INDEX 키워드 셀의 공백을 구분자가 아니라 구(句)로 취급 — `점검 프롬프트`는 통으로 있어야 매칭. 실 프롬프트 122건 리플레이(tests/ctxdb-fpr)로 오탐률 7.4->3.3% / 정밀도 64->80%, 회귀셋 20/20 유지. 상세: docs/CHANGELOG_v2.50.md" -ForegroundColor Cyan
         Write-Host "  - design 스킬 원형 기반 재설계 (v2.51): 최상위 원칙에 위계 정합을 1순위로 추가 — 화면은 3초 안에 지금 상태/다음 행동/기대 결과에 답하고 그 순서가 시각 위계와 일치해야 한다(일관성은 2순위). 절차 4->6단계(제품 원형 분류 -> 의미 기반 토큰 -> 3영역 레이아웃 -> 일관성 5축 -> 상태 전수 12종 -> anti-slop/원칙8/정량6/최악조건10). references/ 3파일 신규(archetypes/tokens/checklists)로 원형 카드 1~2개만 on-demand read. 원형 16종 = 앱/도구 A1~A7 + 게임 G1~G9. 사후보강#1: 게임용 재질(material) 5층 축 + 스킨 분리 + 그래픽 컨셉 게이트(게임이면 컨셉을 사용자에게 물어 확정, 컨셉은 스킨 토큰만 교체). 상세: docs/CHANGELOG_v2.51.md" -ForegroundColor Cyan
         Write-Host "  - device-qa 스킬 신규 (v2.52): 기기 QA 실행 프로토콜 (21->22, qa 번들 = full 전용). 검증 채널 우선순위(자동화 테스트 -> logcat/dumpsys -> 앱 DB -> uiautomator dump -> 축소 스크린샷) + 스크린샷 예산제(세션 8장, 읽기 전 32% 축소) + 셸 규율(자기완결 스니펫/Git Bash 기기경로 // /덤프 원문 금지) + 안전 가드. 근거: 스크린샷 루프로 5시간 한도 소진 실측. 상세: docs/CHANGELOG_v2.52.md" -ForegroundColor Cyan
+        Write-Host "  - Codex 표면 opt-in (v2.53): 기본 설치는 Claude 전용 — AGENTS.md / .agents/skills / .codex/* 는 -WithCodex 지정 시에만 생성. 이미 Codex 산출물이 있는 기존 설치는 자동 감지되어 계속 갱신(사용자 자산 무손실). 스킬 22 불변, Claude 산출물 바이트 불변." -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 22 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review,qa" -ForegroundColor Cyan
-        Write-Host "  - cross-platform hooks (.ps1/.sh), statusLine, Codex adapter, -Upgrade (preserves user data)" -ForegroundColor Cyan
+        Write-Host "  - cross-platform hooks (.ps1/.sh), statusLine, -Upgrade (preserves user data)" -ForegroundColor Cyan
         Write-Host "  - codemap / codebase-map / .ctxdb context DB / security-check gate (DoD)" -ForegroundColor Cyan
         Write-Host "  - analyze hook now runs via -File script + forwards diagnostics to stderr (exit 2/0 normalized)" -ForegroundColor Cyan
         Write-Host "  - retrieval indicator (v2.41): in-response 📡 Retrieval declaration + statusline 📡 cmap/ctx/src measured counters (read-track hook)" -ForegroundColor Cyan
@@ -8903,6 +8930,10 @@ if ($failed -eq 0) {
         Write-Host "  - brainstorming skill (v2.45): idea divergence + omission sweep (adjacent features, 8-axis non-happy-path checklist) + MoSCoW scope gate in one skill — pre-clarity stage, cuts late feature add/remove churn (prd bundle, 20->21)" -ForegroundColor Cyan
         Write-Host "  - design skill visual-quality redesign (v2.46): top-3 principles (consistency-first / intentional direction / anti-slop) + 5-axis consistency scales (token-derived values only, no arbitrary values) + quantitative checks (radius<=4, control heights<=3, zero arbitrary spacing) + 2-pass workflow (skills stay 21) | details: docs/CHANGELOG_v2.46.md" -ForegroundColor Cyan
     }
+    # Codex 표면 상태 (v2.53): 기본 Claude 전용 / -WithCodex 설치 / 기존 설치 감지 갱신
+    if (-not $script:installCodex) { Write-Host $L.codexOff -ForegroundColor Cyan }
+    elseif ($script:codexDetected) { Write-Host $L.codexKept -ForegroundColor Cyan }
+    else { Write-Host $L.codexOn -ForegroundColor Cyan }
     Write-Host ""
 } else {
     Write-Host ($L.failed -f $failed) -ForegroundColor Yellow
@@ -8924,13 +8955,13 @@ if (-not $Force -and -not $Upgrade) {
     Write-Host $L.forceHint1 -ForegroundColor DarkGray
     Write-Host $L.forceHint2 -ForegroundColor DarkGray
     Write-Host $L.forceHint3 -ForegroundColor DarkGray
-    Write-Host "options: -Preset lean|standard|full  -Bundles prd,ui,delegate,review,qa  -Lang en|ko" -ForegroundColor DarkGray
+    Write-Host "options: -Preset lean|standard|full  -Bundles prd,ui,delegate,review,qa  -Lang en|ko  -WithCodex" -ForegroundColor DarkGray
     Write-Host ""
 }
 
-# ── 전역 Codex 스킬 섀도잉 감지 (비파괴 경고, 모든 모드 공통) ─────────────────────
+# ── 전역 Codex 스킬 섀도잉 감지 (비파괴 경고, Codex 표면 설치 시에만) ─────────────
 $globalSkillRoot = Join-Path $env:USERPROFILE ".codex\skills"
-if (Test-Path $globalSkillRoot) {
+if ($script:installCodex -and (Test-Path $globalSkillRoot)) {
     $localSkillNames = @(Get-ChildItem ".claude\skills" -Directory -ErrorAction SilentlyContinue | ForEach-Object { $_.Name })
     $shadowedSkills = @(Get-ChildItem $globalSkillRoot -Directory -ErrorAction SilentlyContinue | Where-Object { $localSkillNames -contains $_.Name } | ForEach-Object { $_.Name })
     if ($shadowedSkills.Count -gt 0) {

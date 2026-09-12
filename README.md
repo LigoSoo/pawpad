@@ -8,12 +8,14 @@
   <sub>Agentic Engineering Toolkit</sub>
 </p>
 
-# PawPad — Agentic Engineering Toolkit (v2.51 FROZEN)
+# PawPad — Agentic Engineering Toolkit (v2.53 FROZEN)
 
-Claude Code ⇄ Codex 하이브리드 협업을 위한 **멀티에이전트 상태관리 + 토큰절약 하니스**.
+Claude Code를 위한 **상태관리 + 토큰절약 하니스** (Codex 하이브리드 협업은 선택).
 하나의 PowerShell 스크립트로 어떤 프로젝트에든 22개 스킬 · PawPad 상태머신 · 양 런타임 자동화 hook · 키워드 컨텍스트 DB · 7축 코드베이스 맵 · 보안 검증 게이트를 설치한다.
 
-> **단일 통합 배포본**: `pawpad-setup.ps1` 하나가 Claude Code + Codex 양쪽 hook을 설치한다 (per-agent 변형 없음).
+> **단일 배포본**: `pawpad-setup.ps1` 하나로 설치한다 (per-agent 변형 없음).
+> **v2.53부터 기본 설치는 Claude 전용** — Codex 표면(`AGENTS.md`, `.agents/skills`, `.codex/*`)은 `-WithCodex`를 줄 때만 생성된다.
+> 이미 Codex 표면이 깔린 기존 설치는 자동 감지되어 스위치 없이도 계속 갱신된다(기존 프로젝트 동작 불변).
 > 대상 스택은 프리셋(flutter/node/python/wpf/tauri/electron/avalonia/generic) 선택 — `CLAUDE.md`/`AGENTS.md`의 `<YOUR_*>`만 채우면 어떤 스택에든 적용.
 
 ---
@@ -66,8 +68,9 @@ Claude Code ⇄ Codex 하이브리드 협업을 위한 **멀티에이전트 상�
 ```powershell
 # 1) pawpad-setup.ps1 을 설치할 프로젝트 루트에 복사 → 그 루트에서 실행
 .\pawpad-setup.ps1 -Stack generic        # 프리셋: flutter | node | python | wpf | tauri | electron | avalonia | generic
+# Codex도 함께 쓸 거면:  .\pawpad-setup.ps1 -Stack generic -WithCodex
 
-# 2) CLAUDE.md / AGENTS.md 의 <YOUR_*> (Stack·Commands·Boundaries) 채우기
+# 2) CLAUDE.md (Codex 설치 시 AGENTS.md도) 의 <YOUR_*> (Stack·Commands·Boundaries) 채우기
 
 # 3) 에이전트(Claude Code/Codex)에서 첫 명령
 #    /resume   → 기존 작업 재개      |   /clarity → 새 기능 기획 시작
@@ -89,18 +92,21 @@ Claude Code ⇄ Codex 하이브리드 협업을 위한 **멀티에이전트 상�
 
 # 설치 중 파일 단위 상세 로그 보기 (기본: live 진행 바 1줄 갱신, 파일 로그 숨김)
 .\pawpad-setup.ps1 -ShowLog
+
+# Codex 표면까지 설치 (AGENTS.md + .agents/skills 미러 + .codex/*). 기본은 Claude 전용
+.\pawpad-setup.ps1 -Stack generic -WithCodex
 ```
 
 출력에 `Created / Updated / Merged / Skipped / Failed` 요약이 뜬다. `0 failed`면 성공.
-`~/.codex/skills/`에 동일 이름 스킬(전역 섀도잉)이 있으면 경고가 출력된다 (삭제는 안 함, 정리 권장 안내만).
+`~/.codex/skills/`에 동일 이름 스킬(전역 섀도잉)이 있으면 경고가 출력된다 (Codex 표면 설치 시에만, 삭제는 안 함).
 
 ### 설치 후 필수 설정
-1. `CLAUDE.md` / `AGENTS.md` 의 **Stack · Commands · Boundaries** 를 실제 프로젝트에 맞게 수정
+1. `CLAUDE.md` (Codex 설치 시 `AGENTS.md`도) 의 **Stack · Commands · Boundaries** 를 실제 프로젝트에 맞게 수정
 2. `.claude/pawpad/_meta.md` 의 `STACK` 줄 수정
 3. `.ctxdb/INDEX.md` 의 **키워드→L1 매핑 테이블**을 프로젝트 도메인에 맞게 작성
 4. 기존 코드가 있으면 에이전트에게 "`.claude/codemap/_index.md` 초기값 만들어줘" / "codebase-map 7축 작성해줘" 요청
 5. `.claude/HYBRID.md` 읽고 협업 프로토콜 숙지
-6. **Codex 사용 시**: Codex에서 `/hooks` 실행 → project-local hooks review/trust (1회)
+6. **Codex 사용 시**: `-WithCodex`로 설치(또는 재설치)한 뒤 Codex에서 `/hooks` 실행 → project-local hooks review/trust (1회)
 
 > Claude hook은 **다음 세션부터** 동작한다 (SessionStart/Stop은 세션 로드 시 등록).
 
@@ -109,14 +115,15 @@ Claude Code ⇄ Codex 하이브리드 협업을 위한 **멀티에이전트 상�
 ## 무엇이 설치되나
 
 ```
-CLAUDE.md / AGENTS.md            # 에이전트 컨텍스트 (Claude / Codex). 완료 기준(DoD) 8번 = security-check 보안 게이트 포함
-pawpad-setup.ps1     # 통합 단일 설치 스크립트 (FROZEN v2.51, 번들 선택 -Preset/-Bundles + 안내 언어 -Lang, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
-.codex/
+CLAUDE.md                        # 에이전트 컨텍스트 (Claude). 완료 기준(DoD) 8번 = security-check 보안 게이트 포함
+AGENTS.md                        # 〃 Codex용 미러 — -WithCodex 시에만
+pawpad-setup.ps1     # 단일 설치 스크립트 (FROZEN v2.53, 번들 선택 -Preset/-Bundles + 안내 언어 -Lang + Codex opt-in -WithCodex, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
+.codex/                          # 아래 Codex 표면 전체는 -WithCodex 시에만 생성
 ├── config.json                  # Codex 보조 설정 (skills 22 + context/backup keys)
 ├── config.toml                  # project config layer note
 ├── hooks.json                   # Codex lifecycle hook router (SessionStart/UserPromptSubmit/PreCompact/Stop)
 └── hooks/{*.ps1,*.sh}           # Codex native hooks (cwd 상위탐색 self-location)
-.agents/skills/{22}/SKILL.md     # Codex repo skill mirror (.claude/skills 단일소스, DO NOT EDIT 헤더)
+.agents/skills/{22}/SKILL.md     # Codex repo skill mirror (.claude/skills 단일소스, DO NOT EDIT 헤더) — -WithCodex 시에만
 .gitignore                       # backup / .ctxdb/.state 등 자동 등록
 docs/HOOK_TESTING.md             # hook 회귀 방지 체크리스트 (event/runtime별 출력 계약)
 .claude/
@@ -278,7 +285,7 @@ $j=(Get-Content .claude\settings.json -Raw | ConvertFrom-Json); $j.hooks.PSObjec
 (Get-Content .codex\config.json -Raw | ConvertFrom-Json).skills.Count   # 22
 
 # 스크립트 STATUS
-Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.51 Unified ... FROZEN
+Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.53 Claude-first ... FROZEN
 ```
 
 설치 후 첫 작업은 보통 `/clarity` 또는 `/resume`로 시작한다.
@@ -295,5 +302,5 @@ Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.51 Unified ... FROZEN
 
 ## 버전 / 변경 정책
 
-`v2.51 FROZEN` (Unified Claude + Codex Distribution). 변경 시 **새 버전 번호 + 변경 보고서 + Codex 리뷰** 절차를 따른다. 동결본을 직접 고치지 않는다.
+`v2.53 FROZEN` (Claude-first Distribution, opt-in Codex). 변경 시 **새 버전 번호 + 변경 보고서 + Codex 리뷰** 절차를 따른다. 동결본을 직접 고치지 않는다.
 기존 설치 환경의 버전 업그레이드는 `-Upgrade` 모드 사용 (툴킷 파일만 갱신, 사용자 데이터 보존).

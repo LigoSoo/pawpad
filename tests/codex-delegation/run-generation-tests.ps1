@@ -1,4 +1,4 @@
-# Offline installer regression; fixtures/logs are retained in TEMP.
+﻿# Offline installer regression; fixtures/logs are retained in TEMP.
 param([string]$BaselineRef = '3081267deaaab562783440ec8cd343f4a03511ca')
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
@@ -30,11 +30,13 @@ function Assert-Manifest($Actual, $Expected, [string]$Label) {
     $different = @($Expected.Keys | Where-Object { -not $Actual.ContainsKey($_) -or $Actual[$_] -ne $Expected[$_] })
     Assert-That ($Actual.Count -eq $Expected.Count -and $different.Count -eq 0) "$Label ($($Expected.Count) files; differences: $($different -join ', '))"
 }
-function Invoke-Setup([string]$Script, [string]$Root, [string]$Tag, [switch]$Upgrade, [string]$Preset = 'full') {
+function Invoke-Setup([string]$Script, [string]$Root, [string]$Tag, [switch]$Upgrade, [string]$Preset = 'full', [switch]$NoCodex) {
     if (-not (Test-Path -LiteralPath $Root)) { New-Item -ItemType Directory -Path $Root | Out-Null }
     $log = Join-Path $fixtureRoot "$Tag.log"
     $params = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $Script, '-Stack', 'generic', '-Preset', $Preset, '-Lang', 'en', '-ShowLog')
     if ($Upgrade) { $params += '-Upgrade' }
+    # v2.53: Codex surface is opt-in. Older baselines have no -WithCodex parameter.
+    if (-not $NoCodex -and (Read-Text $Script) -match '\$WithCodex') { $params += '-WithCodex' }
     Push-Location -LiteralPath $Root
     try { & powershell @params *> $log; $code = $LASTEXITCODE } finally { Pop-Location }
     if ($code -ne 0) { throw "Installer exit $code; see $log" }
@@ -91,6 +93,19 @@ try {
     Assert-EqualText (Get-CodexSection (Read-Text $agentsPath)) $before 'Repeated upgrade preserves Codex section'
     Assert-That ([regex]::Matches((Read-Text $agentsPath), '(?m)^## Codex ').Count -eq 1) 'No duplicate Codex section'
     Assert-EqualText (Read-Text (Join-Path $oldRoot $skillRel)) $expectedSkill 'Repeated upgrade retains Codex template'
+    # v2.53: default install is Claude-only; the Codex surface needs -WithCodex.
+    $claudeOnlyRoot = Join-Path $fixtureRoot 'claude-only/app'
+    Invoke-Setup $setup $claudeOnlyRoot 'claude-only' -NoCodex
+    Assert-That (-not (Test-Path (Join-Path $claudeOnlyRoot 'AGENTS.md'))) 'Default install omits AGENTS.md'
+    Assert-That (-not (Test-Path (Join-Path $claudeOnlyRoot '.agents'))) 'Default install omits Codex skill mirror'
+    Assert-That (-not (Test-Path (Join-Path $claudeOnlyRoot '.codex'))) 'Default install omits Codex adapter'
+    Assert-That (Test-Path (Join-Path $claudeOnlyRoot 'CLAUDE.md')) 'Default install still writes CLAUDE.md'
+    $claudePaths = @('CLAUDE.md', '.claude/skills', '.claude/hooks')
+    Assert-Manifest (Get-Manifest $claudeOnlyRoot $claudePaths) (Get-Manifest $freshRoot $claudePaths) 'Claude-only install preserves Claude bytes'
+    # An existing Codex surface keeps being updated even without -WithCodex.
+    [IO.File]::WriteAllText((Join-Path $oldRoot $skillRel), 'stale mirror', $utf8)
+    Invoke-Setup $setup $oldRoot 'upgrade-detect' -Upgrade -NoCodex
+    Assert-EqualText (Read-Text (Join-Path $oldRoot $skillRel)) $expectedSkill 'Existing Codex surface still refreshed without -WithCodex'
     $leanRoot = Join-Path $fixtureRoot 'lean/app'
     Invoke-Setup $setup $leanRoot 'lean' -Preset 'lean'
     Assert-That (-not (Test-Path (Join-Path $leanRoot $skillRel))) 'Lean preset excludes code-delegate'
