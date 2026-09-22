@@ -8,13 +8,14 @@
   <sub>Agentic Engineering Toolkit</sub>
 </p>
 
-# PawPad — Agentic Engineering Toolkit (v2.53 FROZEN)
+# PawPad — Agentic Engineering Toolkit (v2.54 FROZEN)
 
 Claude Code를 위한 **상태관리 + 토큰절약 하니스** (Codex 하이브리드 협업은 선택).
 하나의 PowerShell 스크립트로 어떤 프로젝트에든 22개 스킬 · PawPad 상태머신 · 양 런타임 자동화 hook · 키워드 컨텍스트 DB · 7축 코드베이스 맵 · 보안 검증 게이트를 설치한다.
 
 > **단일 배포본**: `pawpad-setup.ps1` 하나로 설치한다 (per-agent 변형 없음).
 > **v2.53부터 기본 설치는 Claude 전용** — Codex 표면(`AGENTS.md`, `.agents/skills`, `.codex/*`)은 `-WithCodex`를 줄 때만 생성된다.
+> **v2.54부터는 표면별로 다른 스킬 세트**를 깔 수 있다 — `-CodexPreset` / `-CodexBundles`. 예: `-Preset full -CodexPreset lean` → Claude 22 / Codex 12(Core). 미지정 시 Claude 축을 그대로 상속한다.
 > 이미 Codex 표면이 깔린 기존 설치는 자동 감지되어 스위치 없이도 계속 갱신된다(기존 프로젝트 동작 불변).
 > 대상 스택은 프리셋(flutter/node/python/wpf/tauri/electron/avalonia/generic) 선택 — `CLAUDE.md`/`AGENTS.md`의 `<YOUR_*>`만 채우면 어떤 스택에든 적용.
 
@@ -117,13 +118,14 @@ Claude Code를 위한 **상태관리 + 토큰절약 하니스** (Codex 하이브
 ```
 CLAUDE.md                        # 에이전트 컨텍스트 (Claude). 완료 기준(DoD) 8번 = security-check 보안 게이트 포함
 AGENTS.md                        # 〃 Codex용 미러 — -WithCodex 시에만
-pawpad-setup.ps1     # 단일 설치 스크립트 (FROZEN v2.53, 번들 선택 -Preset/-Bundles + 안내 언어 -Lang + Codex opt-in -WithCodex, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
+pawpad-setup.ps1     # 단일 설치 스크립트 (FROZEN v2.54, 번들 선택 -Preset/-Bundles + Codex 축 -CodexPreset/-CodexBundles + 안내 언어 -Lang + Codex opt-in -WithCodex, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
 .codex/                          # 아래 Codex 표면 전체는 -WithCodex 시에만 생성
 ├── config.json                  # Codex 보조 설정 (skills 22 + context/backup keys)
 ├── config.toml                  # project config layer note
 ├── hooks.json                   # Codex lifecycle hook router (SessionStart/UserPromptSubmit/PreCompact/Stop)
 └── hooks/{*.ps1,*.sh}           # Codex native hooks (cwd 상위탐색 self-location)
-.agents/skills/{22}/SKILL.md     # Codex repo skill mirror (.claude/skills 단일소스, DO NOT EDIT 헤더) — -WithCodex 시에만
+.agents/skills/{22}/SKILL.md     # Codex repo skill mirror (.claude/skills 단일소스, DO NOT EDIT 헤더) — -WithCodex 시에만. -CodexPreset/-CodexBundles로 수량 별도 지정 가능
+.agents/SKILLS_MANIFEST.md       # Codex용 스킬 카탈로그 (설치된 Codex 스킬만) — -WithCodex 시에만
 .gitignore                       # backup / .ctxdb/.state 등 자동 등록
 docs/HOOK_TESTING.md             # hook 회귀 방지 체크리스트 (event/runtime별 출력 계약)
 .claude/
@@ -285,7 +287,7 @@ $j=(Get-Content .claude\settings.json -Raw | ConvertFrom-Json); $j.hooks.PSObjec
 (Get-Content .codex\config.json -Raw | ConvertFrom-Json).skills.Count   # 22
 
 # 스크립트 STATUS
-Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.53 Claude-first ... FROZEN
+Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.54 Claude-first ... FROZEN
 ```
 
 설치 후 첫 작업은 보통 `/clarity` 또는 `/resume`로 시작한다.
@@ -302,5 +304,5 @@ Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.53 Claude-first ... FROZEN
 
 ## 버전 / 변경 정책
 
-`v2.53 FROZEN` (Claude-first Distribution, opt-in Codex). 변경 시 **새 버전 번호 + 변경 보고서 + Codex 리뷰** 절차를 따른다. 동결본을 직접 고치지 않는다.
+`v2.54 FROZEN` (Claude-first Distribution, per-surface skill bundles). 변경 시 **새 버전 번호 + 변경 보고서 + Codex 리뷰** 절차를 따른다. 동결본을 직접 고치지 않는다.
 기존 설치 환경의 버전 업그레이드는 `-Upgrade` 모드 사용 (툴킷 파일만 갱신, 사용자 데이터 보존).

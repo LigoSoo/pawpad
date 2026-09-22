@@ -30,10 +30,15 @@ function Assert-Manifest($Actual, $Expected, [string]$Label) {
     $different = @($Expected.Keys | Where-Object { -not $Actual.ContainsKey($_) -or $Actual[$_] -ne $Expected[$_] })
     Assert-That ($Actual.Count -eq $Expected.Count -and $different.Count -eq 0) "$Label ($($Expected.Count) files; differences: $($different -join ', '))"
 }
-function Invoke-Setup([string]$Script, [string]$Root, [string]$Tag, [switch]$Upgrade, [string]$Preset = 'full', [switch]$NoCodex) {
+function Invoke-Setup([string]$Script, [string]$Root, [string]$Tag, [switch]$Upgrade, [string]$Preset = 'full', [switch]$NoCodex, [string]$CodexPreset = '', [switch]$NoPreset, [string]$BundlesCsv = '', [string]$CodexBundlesCsv = '') {
     if (-not (Test-Path -LiteralPath $Root)) { New-Item -ItemType Directory -Path $Root | Out-Null }
     $log = Join-Path $fixtureRoot "$Tag.log"
-    $params = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $Script, '-Stack', 'generic', '-Preset', $Preset, '-Lang', 'en', '-ShowLog')
+    $params = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $Script, '-Stack', 'generic', '-Lang', 'en', '-ShowLog')
+    # v2.54: -NoPreset omits the bundle args entirely so the recorded selection in pawpad-config.json is exercised.
+    if (-not $NoPreset) { $params += @('-Preset', $Preset) }
+    if ($CodexPreset) { $params += @('-CodexPreset', $CodexPreset) }
+    if ($BundlesCsv) { $params += @('-Bundles', $BundlesCsv) }
+    if ($CodexBundlesCsv) { $params += @('-CodexBundles', $CodexBundlesCsv) }
     if ($Upgrade) { $params += '-Upgrade' }
     # v2.53: Codex surface is opt-in. Older baselines have no -WithCodex parameter.
     if (-not $NoCodex -and (Read-Text $Script) -match '\$WithCodex') { $params += '-WithCodex' }
@@ -49,6 +54,43 @@ try {
     $tokens = $null; $parseErrors = $null
     $ast = [Management.Automation.Language.Parser]::ParseFile($setup, [ref]$tokens, [ref]$parseErrors)
     Assert-That ($parseErrors.Count -eq 0) 'Installer PowerShell syntax'
+    # Exercise the actual installer function without regenerating user config first.
+    $bundleFunction = $ast.Find({ param($node)
+        $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Update-BundleRecord'
+    }, $true)
+    & {
+        . ([scriptblock]::Create($bundleFunction.Extent.Text))
+        function Write-InstallLog { param($Message, $Color, [switch]$Always) }
+        $recordRoot = Join-Path $fixtureRoot 'bundle-record'
+        New-Item -ItemType Directory -Path (Join-Path $recordRoot '.claude') | Out-Null
+        $recordPath = Join-Path $recordRoot '.claude/pawpad-config.json'
+        $cases = @(
+            @{ Name = 'empty object'; Json = '{}' },
+            @{ Name = 'compact JSON'; Json = '{"hooks":{"enabled":false},"bundles":{"claude":["qa"],"codex":["qa"]},"user":{"nested":{"level":{"value":"preserved"}}}}' },
+            @{ Name = 'nested bundles'; Json = "{`r`n  `"bundles`": {`r`n    `"custom`": {`r`n      `"nested`": true`r`n    },`r`n    `"claude`": [`"qa`"]`r`n  },`r`n  `"user`": {`"nested`": {`"level`": {`"value`": `"preserved`"}}}`r`n}" }
+        )
+        Push-Location -LiteralPath $recordRoot
+        try {
+            foreach ($case in $cases) {
+                [IO.File]::WriteAllText($recordPath, $case.Json, $utf8)
+                $script:failed = 0
+                Update-BundleRecord @('review', 'prd') @()
+                $recordText = Read-Text $recordPath
+                $record = ConvertFrom-Json -InputObject $recordText -ErrorAction Stop
+                Assert-That ($script:failed -eq 0 -and ($record.bundles.claude -join ',') -eq 'prd,review' -and @($record.bundles.codex).Count -eq 0) "$($case.Name): valid JSON and selected bundles"
+                $original = ConvertFrom-Json -InputObject $case.Json
+                $record.PSObject.Properties.Remove('bundles')
+                $original.PSObject.Properties.Remove('bundles')
+                Assert-EqualText (ConvertTo-Json -InputObject $record -Depth 100 -Compress) (ConvertTo-Json -InputObject $original -Depth 100 -Compress) "$($case.Name): unrelated properties preserved"
+                $recordBytes = [IO.File]::ReadAllBytes($recordPath)
+                Assert-That ($recordBytes[0] -eq 123 -and [regex]::Matches($recordText, '"bundles"\s*:').Count -eq 1) "$($case.Name): no BOM or duplicate bundles key"
+            }
+            [IO.File]::WriteAllText($recordPath, '{"broken":', $utf8)
+            $script:failed = 0
+            Update-BundleRecord @('prd') @()
+            Assert-That ($script:failed -eq 1 -and (Read-Text $recordPath) -ceq '{"broken":') 'Invalid JSON is preserved and counted as an install failure'
+        } finally { Pop-Location }
+    }
     $assignment = $ast.Find({ param($node)
         $node -is [Management.Automation.Language.AssignmentStatementAst] -and $node.Left.Extent.Text -eq '$codexCodeDelegateSkill'
     }, $true)
@@ -109,6 +151,42 @@ try {
     $leanRoot = Join-Path $fixtureRoot 'lean/app'
     Invoke-Setup $setup $leanRoot 'lean' -Preset 'lean'
     Assert-That (-not (Test-Path (Join-Path $leanRoot $skillRel))) 'Lean preset excludes code-delegate'
+    # v2.54: Codex-only bundle axis. Claude stays full while the Codex surface is narrowed.
+    function Get-SkillNames([string]$Root, [string]$Rel) {
+        return @(Get-ChildItem -LiteralPath (Join-Path $Root $Rel) -Directory -EA SilentlyContinue | ForEach-Object { $_.Name } | Sort-Object)
+    }
+    $asymRoot = Join-Path $fixtureRoot 'asym/app'
+    Invoke-Setup $setup $asymRoot 'asym' -Preset 'full' -CodexPreset 'lean'
+    $asymClaude = Get-SkillNames $asymRoot '.claude/skills'
+    $asymCodex = Get-SkillNames $asymRoot '.agents/skills'
+    Assert-That ($asymClaude.Count -eq 22 -and $asymCodex.Count -eq 12) "Codex axis narrows only the mirror (claude=$($asymClaude.Count) codex=$($asymCodex.Count))"
+    Assert-That (@($asymCodex | Where-Object { $asymClaude -notcontains $_ }).Count -eq 0) 'Codex mirror stays a subset of the Claude install'
+    $asymCfg = (Read-Text (Join-Path $asymRoot '.codex/config.json')) | ConvertFrom-Json
+    Assert-That (@($asymCfg.skills).Count -eq 12) "config.json skills follow the Codex axis ($(@($asymCfg.skills).Count))"
+    Assert-That (@(@($asymCfg.skills) | Where-Object { $asymCodex -notcontains $_ }).Count -eq 0) 'config.json lists no skill missing from the mirror'
+    # 'review/trust' is the Codex /hooks instruction, not the review skill; strip it before scanning for skill names.
+    $asymAgents = (Read-Text (Join-Path $asymRoot 'AGENTS.md')) -replace 'review/trust', ''
+    $codexDropped = @($asymClaude | Where-Object { $asymCodex -notcontains $_ })
+    Assert-That (@($codexDropped | Where-Object { $asymAgents -match ('(?<![A-Za-z0-9-])' + [regex]::Escape($_) + '(?![A-Za-z0-9-])') }).Count -eq 0) 'AGENTS.md drops every Codex-excluded skill name'
+    $asymManifest = Read-Text (Join-Path $asymRoot '.agents/SKILLS_MANIFEST.md')
+    Assert-That ([regex]::Matches($asymManifest, '(?m)^\|\s*\*\*').Count -eq 12) 'Codex manifest lists only the Codex skills'
+    $claudeSurface = @('CLAUDE.md', '.claude/skills', '.claude/hooks', '.claude/HYBRID.md', '.claude/SKILLS_MANIFEST.md')
+    Assert-Manifest (Get-Manifest $asymRoot $claudeSurface) (Get-Manifest $freshRoot $claudeSurface) 'Narrowing the Codex axis leaves Claude bytes untouched'
+    # The Codex axis cannot exceed the Claude install (mirror source is .claude/skills).
+    $clampRoot = Join-Path $fixtureRoot 'clamp/app'
+    Invoke-Setup $setup $clampRoot 'clamp' -Preset 'lean' -CodexPreset 'full'
+    Assert-That ((Get-SkillNames $clampRoot '.claude/skills').Count -eq 12 -and (Get-SkillNames $clampRoot '.agents/skills').Count -eq 12) 'Codex axis is clamped to the Claude install set'
+    # The selection is recorded, so an upgrade without bundle args keeps it instead of restoring full.
+    Invoke-Setup $setup $asymRoot 'asym-upgrade' -Upgrade -NoPreset
+    Assert-That ((Get-SkillNames $asymRoot '.claude/skills').Count -eq 22 -and (Get-SkillNames $asymRoot '.agents/skills').Count -eq 12) 'Upgrade without bundle args reuses the recorded selection'
+    $asymCfgJson = (Read-Text (Join-Path $asymRoot '.claude/pawpad-config.json')) | ConvertFrom-Json
+    Assert-That (@($asymCfgJson.bundles.claude).Count -eq 5 -and @($asymCfgJson.bundles.codex).Count -eq 0) 'pawpad-config.json records both axes'
+    # Comma-form bundle args: PowerShell parses `-Bundles prd,review` as an array and hands the
+    # [string] parameter a space-joined value, so splitting on ',' alone collapsed it to Core (latent since v2.39).
+    $csvRoot = Join-Path $fixtureRoot 'csv/app'
+    Invoke-Setup $setup $csvRoot 'csv' -NoPreset -BundlesCsv 'prd,review' -CodexBundlesCsv 'prd'
+    Assert-That ((Get-SkillNames $csvRoot '.claude/skills').Count -eq 17) "Comma-form -Bundles keeps the named bundles ($((Get-SkillNames $csvRoot '.claude/skills').Count))"
+    Assert-That ((Get-SkillNames $csvRoot '.agents/skills').Count -eq 16) "Comma-form -CodexBundles applies to the mirror ($((Get-SkillNames $csvRoot '.agents/skills').Count))"
     Assert-EqualText (Read-Text (Join-Path $repo $skillRel)) $expectedSkill 'Checked-in skill matches generator'
     Write-Output "Result: $checks checks passed. Fixtures: $fixtureRoot"
 } catch { Write-Error "$_`nFixtures: $fixtureRoot" -ErrorAction Continue; exit 1 }

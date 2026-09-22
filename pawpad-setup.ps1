@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.53 (Claude-first Distribution, opt-in Codex, PowerShell)
-# STATUS: FROZEN (v2.53. v2.52 기반 + **Codex 표면 기본 미설치(opt-in)** — 스킬 22 불변, Claude 산출물 바이트 불변. 사용자 요구: "Codex에서 현재 스킬을 사용하는 건 불안하다". 기본 설치는 Claude 전용이고 Codex 표면 4종(AGENTS.md / .agents/skills 미러 / .codex/config.json / .codex/config.toml·hooks.json·hooks/*)은 `-WithCodex` 지정 시에만 생성한다. 부분 제외는 기각했다 — AGENTS.md 본문과 config.json의 skills 배열이 .agents/skills 경로를 다수 참조하므로 A만 빼면 죽은 경로가 남는다. **기존 설치는 자동 감지로 계속 갱신**한다(AGENTS.md / .agents/skills / .codex/config.json / .codex/hooks.json 중 하나라도 있으면 on): -Upgrade가 사용자 자산을 말없이 지우지 않는 기존 규율과 같은 방향이고, 이 때문에 기본값 변경이 기존 설치처의 동작을 바꾸지 않는다. 진행 바 단계는 29 -> 25로 줄고(Codex 4단계 제외) 체크리스트도 그만큼 사라진다. 전역 Codex 스킬 섀도잉 경고도 Codex 표면 설치 시에만 발화한다. Claude 측(CLAUDE.md/.claude/skills/.claude/hooks)은 **한 바이트도 바뀌지 않는다** — 스킬 본문의 "CLAUDE.md/AGENTS.md가 강제" 같은 산문은 그대로 두었다(조건부 텍스트로 만들면 두 모드의 스킬 바이트가 갈라져 live==embed 대조와 회귀 테스트가 무의미해진다). 보고서: docs/CHANGELOG_v2.53.md.)
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.54 (Claude-first Distribution, per-surface skill bundles, PowerShell)
+# STATUS: FROZEN (v2.54. v2.53 기반 + **Codex 전용 번들 축** (`-CodexPreset` / `-CodexBundles`) — Claude와 Codex에 서로 다른 스킬 세트를 설치한다. v2.53까지 축은 1개(`-Preset`/`-Bundles`)뿐이고 미러는 `.claude/skills` 전 디렉터리 1:1 복사였다 — 두 표면이 항상 동일 세트. 예: `-Preset full -CodexPreset lean` → Claude 22 / Codex 12(Core). **v2.53이 기각했던 “부분 제외”를 이번에 수행**했다 — 기각 사유였던 죽은 경로(AGENTS.md 본문·config.json `skills[]`)를 prune이 keepX 기준으로 다시 긎게 했고, 정규식 트림 로직 자체는 무변경이다(파일별로 다른 집합을 먹일 뿐). 제약: codexSel ⊆ claudeSel(미러 소스가 `.claude/skills`) — 초과분은 자동 교집합 + 경고 1줄. Codex 축을 줄여도 **Claude 산출물은 바이트 불변**(제거할 게 없는 표면은 파일을 열지도 않는다 — 불필요 재기록은 BOM을 떨구어뜨렸다). `.agents/SKILLS_MANIFEST.md` 신규(keepX 기준) + `config.json` `contextFiles.skillsManifest` 포인터 전환 — Codex가 호출 불가 스킬을 목록에서 보지 않는다. 번들 선택은 `.claude/pawpad-config.json` `bundles`에 기록되고 `-Upgrade`에서 인자 생략 시 재사용된다(인자 우선) — v2.39부터 있던 “업그레이드하면 말없이 full로 되돌아가는” 결함도 같이 해소된다. 스킬 22 불변, 진행 바 단계 불변(25/29). 보고서: docs/CHANGELOG_v2.54.md.)
+#         이전: v2.53. v2.52 기반 + **Codex 표면 기본 미설치(opt-in)** — 스킬 22 불변, Claude 산출물 바이트 불변. 사용자 요구: "Codex에서 현재 스킬을 사용하는 건 불안하다". 기본 설치는 Claude 전용이고 Codex 표면 4종(AGENTS.md / .agents/skills 미러 / .codex/config.json / .codex/config.toml·hooks.json·hooks/*)은 `-WithCodex` 지정 시에만 생성한다. 부분 제외는 기각했다 — AGENTS.md 본문과 config.json의 skills 배열이 .agents/skills 경로를 다수 참조하므로 A만 빼면 죽은 경로가 남는다. **기존 설치는 자동 감지로 계속 갱신**한다(AGENTS.md / .agents/skills / .codex/config.json / .codex/hooks.json 중 하나라도 있으면 on): -Upgrade가 사용자 자산을 말없이 지우지 않는 기존 규율과 같은 방향이고, 이 때문에 기본값 변경이 기존 설치처의 동작을 바꾸지 않는다. 진행 바 단계는 29 -> 25로 줄고(Codex 4단계 제외) 체크리스트도 그만큼 사라진다. 전역 Codex 스킬 섀도잉 경고도 Codex 표면 설치 시에만 발화한다. Claude 측(CLAUDE.md/.claude/skills/.claude/hooks)은 **한 바이트도 바뀌지 않는다** — 스킬 본문의 "CLAUDE.md/AGENTS.md가 강제" 같은 산문은 그대로 두었다(조건부 텍스트로 만들면 두 모드의 스킬 바이트가 갈라져 live==embed 대조와 회귀 테스트가 무의미해진다). 보고서: docs/CHANGELOG_v2.53.md.
 #         이전: v2.52. v2.51 기반 + device-qa 스킬 신규(21→22, 새 qa 번들 = full 전용) — 기기 QA에서 스크린샷 루프가 5시간 사용 한도를 한 세션에 태우는 사고를 차단한다(설치처 TodayQuest 2026-09-02 실측: PNG 98장 생성·약 50장 read). 읽은 이미지는 이후 모든 도구 호출에 재전송되므로 비용이 `이미지 수 × 남은 호출 수`로 누적되고, QA는 도구 호출이 가장 많은 작업이라 이 곱이 최대가 된다. **위임(qa-delegate)은 기각** — 서브 컨텍스트도 같은 한도를 먹으므로 비용이 숨을 뿐이다. 대신 검증 채널 우선순위를 고정한다: 기기 자동화 테스트(integration_test/am instrument) → logcat/dumpsys → 앱 DB → uiautomator dump → **축소 스크린샷**(기본 32%) → 원본. 편입 전 에뮬레이터 실측(Android 16 / 1080x2400 / Flutter 앱)으로 원안 결함 6건을 수정했다: ①원안 1순위였던 `uiautomator dump`가 Flutter 홈에서 `could not get idle state` **12/12 실패**(plain 6 + --compressed 6, 애니메이션 스케일 0에서도. 네이티브 설정 앱·런처는 성공) → dump를 4순위로 내리고 **화면 1회 프로브** 후 불가면 축소 스크린샷으로 전환 ②성공한 dump도 Flutter Text가 안 올라와 앱 문자열 0건 → 기대 문자열 부재 시 판정 근거 불가 명시 ③Git Bash가 기기 경로 `/sdcard/x.xml`을 `/Files/Git/sdcard/...`로 변환해 **옛 파일을 읽어 다른 화면으로 PASS**가 나던 경로 → 기기 경로 `//` 규칙 + dump 전 옛 파일 삭제 ④에이전트 Bash 도구는 호출 간 변수·함수를 보존하지 않음 → 스니펫 자기완결 규율(원안의 `D=<serial>`·`dump()` 헬퍼는 다음 호출에서 소멸) ⑤`integration_test` 채널 누락 → 1순위로 신설 ⑥"크롭·축소" 지시에 명령이 없어 원본을 read하던 경로 → .NET 리사이즈 스니펫 제공(실측 1,476→354 토큰, 판독성 유지). 실측 단가표를 스킬 본문에 포함: grep 어서션 ~10 / dump 필터 ~250 / 축소샷 ~354 / 원본샷 ~1,476 / **dump 원문 ~8,000**(스크린샷의 5배 — 원문 투입 금지가 🔴 규칙). 미검증: 노트8(Android 9) dump 거동, 실패 원인의 Flutter 애니메이션 특정(정황). 보고서: docs/CHANGELOG_v2.52.md.)
 #         이전: v2.51. v2.50 기반 + design 스킬 원형 기반 재설계 — 스킬 21 불변. 기존 design은 최상위 원칙이 "AI 티 = 불일치"(일관성)라 **일관되게 틀린 위계**를 통과시켰다: 토큰이 전부 스케일 파생이어도 모든 카드가 같은 크기이고 주 CTA가 보조 행동에 파묻히면 정량 체크는 전부 녹색이다. v2.51은 그 위에 **위계 정합**을 1순위로 얹는다 — 화면은 3초 안에 "지금 어떤 상태 / 다음에 뭘 하나 / 그러면 뭘 얻나"에 답하고 그 순서가 시각 위계와 일치해야 한다. 절차도 4단계→**6단계**: (1) **제품 원형 분류**(7문항 + 게임 5문항) → (2) 의미 기반 토큰(색 정의 순서 고정·다크 재정의 6항) → (3) **3영역 레이아웃**(상태/맥락/행동) → (4) 일관성 5축 → (5) **상태 전수 12종**(기존 4종에서 확장 — 부분 데이터·권한 거부·오프라인 포함) → (6) anti-slop + 원칙 8 + 정량 6 + 최악조건 10. 패키징은 `SKILL.md`(코어) + **`references/` 3파일 신규**(archetypes 16,943 B / tokens 6,937 B / checklists 9,747 B)로 쪼개 해당 원형 카드 1~2개만 on-demand read — 게임 만들 때 앱 규칙을 읽지 않는다. 원형 **16종**: 앱·도구 A1~A7(과업완료·발견중심·반복실행·지속상태·습관형성·조건탐색·**관측진단**) + 게임 G1~G9(콘텐츠중심미니멀·코지시스템·에디토리얼미니멀·상태반응·액션로비·진행루프·태스크중심·원버튼진행·고밀도라이브서비스). 게임 축은 토큰에 economy/rarity가 **추가**되고 checklists에 컴포넌트 9종 필수 상태·배지 정책·안티패턴 9종이 붙는다. 미러는 `SKILL.md`만 복사하므로 references 참조는 mockup의 `spec-viewer.html` 선례대로 `.claude/skills/design/references/` **절대 경로**로 적었다. 검증: live==embed **4/4 byte-equal** · PSParser 0 · 설치처 메인 화면 적용 목업으로 3초3질문 1/3→3/3 · 동일 강조도 주 CTA 9→1 · **신규 토큰 0건**. 보고서: docs/CHANGELOG_v2.51.md. 사후수정#1(2026-09-01, 버전 불변): 배포본 빌드 베이스가 v2.50 Addendum(brainstorming 왕복 라운드) 이전이라 임베드·첨자가 회귀 — 해당 SKILL 임베드 + CLAUDE/AGENTS 템플릿 첨자 2를 복원(design 변경분 무영향).
 #         이전: v2.48. v2.47 기반 + ctxdb 키워드 회수 복구 + 계층 성장 규약(스킬 21 불변) — 설치처 실측에서 "프롬프트 키워드로 과거를 부른다"가 사실상 죽어 있었다: 한글 2음절 키워드가 길이 하한 3에 전량 탈락(관측 레포 INDEX 키워드 38%), L1이 자라 포인터가 읽기범위 밖으로 밀리면 무주입인데 진단이 `{}` 하나뿐, 매칭 성공이 폴백을 끄고(가장 관련 있는 프롬프트에서 실패), 이월한 L3는 회수 정규식(`L2/`만)에 안 걸려 영구 회수불가 — 즉 규정대로 이월할수록 장기기억이 사라졌다. 훅 양 런타임 수정: CJK 2자/라틴 3자 하한 분리 + 조사 스트립(원형+어간 양쪽 후보) + 전 행 점수화 매칭(첫 히트 즉시반환 폐기) + `L[234]/` 회수 + L3/L4 `## ` 블록 단위 추출(파일 통째 금지) + L1 포인터 탐색범위와 주입범위 분리 + 폴백 상시 적용 + 무주입 사유 `.ctxdb/.state/{claude|codex}-last-decision` 기록(`{}` 출력계약 유지). 규약: INDEX `L2/L3 경로` 컬럼(포인터를 본문 길이와 분리) + `.ctxdb/keywords.md` 의미매칭 층 신설(agent 전용 — hook 차단·비Windows 폴백, codemap keywords 패턴 이식) + context-saver STEP5 계층 승격(L2 150줄→L3, L3 400줄→L4, L1 60줄/키워드 30개 초과 시 도메인 분할 제안, 이월 시 INDEX·L1 포인터 갱신 의무) + checkpoint 절차 context-saver 누락 보정 + Session Protocol ON NEW TOPIC 폴백. 회귀셋 `tests/ctxdb-recall` 21케이스(toolkit 개발 자산, 배포본 미포함): Claude 20/20(+Codex 전용 1 SKIP)·Codex 21/21, mutation 6/6 검출. 사후수정#1(버전 불변): 영문 어간+한글 조사(React를/Flutter로/Docker에서) 조사 스트립 실패 수정(훅 4표면) + .gitignore `.ctxdb/L4/` 누락 보정. 사후수정#2(버전 불변): handoff 절차에 codemap 갱신 + context-saver 호출 누락 보정(checkpoint D-8과 동형 — 인수 agent는 새 세션이라 영향이 더 크다). Codex exec 교차 리뷰 review-01 PASS_WITH_FIXES 84%(H 0) findings 7건 전건 반영 — mixed L2/L3 아카이브 절단·조사 오분해(전문가→전문)·무주입 진단 불일치·clean clone 러너 실패가 실버그였다. 보고서: docs/CHANGELOG_v2.48.md.
@@ -25,7 +26,7 @@
 #         - Codex native hooks: /hooks trust 후 ctxdb/codemap 최소 로드 + checkpoint continuation.
 #         이전: v2.17 statusLine/ctxdb/codemap(FROZEN). 보고서: docs/CHANGELOG_v2.17.md.
 #         변경 시 새 버전 번호 + 변경 보고서 + Codex 리뷰 절차 따를 것.
-# Usage: .\pawpad-setup.ps1 [-Stack <flutter|node|python|wpf|tauri|electron|avalonia|generic>] [-Force | -Upgrade] [-ShowLog] [-Preset <lean|standard|full>] [-Bundles <prd,ui,delegate,review,qa>] [-Lang <en|ko>] [-WithCodex]
+# Usage: .\pawpad-setup.ps1 [-Stack <flutter|node|python|wpf|tauri|electron|avalonia|generic>] [-Force | -Upgrade] [-ShowLog] [-Preset <lean|standard|full>] [-Bundles <prd,ui,delegate,review,qa>] [-Lang <en|ko>] [-WithCodex] [-CodexPreset <lean|standard|full>] [-CodexBundles <prd,ui,...>]
 #        -Stack/-Preset/-Lang 생략 시 대화형 프롬프트(Enter=generic/full/ko). pwsh로 Mac/Linux에서도 실행 가능.
 #
 # 한 번에 모든 것을 세팅합니다:
@@ -44,6 +45,10 @@
 #
 # -WithCodex : Codex 표면 설치(AGENTS.md + .agents/skills + .codex/*). 기본은 Claude 전용.
 #              이미 Codex 산출물이 있는 기존 설치는 자동 감지되어 지정 없이도 계속 갱신된다.
+# -CodexPreset / -CodexBundles : Codex 표면에만 적용하는 별도 번들 축(v2.54).
+#              미지정 시 Claude 축(-Preset/-Bundles)을 그대로 상속한다(= v2.53 이하와 동일 산출물).
+#              지정 시 -WithCodex 암묵 적용. 예: -Preset full -CodexPreset lean -> Claude 22 / Codex 12(Core).
+#              Claude 설치 범위를 초과할 수 없다(미러 소스가 .claude/skills) -> 자동 교집합 + 경고.
 # -Force : 기존 파일 덮어쓰기 (기본: 기존 파일 건너뜀)
 # -Upgrade : 기존 설치 업그레이드. 툴킷 소유 파일만 갱신(UPDATED), 사용자 데이터 보존(SKIP),
 #            혼합 파일(CLAUDE/AGENTS/settings/config.json)은 툴킷 섹션·키만 자동 병합(MERGED).
@@ -59,14 +64,14 @@
 # 실행 정책 오류 시:
 #   Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
-param([switch]$Force, [switch]$Upgrade, [string]$Stack = "", [switch]$ShowLog, [string]$Preset = "", [string]$Bundles = "", [string]$Lang = "", [switch]$WithCodex)
+param([switch]$Force, [switch]$Upgrade, [string]$Stack = "", [switch]$ShowLog, [string]$Preset = "", [string]$Bundles = "", [string]$Lang = "", [switch]$WithCodex, [string]$CodexPreset = "", [string]$CodexBundles = "")
 
 if ($Force -and $Upgrade) {
     Write-Host "ERROR: -Force와 -Upgrade는 동시 지정 불가. 하나만 선택하세요." -ForegroundColor Red
     exit 1
 }
 
-$ver = "2.53"
+$ver = "2.54"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -79,7 +84,10 @@ $projectName = Split-Path (Get-Location) -Leaf
 # ── Codex 표면 설치 여부 (v2.53) ─────────────────────────────────────────────────
 # 기본은 Claude 전용. Codex 표면(AGENTS.md / .agents/skills / .codex/*)은 -WithCodex 지정 시에만 설치한다.
 # 예외: 이미 Codex 산출물이 깔린 기존 설치는 자동 감지해 계속 갱신한다(-Upgrade가 사용자 자산을 말없이 지우지 않는 규율).
-$script:installCodex = [bool]$WithCodex
+# v2.54: Codex 번들 축(-CodexPreset/-CodexBundles)을 지정하면 의도가 명백하므로 -WithCodex를 암묵 적용한다.
+$script:codexAxisArg = [bool]$CodexPreset -or [bool]$CodexBundles
+$script:installCodex = [bool]$WithCodex -or $script:codexAxisArg
+$script:codexImplied = $script:codexAxisArg -and -not $WithCodex
 $script:codexDetected = $false
 if (-not $script:installCodex) {
     foreach ($probe in @('AGENTS.md', '.agents\skills', '.codex\config.json', '.codex\hooks.json')) {
@@ -709,6 +717,10 @@ $TR = @{
         inputNumName = "번호 또는 이름"; unknownStack = "알 수 없는 스택 '{0}' -> generic 사용"
         bundlePrompt = "스킬 번들 선택 (Enter=full 전체 설치):"; bundleOpts = "  1) lean (Core 12)   2) standard (Core+PRD+위임+리뷰 18)   3) full (전체 22)"
         unknownPreset = "알 수 없는 preset '{0}' -> full 사용"; bundleLine = "번들 설치: {0} = {1} 스킬 (제거 {2}: {3})"
+        codexBundleLine = "  └ Codex 표면: {0} = {1} 스킬 (제외 {2}: {3})"
+        codexIntersectWarn = "Codex 번들이 Claude 설치 범위를 초과 -> 교집합으로 축소 ({0} 제외. 미러 소스가 .claude/skills이라 초과 불가)"
+        codexImpliedLine = "-CodexPreset/-CodexBundles 지정 -> Codex 표면 설치 활성화 (-WithCodex 암묵 적용)"
+        bundleRecalled = "이전 설치의 번들 선택 재사용 (.claude/pawpad-config.json): Claude={0} / Codex={1}. 변경은 -Preset/-CodexPreset 지정."
         coreOnly = "Core 전용"; corePlus = "Core + "
         complete = "프로젝트 초기화 완료 (PawPad v{0})"; failed = "{0} 개 항목 실패. 권한 확인 후 다시 시도하세요."
         codexOff = "  - Codex 표면 미설치 (Claude 전용 기본값). 필요 시 -WithCodex: AGENTS.md + .agents/skills + .codex/*"
@@ -736,6 +748,10 @@ $TR = @{
         inputNumName = "number or name"; unknownStack = "Unknown stack '{0}' -> using generic"
         bundlePrompt = "Select skill bundles (Enter=full):"; bundleOpts = "  1) lean (Core 12)   2) standard (Core+PRD+delegate+review 18)   3) full (all 22)"
         unknownPreset = "Unknown preset '{0}' -> using full"; bundleLine = "Bundles: {0} = {1} skills (removed {2}: {3})"
+        codexBundleLine = "  └ Codex surface: {0} = {1} skills (excluded {2}: {3})"
+        codexIntersectWarn = "Codex bundles exceed the Claude install set -> clamped to the intersection ({0} dropped; mirror source is .claude/skills)"
+        codexImpliedLine = "-CodexPreset/-CodexBundles given -> Codex surface enabled (-WithCodex implied)"
+        bundleRecalled = "Reusing bundle selection from previous install (.claude/pawpad-config.json): Claude={0} / Codex={1}. Override with -Preset/-CodexPreset."
         coreOnly = "Core only"; corePlus = "Core + "
         complete = "Project initialized (PawPad v{0})"; failed = "{0} item(s) failed. Check permissions and retry."
         codexOff = "  - Codex surface not installed (Claude-only default). Use -WithCodex for AGENTS.md + .agents/skills + .codex/*"
@@ -801,22 +817,76 @@ if ($validStacks -notcontains $Stack) {
     $Stack = 'generic'
 }
 
-# ── Bundle 선택 (선택 번들 설치, v2.39) ──────────────────────────────────────────
+# ── Bundle 선택 (선택 번들 설치 v2.39 / Codex 전용 축 v2.54) ─────────────────────
 # Core 12 항상 설치. Optional 번들: prd / ui / delegate / review / qa. ui·delegate는 prd 의존(자동 포함). qa는 독립(기기 QA 프로토콜).
+# 축 2개: Claude(-Preset/-Bundles) / Codex(-CodexPreset/-CodexBundles). Codex 축 미지정 = Claude 축 상속 -> v2.53 이하와 동일 산출물.
 $validBundles = @('prd', 'ui', 'delegate', 'review', 'qa')
 $bundlePresets = @{ lean = @(); standard = @('prd', 'delegate', 'review'); full = @('prd', 'ui', 'delegate', 'review', 'qa') }
+# 번들 <-> 스킬 매핑 (prune과 공유). 번들별 스킬 집합은 서로 겹치지 않는다 -> 번들 교집합 == 스킬 교집합.
+$bpCore = @('resume', 'task-done', 'ctxdb-navigator', 'checkpoint', 'context-saver', 'handoff', 'codemap', 'codebase-map', 'caveman', 'lean-code', 'feature-architecture', 'security-check')
+$bpMap = [ordered]@{ prd = @('brainstorming', 'clarity', 'grill-me', 'to-prd'); ui = @('design', 'mockup', 'viewer-apply'); delegate = @('code-delegate'); review = @('review'); qa = @('device-qa') }
+$bpDeps = @{ ui = @('prd'); delegate = @('prd') }
+$bpAll = @($bpCore); foreach ($bpKey in $bpMap.Keys) { $bpAll += $bpMap[$bpKey] }
+
+function Expand-BundleSel {
+    # 유효 번들만 남기고 의존 번들 자동 포함(ui·delegate -> prd). 중복 제거.
+    param([string[]]$Sel)
+    $s = @(@($Sel) | Where-Object { $validBundles -contains $_ } | Select-Object -Unique)
+    $chg = $true
+    while ($chg) {
+        $chg = $false
+        foreach ($b in @($s)) {
+            if ($bpDeps.ContainsKey($b)) {
+                foreach ($d in $bpDeps[$b]) { if ($s -notcontains $d) { $s += $d; $chg = $true } }
+            }
+        }
+    }
+    return ,@($s)
+}
+
+function Resolve-BundleKeep {
+    # 번들 선택 -> 설치 유지 스킬 집합 (Core 12 + 선택 번들의 스킬)
+    param([string[]]$Sel)
+    $k = @($bpCore)
+    foreach ($b in (Expand-BundleSel $Sel)) { $k += $bpMap[$b] }
+    return ,@($k | Select-Object -Unique)
+}
+
+function ConvertFrom-BundleCsv {
+    # 공백도 구분자로 받는다: PowerShell은 `-Bundles prd,review`를 **배열**로 파싱해 [string] 파라미터에
+    # 공백 join된 "prd review"를 넘긴다. 쉼표만 자르면 토큰이 깨져 Core만 남는다(v2.39부터 잠복).
+    param([string]$Csv)
+    $sep = [char[]]@(',', ' ', ';')
+    return ,@($Csv.Split($sep, [System.StringSplitOptions]::RemoveEmptyEntries) | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $_ -and ($validBundles -contains $_) })
+}
+
+function Resolve-PresetSel {
+    param([string]$PresetVal)
+    $pkey = $PresetVal.Trim().ToLower()
+    if (-not $bundlePresets.ContainsKey($pkey)) { Write-Host ($L.unknownPreset -f $pkey) -ForegroundColor Yellow; $pkey = 'full' }
+    return ,@($bundlePresets[$pkey])
+}
+
+# 이전 설치의 번들 선택 기록(.claude/pawpad-config.json). 인자 우선 - 인자가 없을 때만 재사용한다.
+# 근거: pawpad-config.json은 -Upgrade에서 SKIP(사용자 영역)이라 기록이 보존된다. 이것이 없으면 -Upgrade가 말없이 full로 되돌린다.
+$script:bundleRecalled = $false
+$bpRecClaude = $null; $bpRecCodex = $null
+if (Test-Path ".claude\pawpad-config.json") {
+    try {
+        $bpCfgJson = [System.IO.File]::ReadAllText((Join-Path (Get-Location) ".claude\pawpad-config.json")) | ConvertFrom-Json
+        if ($bpCfgJson.bundles) {
+            $bpCfgNames = @($bpCfgJson.bundles.PSObject.Properties.Name)
+            if ($bpCfgNames -contains 'claude') { $bpRecClaude = @(@($bpCfgJson.bundles.claude) | Where-Object { $validBundles -contains $_ }) }
+            if ($bpCfgNames -contains 'codex') { $bpRecCodex = @(@($bpCfgJson.bundles.codex) | Where-Object { $validBundles -contains $_ }) }
+        }
+    } catch { $bpRecClaude = $null; $bpRecCodex = $null }
+}
+
+# Claude 축
 $script:bundleSelected = @()
-$script:bundleMode = 'full'
-if ($Preset) {
-    $pk = $Preset.Trim().ToLower()
-    if (-not $bundlePresets.ContainsKey($pk)) { Write-Host ($L.unknownPreset -f $pk) -ForegroundColor Yellow; $pk = 'full' }
-    $script:bundleSelected = @($bundlePresets[$pk])
-    $script:bundleMode = if ($pk -eq 'full') { 'full' } else { 'custom' }
-}
-elseif ($Bundles) {
-    $script:bundleSelected = @($Bundles.Split(',') | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $_ -and ($validBundles -contains $_) })
-    $script:bundleMode = 'custom'
-}
+if ($Preset) { $script:bundleSelected = Resolve-PresetSel $Preset }
+elseif ($Bundles) { $script:bundleSelected = ConvertFrom-BundleCsv $Bundles }
+elseif ($null -ne $bpRecClaude) { $script:bundleSelected = @($bpRecClaude); $script:bundleRecalled = $true }
 else {
     $bsel = ''
     try {
@@ -828,11 +898,37 @@ else {
         }
     } catch { $bsel = '' }
     switch -Regex ($bsel.Trim().ToLower()) {
-        '^(1|lean)$' { $script:bundleSelected = @($bundlePresets['lean']); $script:bundleMode = 'custom' }
-        '^(2|standard)$' { $script:bundleSelected = @($bundlePresets['standard']); $script:bundleMode = 'custom' }
-        default { $script:bundleSelected = @($bundlePresets['full']); $script:bundleMode = 'full' }
+        '^(1|lean)$' { $script:bundleSelected = @($bundlePresets['lean']) }
+        '^(2|standard)$' { $script:bundleSelected = @($bundlePresets['standard']) }
+        default { $script:bundleSelected = @($bundlePresets['full']) }
     }
 }
+$script:bundleSelected = Expand-BundleSel $script:bundleSelected
+
+# Codex 축 (미지정 시 Claude 상속)
+if ($CodexPreset) { $script:codexSelected = Resolve-PresetSel $CodexPreset }
+elseif ($CodexBundles) { $script:codexSelected = ConvertFrom-BundleCsv $CodexBundles }
+elseif ($null -ne $bpRecCodex) { $script:codexSelected = @($bpRecCodex); $script:bundleRecalled = $true }
+else { $script:codexSelected = @($script:bundleSelected) }
+$script:codexSelected = Expand-BundleSel $script:codexSelected
+
+# codexSel ⊆ claudeSel 강제: 미러 소스가 .claude/skills이므로 초과 불가. 초과분은 교집합으로 축소 + 경고 1줄.
+$bpCodexOver = @($script:codexSelected | Where-Object { $script:bundleSelected -notcontains $_ })
+if ($bpCodexOver.Count -gt 0) {
+    $script:codexSelected = @($script:codexSelected | Where-Object { $script:bundleSelected -contains $_ })
+    Write-Host ($L.codexIntersectWarn -f ($bpCodexOver -join ', ')) -ForegroundColor Yellow
+}
+
+# full 여부는 최종 선택으로 판정 (인자·기록값·대화형 모두 같은 규칙)
+$bpFullKey = (($bundlePresets['full'] | Sort-Object) -join ',')
+$script:bundleMode = if ((($script:bundleSelected | Sort-Object) -join ',') -eq $bpFullKey) { 'full' } else { 'custom' }
+
+if ($script:bundleRecalled) {
+    $bpTxtC = if ($script:bundleSelected.Count -gt 0) { ($script:bundleSelected | Sort-Object) -join '+' } else { $L.coreOnly }
+    $bpTxtX = if ($script:codexSelected.Count -gt 0) { ($script:codexSelected | Sort-Object) -join '+' } else { $L.coreOnly }
+    Write-Host ($L.bundleRecalled -f $bpTxtC, $bpTxtX) -ForegroundColor DarkGray
+}
+if ($script:codexImplied) { Write-Host $L.codexImpliedLine -ForegroundColor Cyan }
 
 # OS 감지 (Windows PowerShell 5.1: $IsWindows 자동변수 미정의 -> Windows로 간주. pwsh: 정의됨)
 $isWin = (-not (Test-Path variable:IsWindows)) -or $IsWindows
@@ -1478,7 +1574,8 @@ function Backup-ProjectData {
         ".agents\skills",
         ".gitignore",
         "CONTEXT.md",
-        ".claude\SKILLS_MANIFEST.md"
+        ".claude\SKILLS_MANIFEST.md",
+        ".agents\SKILLS_MANIFEST.md"
     )
 
     # 백업할 내용이 있는지 확인
@@ -2077,6 +2174,43 @@ Write-FileContent -NoBom ".claude\pawpad-config.json" @'
   }
 }
 '@
+
+# 번들 선택 기록 (v2.54). -Upgrade에서 이 파일은 SKIP(사용자 영역)이라 기록이 보존되고,
+# 다음 실행에서 -Preset/-CodexPreset 생략 시 그대로 재사용된다(인자 우선). 템플릿이 아니라
+# 사후 갱신인 이유: 신규 설치(CREATE)·-Force·-Upgrade(SKIP) 세 경로 모두 같은 코드로 덮어야 하기 때문.
+function Update-BundleRecord {
+    param([string[]]$ClaudeSel, [string[]]$CodexSel)
+    $bpRecPath = Join-Path (Get-Location) ".claude\pawpad-config.json"
+    $bpRecTemp = $null
+    try {
+        $bpRecText = [System.IO.File]::ReadAllText($bpRecPath)
+        $bpRecObject = ConvertFrom-Json -InputObject $bpRecText -ErrorAction Stop
+        if ($bpRecObject -isnot [System.Management.Automation.PSCustomObject]) {
+            throw 'pawpad-config.json must contain a JSON object.'
+        }
+        $bpRecBlock = [pscustomobject][ordered]@{
+            _note = '설치 시 선택된 스킬 번들. Core 12는 항상 설치되므로 여기엔 optional 번들만 기록된다. 다음 설치에서 -Preset/-Bundles(-CodexPreset/-CodexBundles) 생략 시 이 값을 재사용한다(인자 우선).'
+            claude = @($ClaudeSel | Sort-Object)
+            codex = @($CodexSel | Sort-Object)
+        }
+        $bpRecObject | Add-Member -MemberType NoteProperty -Name bundles -Value $bpRecBlock -Force
+        $bpRecText = ConvertTo-Json -InputObject $bpRecObject -Depth 100 -ErrorAction Stop -WarningAction Stop
+        $null = ConvertFrom-Json -InputObject $bpRecText -ErrorAction Stop
+        # Match Write-FileContent -NoBom; replace only after serialization and validation succeed.
+        $bpRecEnc = New-Object System.Text.UTF8Encoding($false)
+        $bpRecTemp = $bpRecPath + '.' + [guid]::NewGuid().ToString('N') + '.tmp'
+        [System.IO.File]::WriteAllText($bpRecTemp, $bpRecText, $bpRecEnc)
+        [System.IO.File]::Replace($bpRecTemp, $bpRecPath, [System.Management.Automation.Language.NullString]::Value)
+    } catch {
+        Write-InstallLog "  FAILED  pawpad-config.json bundles 기록 실패" Red -Always
+        $script:failed++
+    } finally {
+        if ($bpRecTemp -and [System.IO.File]::Exists($bpRecTemp)) {
+            [System.IO.File]::Delete($bpRecTemp)
+        }
+    }
+}
+Update-BundleRecord $script:bundleSelected $script:codexSelected
 
 # ── hooks: run-hook.ps1 (settings.json root-aware wrapper) ───────────────────
 Step-Begin "Claude hooks + statusline"
@@ -8509,7 +8643,7 @@ PowerShell hook을 stdin 주입으로 단독 검증:
 '@
 
 # -- .claude/SKILLS_MANIFEST.md (스킬 카탈로그) --
-Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
+$tmplSkillsManifest = @'
 # Skills Manifest
 
 프로젝트에 설치된 모든 스킬 목록. (22개)
@@ -8614,6 +8748,13 @@ Write-FileContent ".claude\SKILLS_MANIFEST.md" @'
 
 상세: 각 `.claude/skills/{skill}/SKILL.md` | 메타: `.codex/config.json` (skills 배열)
 '@
+Write-FileContent ".claude\SKILLS_MANIFEST.md" $tmplSkillsManifest
+# Codex 용 매니페스트 사본(v2.54): 경로만 .agents/skills 로 치환. 번들 축이 갈리면 prune이 keepX 기준으로 다시 긎는다.
+if ($script:installCodex) {
+    $tmplCodexManifest = $tmplSkillsManifest -replace '\.claude/skills/', '.agents/skills/'
+    $tmplCodexManifest = $tmplCodexManifest -replace '(?m)^# Skills Manifest[ \t]*$', "# Skills Manifest (Codex)`r`n`r`n<!-- DO NOT EDIT: generated from .claude/SKILLS_MANIFEST.md by pawpad-setup.ps1. -->"
+    Write-FileContent ".agents\SKILLS_MANIFEST.md" $tmplCodexManifest -NoBom
+}
 
 # ── .codex/config.json (보조 설정, 동적 projectName) ──────────────────────────
 if ($script:installCodex) { Step-Begin "Codex config.json" }
@@ -8639,7 +8780,8 @@ $($p.StackInfo)
     "architectureDecisions": ".claude/pawpad/decisions/arch.md",
     "rejectedApproaches": ".claude/pawpad/decisions/rejected.md",
     "glossary": "CONTEXT.md",
-    "skillsManifest": ".claude/SKILLS_MANIFEST.md",
+    "skillsManifest": ".agents/SKILLS_MANIFEST.md",
+    "skillsManifestClaude": ".claude/SKILLS_MANIFEST.md",
     "codexRuntimeConfig": ".codex/config.toml",
     "codexHooks": ".codex/hooks.json",
     "codexHookScripts": ".codex/hooks/",
@@ -8718,7 +8860,7 @@ $($p.StackInfo)
     "location": ".claude/pawpad/backup/{YYYY-MM-DD_HHmm}/",
     "preservedItems": {
       "pawpad": ["_wip.md", "_meta.md", "decisions/", "wip/", "handoffs/", "specs/", "codemap/_index.md"],
-      "contextFiles": ["CLAUDE.md", "AGENTS.md", ".claude/HYBRID.md", ".claude/settings.json", ".claude/pawpad-config.json", ".codex/config.json", ".gitignore", "CONTEXT.md", ".claude/SKILLS_MANIFEST.md"],
+      "contextFiles": ["CLAUDE.md", "AGENTS.md", ".claude/HYBRID.md", ".claude/settings.json", ".claude/pawpad-config.json", ".codex/config.json", ".gitignore", "CONTEXT.md", ".claude/SKILLS_MANIFEST.md", ".agents/SKILLS_MANIFEST.md"],
       "codexAdapter": [".codex/config.toml", ".codex/hooks.json", ".codex/hooks/", ".agents/skills/"],
       "claudeHooks": [".claude/hooks/", ".claude/pawpad-config.json"],
       "ctxdb": [".ctxdb"],
@@ -8780,96 +8922,133 @@ Update-Gitignore
 Step-Begin ".gitattributes"
 Update-Gitattributes
 
-# ── Bundle prune (선택 번들 외 제거 + 정합, v2.39) ───────────────────────────────
+# ── Bundle prune (선택 번들 외 제거 + 정합, v2.39 / 표면별 분리 v2.54) ────────────
 # 전체 설치 후 미선택 번들 정리(가산적). docs/config/manifest dangling 0 유지.
-if ($script:bundleMode -eq 'custom') {
-    $bpCore = @('resume', 'task-done', 'ctxdb-navigator', 'checkpoint', 'context-saver', 'handoff', 'codemap', 'codebase-map', 'caveman', 'lean-code', 'feature-architecture', 'security-check')
-    $bpMap = [ordered]@{ prd = @('brainstorming', 'clarity', 'grill-me', 'to-prd'); ui = @('design', 'mockup', 'viewer-apply'); delegate = @('code-delegate'); review = @('review'); qa = @('device-qa') }
-    $bpAll = @($bpCore); foreach ($k in $bpMap.Keys) { $bpAll += $bpMap[$k] }
-    $bpDeps = @{ ui = @('prd'); delegate = @('prd') }
-    $sel = @($script:bundleSelected)
-    $chg = $true; while ($chg) { $chg = $false; foreach ($b in @($sel)) { if ($bpDeps.ContainsKey($b)) { foreach ($d in $bpDeps[$b]) { if ($sel -notcontains $d) { $sel += $d; $chg = $true } } } } }
-    $bpKeep = @($bpCore); foreach ($b in $sel) { $bpKeep += $bpMap[$b] }; $bpKeep = $bpKeep | Select-Object -Unique
-    $bpRemove = @($bpAll | Where-Object { $bpKeep -notcontains $_ })
+# v2.54: Claude(rmC) / Codex(rmX) 집합을 분리한다. 정규식 트림 로직 자체는 v2.53과 동일 —
+#        같은 로직을 파일별로 다른 집합에 태우는 것이 표면별 스킬셋 분리의 전부다.
+function Sync-SkillsManifest {
+    # 매니페스트의 개수 표기 + 스킬 행 + 경로 참조 줄을 설치 집합에 맞춘다.
+    param([string]$Path, [string[]]$Keep, [string[]]$Remove, [System.Text.Encoding]$Enc)
+    if (-not (Test-Path $Path)) { return }
+    # 제거할 게 없으면 손대지 않는다 - 불필요한 재기록은 BOM/줄끝 변형을 부른다.
+    if (@($Remove).Count -eq 0) { return }
+    $man = [System.IO.File]::ReadAllText($Path, $Enc)
+    $gae = [char]0xAC1C
+    $man = [regex]::Replace($man, '\(\d+' + $gae + '\)', '(' + @($Keep).Count + $gae + ')')
+    foreach ($sk in $Remove) {
+        $man = [regex]::Replace($man, '(?m)^\|\s*\*\*' + [regex]::Escape($sk) + '\*\*\s*\|.*\r?\n', '')
+        $man = [regex]::Replace($man, '(?m)^.*/' + [regex]::Escape($sk) + '(\b|\s).*\r?\n', '')
+    }
+    [System.IO.File]::WriteAllText($Path, $man, $Enc)
+}
+
+function Remove-SkillRefs {
+    # 미설치 스킬 이름이 문서에 남지 않도록 트림. Sel은 번들 선택(섹션 단위 제거 판정용).
+    param([string]$Path, [string[]]$Remove, [string[]]$Sel, [System.Text.Encoding]$Enc)
+    if (-not (Test-Path $Path)) { return }
+    # 해당 표면에서 제거된 스킬이 없으면 파일을 열지 않는다.
+    # 근거: Codex 축만 줄인 설치에서도 CLAUDE.md를 재기록하면 BOM이 떨어져 Claude 산출물 바이트가 갈라진다.
+    if (@($Remove).Count -eq 0) { return }
+    $mdc = [char]0xB7
+    $t = [System.IO.File]::ReadAllText($Path, $Enc)
+    if (@($Sel) -notcontains 'prd') { $t = [regex]::Replace($t, '(?sm)^## Idea.*?(?=^## |\z)', '') }
+    if ($Remove -contains 'mockup') { $t = [regex]::Replace($t, '(?m)^.*/mockup viewer.*\r?\n', '') }
+    if ($Remove -contains 'review') { $t = [regex]::Replace($t, '(?m)^.*review skill.*\r?\n', '') }
+    if ($Remove -contains 'design') { $t = [regex]::Replace($t, '(?m)^.*design\(.*\r?\n', '') }
+    # 외부 문서 구현 진입 게이트(v2.44) clause 정리: 미설치 스킬 이름 잔존 0
+    if ($Remove -contains 'design') {
+        $t = [regex]::Replace($t, '(?m)^2\. UI/[^\r\n]*design[^\r\n]*\r?\n', '')
+        $t = [regex]::Replace($t, ' ?② UI/[^①②③\r\n]*design[^①②③\r\n]*(?=③|\. phase)', ' ')
+        $t = $t -replace '\) \. phase', '). phase'
+    }
+    if ($Remove -contains 'code-delegate') {
+        $t = [regex]::Replace($t, '(?m)^3\. 코딩 진입 시 code-delegate[^\r\n]*\r?\n', '')
+        $t = [regex]::Replace($t, ' ?③ 코딩 진입 시 code-delegate[^①②③\r\n]*(?=\. phase)', '')
+    }
+    # 자동제안 리뷰/코딩 위임 clause 정리(선재 잠복: `/review`·`/code-delegate`는 backtick-strip `skill 패턴 미매칭 — prd-only 조합서 노출)
+    if ($Remove -contains 'review') {
+        $t = [regex]::Replace($t, '(?m)^- 리뷰 제안\(구현완료 경계\):[^\r\n]*\r?\n', '')
+        $t = [regex]::Replace($t, '리뷰 제안\(구현완료 경계\):[^\r\n]*?에스컬레이션\. ?', '')
+    }
+    if ($Remove -contains 'code-delegate') {
+        $t = [regex]::Replace($t, '(?m)^- 코딩 위임 제안\(구현 진입 경계\):[^\r\n]*\r?\n', '')
+        $t = [regex]::Replace($t, ' ?코딩 위임 제안\(구현 진입 경계\):[^\r\n]*?제안 X\)\.', '')
+    }
+    foreach ($sk in $Remove) { $t = $t -replace ($mdc + [regex]::Escape($sk)), ''; $t = $t -replace ([regex]::Escape($sk) + $mdc), '' }
+    $rmc = $Remove
+    $t = [regex]::Replace($t, '\{[^}]*\}', { param($m) $parts = ($m.Value.Substring(1, $m.Value.Length - 2)) -split ','; $kept = @($parts | Where-Object { $rmc -notcontains $_.Trim() }); '{' + ($kept -join ',') + '}' })
+    foreach ($sk in $Remove) { $t = [regex]::Replace($t, '`' + [regex]::Escape($sk) + '[^`]*`,?\s?', '') }
+    [System.IO.File]::WriteAllText($Path, $t, $Enc)
+}
+
+$bpKeepC = Resolve-BundleKeep $script:bundleSelected
+$bpKeepX = if ($script:installCodex) { Resolve-BundleKeep $script:codexSelected } else { @($bpKeepC) }
+# 발동 조건: Claude 축이 full이어도 Codex 축이 다르면 깎아야 한다(-Preset full -CodexPreset lean).
+$bpAsym = ((($bpKeepC | Sort-Object) -join ',') -ne (($bpKeepX | Sort-Object) -join ','))
+if (($script:bundleMode -eq 'custom') -or $bpAsym) {
+    $bpRemoveC = @($bpAll | Where-Object { $bpKeepC -notcontains $_ })
+    $bpRemoveX = @($bpAll | Where-Object { $bpKeepX -notcontains $_ })
 
     $root2 = (Get-Location).Path
     $utf8nb = New-Object System.Text.UTF8Encoding $false
-    # 1) 미선택 스킬 디렉토리 제거 (.claude/skills + .agents/skills)
-    foreach ($s in $bpRemove) { foreach ($base in @('.claude\skills', '.agents\skills')) { $d = Join-Path $root2 (Join-Path $base $s); if (Test-Path $d) { Remove-Item $d -Recurse -Force -ErrorAction SilentlyContinue } } }
-    # 2) config.json skills 배열 동기
+    # 1) 미선택 스킬 디렉토리 제거 (표면별 집합)
+    foreach ($s in $bpRemoveC) { $d = Join-Path $root2 (Join-Path '.claude\skills' $s); if (Test-Path $d) { Remove-Item $d -Recurse -Force -ErrorAction SilentlyContinue } }
+    foreach ($s in $bpRemoveX) { $d = Join-Path $root2 (Join-Path '.agents\skills' $s); if (Test-Path $d) { Remove-Item $d -Recurse -Force -ErrorAction SilentlyContinue } }
+    # 2) config.json skills 배열 동기 (Codex 표면 기준)
     $cfgP = Join-Path $root2 '.codex\config.json'
     if (Test-Path $cfgP) {
         $cfg = [System.IO.File]::ReadAllText($cfgP, $utf8nb)
         $mm = [regex]::Match($cfg, '"skills":\s*\[(.*?)\]', 'Singleline')
         if ($mm.Success) {
             $on = @([regex]::Matches($mm.Groups[1].Value, '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value })
-            $ko = @($on | Where-Object { $bpKeep -contains $_ })
+            $ko = @($on | Where-Object { $bpKeepX -contains $_ })
             $at = ($ko | ForEach-Object { '    "' + $_ + '"' }) -join ",`r`n"
             $cfg = $cfg.Substring(0, $mm.Index) + "`"skills`": [`r`n$at`r`n  ]" + $cfg.Substring($mm.Index + $mm.Length)
             [System.IO.File]::WriteAllText($cfgP, $cfg, $utf8nb)
         }
     }
-    # 3) SKILLS_MANIFEST.md 카운트 + 행 + 호출/체이닝 줄 동기
-    $manP = Join-Path $root2 '.claude\SKILLS_MANIFEST.md'
-    if (Test-Path $manP) {
-        $man = [System.IO.File]::ReadAllText($manP, $utf8nb)
-        $gae = [char]0xAC1C
-        $man = [regex]::Replace($man, '\(\d+' + $gae + '\)', '(' + $bpKeep.Count + $gae + ')')
-        foreach ($s in $bpRemove) {
-            $man = [regex]::Replace($man, '(?m)^\|\s*\*\*' + [regex]::Escape($s) + '\*\*\s*\|.*\r?\n', '')
-            $man = [regex]::Replace($man, '(?m)^.*/' + [regex]::Escape($s) + '(\b|\s).*\r?\n', '')
-        }
-        [System.IO.File]::WriteAllText($manP, $man, $utf8nb)
-    }
-    # 4) docs 트림 (CLAUDE.md / AGENTS.md / HYBRID.md)
-    $mdc = [char]0xB7
-    foreach ($doc in @('CLAUDE.md', 'AGENTS.md', '.claude\HYBRID.md')) {
-        $p = Join-Path $root2 $doc
-        if (-not (Test-Path $p)) { continue }
-        $t = [System.IO.File]::ReadAllText($p, $utf8nb)
-        if ($sel -notcontains 'prd') { $t = [regex]::Replace($t, '(?sm)^## Idea.*?(?=^## |\z)', '') }
-        if ($bpRemove -contains 'mockup') { $t = [regex]::Replace($t, '(?m)^.*/mockup viewer.*\r?\n', '') }
-        if ($bpRemove -contains 'review') { $t = [regex]::Replace($t, '(?m)^.*review skill.*\r?\n', '') }
-        if ($bpRemove -contains 'design') { $t = [regex]::Replace($t, '(?m)^.*design\(.*\r?\n', '') }
-        # 외부 문서 구현 진입 게이트(v2.44) clause 정리: 미설치 스킬 이름 잔존 0
-        if ($bpRemove -contains 'design') {
-            $t = [regex]::Replace($t, '(?m)^2\. UI/[^\r\n]*design[^\r\n]*\r?\n', '')
-            $t = [regex]::Replace($t, ' ?② UI/[^①②③\r\n]*design[^①②③\r\n]*(?=③|\. phase)', ' ')
-            $t = $t -replace '\) \. phase', '). phase'
-        }
-        if ($bpRemove -contains 'code-delegate') {
-            $t = [regex]::Replace($t, '(?m)^3\. 코딩 진입 시 code-delegate[^\r\n]*\r?\n', '')
-            $t = [regex]::Replace($t, ' ?③ 코딩 진입 시 code-delegate[^①②③\r\n]*(?=\. phase)', '')
-        }
-        # 자동제안 리뷰/코딩 위임 clause 정리(선재 잠복: `/review`·`/code-delegate`는 backtick-strip `skill 패턴 미매칭 — prd-only 조합서 노출)
-        if ($bpRemove -contains 'review') {
-            $t = [regex]::Replace($t, '(?m)^- 리뷰 제안\(구현완료 경계\):[^\r\n]*\r?\n', '')
-            $t = [regex]::Replace($t, '리뷰 제안\(구현완료 경계\):[^\r\n]*?에스컬레이션\. ?', '')
-        }
-        if ($bpRemove -contains 'code-delegate') {
-            $t = [regex]::Replace($t, '(?m)^- 코딩 위임 제안\(구현 진입 경계\):[^\r\n]*\r?\n', '')
-            $t = [regex]::Replace($t, ' ?코딩 위임 제안\(구현 진입 경계\):[^\r\n]*?제안 X\)\.', '')
-        }
-        foreach ($s in $bpRemove) { $t = $t -replace ($mdc + [regex]::Escape($s)), ''; $t = $t -replace ([regex]::Escape($s) + $mdc), '' }
-        $rmc = $bpRemove
-        $t = [regex]::Replace($t, '\{[^}]*\}', { param($m) $parts = ($m.Value.Substring(1, $m.Value.Length - 2)) -split ','; $kept = @($parts | Where-Object { $rmc -notcontains $_.Trim() }); '{' + ($kept -join ',') + '}' })
-        foreach ($s in $bpRemove) { $t = [regex]::Replace($t, '`' + [regex]::Escape($s) + '[^`]*`,?\s?', '') }
-        [System.IO.File]::WriteAllText($p, $t, $utf8nb)
-    }
-    # 5) 가드 1줄 (설치 스킬만 추천)
-    foreach ($gp in @('CLAUDE.md', 'AGENTS.md')) {
+    # 3) SKILLS_MANIFEST.md 동기 (Claude용/Codex용 각각)
+    Sync-SkillsManifest (Join-Path $root2 '.claude\SKILLS_MANIFEST.md') $bpKeepC $bpRemoveC $utf8nb
+    Sync-SkillsManifest (Join-Path $root2 '.agents\SKILLS_MANIFEST.md') $bpKeepX $bpRemoveX $utf8nb
+    # 4) docs 트림 — CLAUDE.md/HYBRID.md는 Claude 집합, AGENTS.md는 Codex 집합.
+    #    HYBRID.md를 Codex 집합으로 깎으면 Claude가 자기 스킬 설명을 잃는다(양 에이전트 공유 SoT).
+    Remove-SkillRefs (Join-Path $root2 'CLAUDE.md') $bpRemoveC $script:bundleSelected $utf8nb
+    Remove-SkillRefs (Join-Path $root2 '.claude\HYBRID.md') $bpRemoveC $script:bundleSelected $utf8nb
+    Remove-SkillRefs (Join-Path $root2 'AGENTS.md') $bpRemoveX $script:codexSelected $utf8nb
+    # 5) 가드 1줄 (설치 스킬만 추천) — 표면별 경로
+    # 가드는 실제로 스킬이 줄어든 표면에만 붙인다.
+    $bpGuards = @{}
+    if ($bpRemoveC.Count -gt 0) { $bpGuards['CLAUDE.md'] = '.claude/skills/' }
+    if ($script:installCodex -and $bpRemoveX.Count -gt 0) { $bpGuards['AGENTS.md'] = '.agents/skills/' }
+    foreach ($gp in $bpGuards.Keys) {
         $p = Join-Path $root2 $gp
         if (Test-Path $p) {
             $t = [System.IO.File]::ReadAllText($p, $utf8nb)
             if ($t -notmatch 'pawpad-bundles guard') {
-                $t = $t.TrimEnd() + "`r`n`r`n> NOTE (pawpad-bundles guard): Only recommend or invoke skills installed under .claude/skills/. Do not suggest skills absent from this install.`r`n"
+                $t = $t.TrimEnd() + "`r`n`r`n> NOTE (pawpad-bundles guard): Only recommend or invoke skills installed under $($bpGuards[$gp]). Do not suggest skills absent from this install.`r`n"
+                [System.IO.File]::WriteAllText($p, $t, $utf8nb)
+            }
+        }
+    }
+    # 6) HYBRID.md는 keepC 기준이라 Codex 미설치 스킬을 언급할 수 있다 -> AGENTS.md에 범위 1줄.
+    if ($script:installCodex -and $bpAsym) {
+        $p = Join-Path $root2 'AGENTS.md'
+        if (Test-Path $p) {
+            $t = [System.IO.File]::ReadAllText($p, $utf8nb)
+            if ($t -notmatch 'pawpad-codex-scope') {
+                $t = $t.TrimEnd() + "`r`n> NOTE (pawpad-codex-scope): .claude/HYBRID.md may mention skills that are Claude-only in this install. Only skills present under .agents/skills/ are invocable here.`r`n"
                 [System.IO.File]::WriteAllText($p, $t, $utf8nb)
             }
         }
     }
     Write-Host ""
-    $selTxt = if ($sel.Count -gt 0) { $L.corePlus + (($sel | Sort-Object) -join ', ') } else { $L.coreOnly }
-    Write-Host ($L.bundleLine -f $selTxt, $bpKeep.Count, $bpRemove.Count, ($bpRemove -join ', ')) -ForegroundColor Cyan
+    $selTxt = if ($script:bundleSelected.Count -gt 0) { $L.corePlus + (($script:bundleSelected | Sort-Object) -join ', ') } else { $L.coreOnly }
+    Write-Host ($L.bundleLine -f $selTxt, $bpKeepC.Count, $bpRemoveC.Count, ($bpRemoveC -join ', ')) -ForegroundColor Cyan
+    if ($script:installCodex -and $bpAsym) {
+        $selTxtX = if ($script:codexSelected.Count -gt 0) { $L.corePlus + (($script:codexSelected | Sort-Object) -join ', ') } else { $L.coreOnly }
+        $bpCodexOnlyOut = @($bpRemoveX | Where-Object { $bpRemoveC -notcontains $_ })
+        Write-Host ($L.codexBundleLine -f $selTxtX, $bpKeepX.Count, $bpCodexOnlyOut.Count, ($bpCodexOnlyOut -join ', ')) -ForegroundColor Cyan
+    }
 }
 
 # ── 완료 요약 ────────────────────────────────────────────────────────────────
@@ -8917,6 +9096,7 @@ if ($failed -eq 0) {
         Write-Host "  - design 스킬 원형 기반 재설계 (v2.51): 최상위 원칙에 위계 정합을 1순위로 추가 — 화면은 3초 안에 지금 상태/다음 행동/기대 결과에 답하고 그 순서가 시각 위계와 일치해야 한다(일관성은 2순위). 절차 4->6단계(제품 원형 분류 -> 의미 기반 토큰 -> 3영역 레이아웃 -> 일관성 5축 -> 상태 전수 12종 -> anti-slop/원칙8/정량6/최악조건10). references/ 3파일 신규(archetypes/tokens/checklists)로 원형 카드 1~2개만 on-demand read. 원형 16종 = 앱/도구 A1~A7 + 게임 G1~G9. 사후보강#1: 게임용 재질(material) 5층 축 + 스킨 분리 + 그래픽 컨셉 게이트(게임이면 컨셉을 사용자에게 물어 확정, 컨셉은 스킨 토큰만 교체). 상세: docs/CHANGELOG_v2.51.md" -ForegroundColor Cyan
         Write-Host "  - device-qa 스킬 신규 (v2.52): 기기 QA 실행 프로토콜 (21->22, qa 번들 = full 전용). 검증 채널 우선순위(자동화 테스트 -> logcat/dumpsys -> 앱 DB -> uiautomator dump -> 축소 스크린샷) + 스크린샷 예산제(세션 8장, 읽기 전 32% 축소) + 셸 규율(자기완결 스니펫/Git Bash 기기경로 // /덤프 원문 금지) + 안전 가드. 근거: 스크린샷 루프로 5시간 한도 소진 실측. 상세: docs/CHANGELOG_v2.52.md" -ForegroundColor Cyan
         Write-Host "  - Codex 표면 opt-in (v2.53): 기본 설치는 Claude 전용 — AGENTS.md / .agents/skills / .codex/* 는 -WithCodex 지정 시에만 생성. 이미 Codex 산출물이 있는 기존 설치는 자동 감지되어 계속 갱신(사용자 자산 무손실). 스킬 22 불변, Claude 산출물 바이트 불변." -ForegroundColor Cyan
+        Write-Host "  - Codex 전용 번들 축 (v2.54): -CodexPreset / -CodexBundles 로 Claude와 Codex에 다른 스킬 세트 설치 (미지정 시 Claude 축 상속 = 종전과 동일). 예: -Preset full -CodexPreset lean -> Claude 22 / Codex 12. codexSel ⊆ claudeSel 강제(초과분 교집합+경고). 번들 선택은 pawpad-config.json에 기록되어 -Upgrade에서 재사용된다." -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 22 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review,qa" -ForegroundColor Cyan

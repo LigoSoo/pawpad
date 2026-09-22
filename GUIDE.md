@@ -1,11 +1,12 @@
 ﻿# 프로젝트 설계→완성 워크플로 가이드
 
-이 문서는 PawPad — Agentic Engineering Toolkit(v2.53 FROZEN)를 설치한 프로젝트에서, **하나의 기능/프로젝트를 기획부터 완성·배포까지** 진행하는 전체 절차와 각 단계의 스킬 사용 예시를 설명한다.
+이 문서는 PawPad — Agentic Engineering Toolkit(v2.54 FROZEN)를 설치한 프로젝트에서, **하나의 기능/프로젝트를 기획부터 완성·배포까지** 진행하는 전체 절차와 각 단계의 스킬 사용 예시를 설명한다.
 
 > 설치/배포 방법은 [`README.md`](README.md) 참조. 이 문서는 설치 후 **작업 워크플로** 중심이다.
 > 대상 스택: 프리셋(flutter/node/python/wpf/tauri/electron/avalonia/generic) — 다른 스택도 `CLAUDE.md`의 `<YOUR_*>`만 채우면 동일 절차 적용
 > 협업 모델: Claude Code ⇄ Codex 하이브리드 (파일 시스템 기반 상태 공유, 단독 사용도 가능)
 > 버전 이력: 전체 표는 [PAWPAD_VERSIONS.md](PAWPAD_VERSIONS.md), 버전별 상세는 docs/CHANGELOG_v{N}.md. 아래는 최근 3개만.
+> v2.54: **Codex 전용 번들 축**(`-CodexPreset` / `-CodexBundles`) — Claude와 Codex에 서로 다른 스킬 세트를 깔 수 있다. 예: `-Preset full -CodexPreset lean` → Claude 22 / Codex 12(Core). 미지정 시 Claude 축 상속(종전과 동일 산출물). **v2.53이 기각했던 “부분 제외”를 수행**한 것 — 죽은 경로가 남는 문제는 prune이 `AGENTS.md`·`config.json`을 Codex 집합 기준으로 다시 긎어 해소했다. 제약은 codexSel ⊆ claudeSel(미러 소스가 `.claude/skills`) — 초과분은 자동 교집합 + 경고. Codex 축만 줄여도 **Claude 산출물은 바이트 불변**이고, 번들 선택은 `pawpad-config.json`에 기록돼 `-Upgrade`에서 재사용된다. 상세: docs/CHANGELOG_v2.54.md
 > v2.53: **Codex 표면 기본 미설치(opt-in)**(스킬 22 불변, Claude 산출물 바이트 불변) — 기본 설치는 Claude 전용이고 `AGENTS.md` · `.agents/skills` 미러 · `.codex/*`는 `-WithCodex`를 줄 때만 생성된다. 부분 제외는 기각했다(`AGENTS.md` 본문과 `config.json`의 skills 배열이 미러 경로를 다수 참조해 죽은 경로가 남는다). **기존 설치는 자동 감지되어 스위치 없이도 계속 갱신** — `-Upgrade`가 사용자 자산을 말없이 지우지 않는 규율과 같은 방향이고, 덕분에 기본값 변경이 배포된 설치처의 동작을 바꾸지 않는다. 진행 바 29→25단계. 상세: docs/CHANGELOG_v2.53.md
 > v2.52: **device-qa 스킬 신규**(21→22, 새 `qa` 번들 = full 전용) — 기기 QA에서 스크린샷 루프가 5시간 사용 한도를 한 세션에 태우는 사고를 차단한다(설치처 실측: PNG 98장 생성·약 50장 read). 읽은 이미지는 **이후 모든 도구 호출에 재전송**되므로 비용이 `이미지 수 x 남은 호출 수`로 쌓이고, QA는 도구 호출이 가장 많은 작업이라 이 곱이 최대가 된다. **위임은 기각**(서브 컨텍스트도 같은 한도를 먹는다). 대신 검증 채널을 고정한다: 기기 자동화 테스트 → logcat/dumpsys → 앱 DB → `uiautomator dump` → **축소 스크린샷**(기본 32%) → 원본. 편입 전 에뮬레이터 실측으로 원안 결함 6건을 고쳤다 — Flutter 홈에서 `uiautomator dump` **12/12 실패**(`could not get idle state`)라 dump를 4순위로 내리고 화면 1회 프로브를 넣었고, Git Bash가 기기 경로 `/sdcard/...`를 변환해 **옛 파일을 읽어 다른 화면으로 PASS**가 나던 경로를 `//` 규칙으로 막았다. 실측 단가: grep 어서션 ~10 / dump 필터 ~250 / 축소샷 ~354 / 원본샷 ~1,476 / **dump 원문 ~8,000 토큰**(원문 투입 금지). 상세: docs/CHANGELOG_v2.52.md
 > v2.51: **design 스킬 원형 기반 재설계**(스킬 21 불변) — 기존 design은 최상위 원칙이 "AI 티 = 불일치"라 **일관되게 틀린 위계**를 통과시켰다: 토큰이 전부 스케일 파생이어도 모든 카드가 같은 크기이고 주 CTA가 파묻히면 정량 체크는 전부 녹색이다. 그 위에 **위계 정합**을 1순위로 얹었다 — 화면은 3초 안에 `지금 어떤 상태 / 다음에 뭘 하나 / 그러면 뭘 얻나`에 답하고 그 순서가 시각 위계와 일치해야 한다. 절차 4단계→**6단계**(원형 분류 → 의미 기반 토큰 → 3영역 레이아웃 → 일관성 5축 → 상태 전수 12종 → anti-slop·원칙8·정량6·최악조건10). `references/` 3파일 신규로 쪼개 **해당 원형 카드 1~2개만 on-demand read** — 게임 만들 때 앱 규칙을 읽지 않는다. 원형 **16종**(앱·도구 A1~A7 + 게임 G1~G9), 게임은 토큰에 economy/rarity 축이 **추가**된다. 검증: live==embed 4/4 byte-equal · 설치처 메인 화면 적용 목업에서 3초3질문 1/3→3/3 · 주 CTA 9→1 · **신규 토큰 0건**. **사후보강#1(버전 불변)**: 게임 경로를 실제 통과시켜 **재질(material) 축 부재**를 적발 — 규칙을 다 지켜도 평면 앱 UI가 나오던 원인이다. 재질 5층 + 스킨 축 분리 + **그래픽 컨셉 게이트**(게임이면 컨셉을 사용자에게 물어 확정) 신설. 상세: docs/CHANGELOG_v2.51.md.
@@ -441,7 +442,7 @@ CLAUDE.md / AGENTS.md      # 에이전트 컨텍스트 (read-only)
 .codex/{config.json,config.toml,hooks.json,hooks/}  # Codex 어댑터 (native hooks)
 .agents/skills/{22}/       # Codex repo skill mirror (DO NOT EDIT)
 docs/HOOK_TESTING.md       # hook 회귀 체크리스트
-pawpad-setup.ps1  # 단일 설치 스크립트 (FROZEN v2.53)
+pawpad-setup.ps1  # 단일 설치 스크립트 (FROZEN v2.54)
 ```
 
 상세는 각 `.claude/skills/{skill}/SKILL.md` 참조.

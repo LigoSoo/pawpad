@@ -22,7 +22,8 @@
                          "architectureDecisions":  ".claude/pawpad/decisions/arch.md",
                          "rejectedApproaches":  ".claude/pawpad/decisions/rejected.md",
                          "glossary":  "CONTEXT.md",
-                         "skillsManifest":  ".claude/SKILLS_MANIFEST.md",
+                         "skillsManifest":  ".agents/SKILLS_MANIFEST.md",
+                         "skillsManifestClaude":  ".claude/SKILLS_MANIFEST.md",
                          "codexRuntimeConfig":  ".codex/config.toml",
                          "codexHooks":  ".codex/hooks.json",
                          "codexHookScripts":  ".codex/hooks/",
@@ -124,7 +125,8 @@
                                                                ".codex/config.json",
                                                                ".gitignore",
                                                                "CONTEXT.md",
-                                                               ".claude/SKILLS_MANIFEST.md"
+                                                               ".claude/SKILLS_MANIFEST.md",
+                                                               ".agents/SKILLS_MANIFEST.md"
                                                            ],
                                           "codexAdapter":  [
                                                                ".codex/config.toml",
