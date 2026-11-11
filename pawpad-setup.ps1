@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.54 (Claude-first Distribution, per-surface skill bundles, PowerShell)
-# STATUS: FROZEN (v2.54. v2.53 기반 + **Codex 전용 번들 축** (`-CodexPreset` / `-CodexBundles`) — Claude와 Codex에 서로 다른 스킬 세트를 설치한다. v2.53까지 축은 1개(`-Preset`/`-Bundles`)뿐이고 미러는 `.claude/skills` 전 디렉터리 1:1 복사였다 — 두 표면이 항상 동일 세트. 예: `-Preset full -CodexPreset lean` → Claude 22 / Codex 12(Core). **v2.53이 기각했던 “부분 제외”를 이번에 수행**했다 — 기각 사유였던 죽은 경로(AGENTS.md 본문·config.json `skills[]`)를 prune이 keepX 기준으로 다시 긎게 했고, 정규식 트림 로직 자체는 무변경이다(파일별로 다른 집합을 먹일 뿐). 제약: codexSel ⊆ claudeSel(미러 소스가 `.claude/skills`) — 초과분은 자동 교집합 + 경고 1줄. Codex 축을 줄여도 **Claude 산출물은 바이트 불변**(제거할 게 없는 표면은 파일을 열지도 않는다 — 불필요 재기록은 BOM을 떨구어뜨렸다). `.agents/SKILLS_MANIFEST.md` 신규(keepX 기준) + `config.json` `contextFiles.skillsManifest` 포인터 전환 — Codex가 호출 불가 스킬을 목록에서 보지 않는다. 번들 선택은 `.claude/pawpad-config.json` `bundles`에 기록되고 `-Upgrade`에서 인자 생략 시 재사용된다(인자 우선) — v2.39부터 있던 “업그레이드하면 말없이 full로 되돌아가는” 결함도 같이 해소된다. 스킬 22 불변, 진행 바 단계 불변(25/29). 보고서: docs/CHANGELOG_v2.54.md.)
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.55 (Claude-first Distribution, per-surface skill bundles, PowerShell)
+# STATUS: FROZEN (v2.55. v2.54 기반 + **세션 시작 비용 · 훅 없는 환경 안전망** — 스킬 22 불변, 본문만 6개 수정(context-saver · task-done · resume · codemap · checkpoint · handoff). 설치처 실측(2026-11-11): 훅이 조직 정책으로 차단된 머신에서 세션 시작 3파일이 43KB(INDEX 12.7KB · _wip 21.7KB · _meta 8.5KB)까지 자랐고 codemap 93파일 중 8개가 상한을 넘었다. (1) INDEX AGENT SYNC 에이전트당 1행 + 8KB 상한 (2) _wip 종결 메모 금지 (3) _meta 1줄 300자 · 8KB — 줄 수와 byte를 함께 잰다 (4) task-done에 ctxdb 저장 · codemap 크기 점검 단계(7 -> 8단계) (5) codemap Phase B 문구 정리 + HOT 넘침 규칙. 훅 · CLAUDE.md/AGENTS.md 템플릿 불변. 상세: docs/CHANGELOG_v2.55.md)
+#         이전: v2.54. v2.53 기반 + **Codex 전용 번들 축** (`-CodexPreset` / `-CodexBundles`) — Claude와 Codex에 서로 다른 스킬 세트를 설치한다. v2.53까지 축은 1개(`-Preset`/`-Bundles`)뿐이고 미러는 `.claude/skills` 전 디렉터리 1:1 복사였다 — 두 표면이 항상 동일 세트. 예: `-Preset full -CodexPreset lean` → Claude 22 / Codex 12(Core). **v2.53이 기각했던 “부분 제외”를 이번에 수행**했다 — 기각 사유였던 죽은 경로(AGENTS.md 본문·config.json `skills[]`)를 prune이 keepX 기준으로 다시 긎게 했고, 정규식 트림 로직 자체는 무변경이다(파일별로 다른 집합을 먹일 뿐). 제약: codexSel ⊆ claudeSel(미러 소스가 `.claude/skills`) — 초과분은 자동 교집합 + 경고 1줄. Codex 축을 줄여도 **Claude 산출물은 바이트 불변**(제거할 게 없는 표면은 파일을 열지도 않는다 — 불필요 재기록은 BOM을 떨구어뜨렸다). `.agents/SKILLS_MANIFEST.md` 신규(keepX 기준) + `config.json` `contextFiles.skillsManifest` 포인터 전환 — Codex가 호출 불가 스킬을 목록에서 보지 않는다. 번들 선택은 `.claude/pawpad-config.json` `bundles`에 기록되고 `-Upgrade`에서 인자 생략 시 재사용된다(인자 우선) — v2.39부터 있던 “업그레이드하면 말없이 full로 되돌아가는” 결함도 같이 해소된다. 스킬 22 불변, 진행 바 단계 불변(25/29). 보고서: docs/CHANGELOG_v2.54.md.)
 #         이전: v2.53. v2.52 기반 + **Codex 표면 기본 미설치(opt-in)** — 스킬 22 불변, Claude 산출물 바이트 불변. 사용자 요구: "Codex에서 현재 스킬을 사용하는 건 불안하다". 기본 설치는 Claude 전용이고 Codex 표면 4종(AGENTS.md / .agents/skills 미러 / .codex/config.json / .codex/config.toml·hooks.json·hooks/*)은 `-WithCodex` 지정 시에만 생성한다. 부분 제외는 기각했다 — AGENTS.md 본문과 config.json의 skills 배열이 .agents/skills 경로를 다수 참조하므로 A만 빼면 죽은 경로가 남는다. **기존 설치는 자동 감지로 계속 갱신**한다(AGENTS.md / .agents/skills / .codex/config.json / .codex/hooks.json 중 하나라도 있으면 on): -Upgrade가 사용자 자산을 말없이 지우지 않는 기존 규율과 같은 방향이고, 이 때문에 기본값 변경이 기존 설치처의 동작을 바꾸지 않는다. 진행 바 단계는 29 -> 25로 줄고(Codex 4단계 제외) 체크리스트도 그만큼 사라진다. 전역 Codex 스킬 섀도잉 경고도 Codex 표면 설치 시에만 발화한다. Claude 측(CLAUDE.md/.claude/skills/.claude/hooks)은 **한 바이트도 바뀌지 않는다** — 스킬 본문의 "CLAUDE.md/AGENTS.md가 강제" 같은 산문은 그대로 두었다(조건부 텍스트로 만들면 두 모드의 스킬 바이트가 갈라져 live==embed 대조와 회귀 테스트가 무의미해진다). 보고서: docs/CHANGELOG_v2.53.md.
 #         이전: v2.52. v2.51 기반 + device-qa 스킬 신규(21→22, 새 qa 번들 = full 전용) — 기기 QA에서 스크린샷 루프가 5시간 사용 한도를 한 세션에 태우는 사고를 차단한다(설치처 TodayQuest 2026-09-02 실측: PNG 98장 생성·약 50장 read). 읽은 이미지는 이후 모든 도구 호출에 재전송되므로 비용이 `이미지 수 × 남은 호출 수`로 누적되고, QA는 도구 호출이 가장 많은 작업이라 이 곱이 최대가 된다. **위임(qa-delegate)은 기각** — 서브 컨텍스트도 같은 한도를 먹으므로 비용이 숨을 뿐이다. 대신 검증 채널 우선순위를 고정한다: 기기 자동화 테스트(integration_test/am instrument) → logcat/dumpsys → 앱 DB → uiautomator dump → **축소 스크린샷**(기본 32%) → 원본. 편입 전 에뮬레이터 실측(Android 16 / 1080x2400 / Flutter 앱)으로 원안 결함 6건을 수정했다: ①원안 1순위였던 `uiautomator dump`가 Flutter 홈에서 `could not get idle state` **12/12 실패**(plain 6 + --compressed 6, 애니메이션 스케일 0에서도. 네이티브 설정 앱·런처는 성공) → dump를 4순위로 내리고 **화면 1회 프로브** 후 불가면 축소 스크린샷으로 전환 ②성공한 dump도 Flutter Text가 안 올라와 앱 문자열 0건 → 기대 문자열 부재 시 판정 근거 불가 명시 ③Git Bash가 기기 경로 `/sdcard/x.xml`을 `/Files/Git/sdcard/...`로 변환해 **옛 파일을 읽어 다른 화면으로 PASS**가 나던 경로 → 기기 경로 `//` 규칙 + dump 전 옛 파일 삭제 ④에이전트 Bash 도구는 호출 간 변수·함수를 보존하지 않음 → 스니펫 자기완결 규율(원안의 `D=<serial>`·`dump()` 헬퍼는 다음 호출에서 소멸) ⑤`integration_test` 채널 누락 → 1순위로 신설 ⑥"크롭·축소" 지시에 명령이 없어 원본을 read하던 경로 → .NET 리사이즈 스니펫 제공(실측 1,476→354 토큰, 판독성 유지). 실측 단가표를 스킬 본문에 포함: grep 어서션 ~10 / dump 필터 ~250 / 축소샷 ~354 / 원본샷 ~1,476 / **dump 원문 ~8,000**(스크린샷의 5배 — 원문 투입 금지가 🔴 규칙). 미검증: 노트8(Android 9) dump 거동, 실패 원인의 Flutter 애니메이션 특정(정황). 보고서: docs/CHANGELOG_v2.52.md.)
 #         이전: v2.51. v2.50 기반 + design 스킬 원형 기반 재설계 — 스킬 21 불변. 기존 design은 최상위 원칙이 "AI 티 = 불일치"(일관성)라 **일관되게 틀린 위계**를 통과시켰다: 토큰이 전부 스케일 파생이어도 모든 카드가 같은 크기이고 주 CTA가 보조 행동에 파묻히면 정량 체크는 전부 녹색이다. v2.51은 그 위에 **위계 정합**을 1순위로 얹는다 — 화면은 3초 안에 "지금 어떤 상태 / 다음에 뭘 하나 / 그러면 뭘 얻나"에 답하고 그 순서가 시각 위계와 일치해야 한다. 절차도 4단계→**6단계**: (1) **제품 원형 분류**(7문항 + 게임 5문항) → (2) 의미 기반 토큰(색 정의 순서 고정·다크 재정의 6항) → (3) **3영역 레이아웃**(상태/맥락/행동) → (4) 일관성 5축 → (5) **상태 전수 12종**(기존 4종에서 확장 — 부분 데이터·권한 거부·오프라인 포함) → (6) anti-slop + 원칙 8 + 정량 6 + 최악조건 10. 패키징은 `SKILL.md`(코어) + **`references/` 3파일 신규**(archetypes 16,943 B / tokens 6,937 B / checklists 9,747 B)로 쪼개 해당 원형 카드 1~2개만 on-demand read — 게임 만들 때 앱 규칙을 읽지 않는다. 원형 **16종**: 앱·도구 A1~A7(과업완료·발견중심·반복실행·지속상태·습관형성·조건탐색·**관측진단**) + 게임 G1~G9(콘텐츠중심미니멀·코지시스템·에디토리얼미니멀·상태반응·액션로비·진행루프·태스크중심·원버튼진행·고밀도라이브서비스). 게임 축은 토큰에 economy/rarity가 **추가**되고 checklists에 컴포넌트 9종 필수 상태·배지 정책·안티패턴 9종이 붙는다. 미러는 `SKILL.md`만 복사하므로 references 참조는 mockup의 `spec-viewer.html` 선례대로 `.claude/skills/design/references/` **절대 경로**로 적었다. 검증: live==embed **4/4 byte-equal** · PSParser 0 · 설치처 메인 화면 적용 목업으로 3초3질문 1/3→3/3 · 동일 강조도 주 CTA 9→1 · **신규 토큰 0건**. 보고서: docs/CHANGELOG_v2.51.md. 사후수정#1(2026-09-01, 버전 불변): 배포본 빌드 베이스가 v2.50 Addendum(brainstorming 왕복 라운드) 이전이라 임베드·첨자가 회귀 — 해당 SKILL 임베드 + CLAUDE/AGENTS 템플릿 첨자 2를 복원(design 변경분 무영향).
@@ -71,7 +72,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.54"
+$ver = "2.55"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -4835,6 +4836,8 @@ description: Save the current session work into .ctxdb/L2/, update INDEX.md AGEN
 - Stop hook decision:block (checkpoint) 수신 시
 - "저장해줘", "세션저장", "컨텍스트저장", "save context" 입력 시
 - /compact 실행 전 반드시 먼저 실행 (순서 역전 금지)
+- task-done 7번 / checkpoint 3번 / handoff 7번에서 호출
+- 훅이 돌지 않는 환경(조직 정책 차단·hook 미신뢰)에서는 Stop hook 신호가 오지 않는다 — 작업 종결(task-done)과 /checkpoint가 유일한 저장 시점이므로 그때 빠뜨리지 않는다.
 
 ## 절차
 STEP 1: 저장 대상 L2 결정
@@ -4851,6 +4854,13 @@ STEP 3: INDEX.md AGENT SYNC 갱신
   상태 셀 = 헤드라인 1줄(150자 이내): {버전/기능} + {결과 1구} + {잔여 유무} + "상세 -> L2 {블록명}" 포인터.
   L2 세션 블록 전문 복제 금지 — INDEX는 매 세션 무조건 주입되므로 상세는 on-demand 자리(L2)에 1벌만 둔다(SoT 1곳, drift 방지, 주입 토큰 절감).
   L2 3개+ -> L1 포인터로 대체 (-> L1/{파일}.md).
+  **에이전트당 1행** — 이전 상태는 덮어쓴다. "(그 앞)" 같은 이력 행을 추가하지 않는다(이력은 L2/L3 블록 헤더가 이미 갖고 있다).
+  이력 행은 누가 썼든 지울 수 있다. 각 에이전트의 최신 1행은 그 에이전트만 고친다.
+  표 밖(파일 머리말 등)에 세션 요약 줄을 따로 두지 않는다.
+  **INDEX.md 전체 8KB 상한** — 저장 후 byte 수를 잰다. 초과면 이번 저장 안에서 줄인다:
+    ① AGENT SYNC 이력 행 삭제(해당 세션 블록이 L2/L3에 있는지 먼저 확인, 없으면 L2에 1줄 digest로 옮긴 뒤 삭제) ② 150자 넘는 상태 셀 축약 ③ 키워드 셀 축약(일반어·버전 나열은 keywords.md/L1로 이동).
+    그래도 넘으면 초과 byte를 보고하고 진행한다 — 도메인 분할은 STEP 5(사용자 확인)의 일이라 이 저장 안에서 끝낼 수 없다.
+  줄 수가 아니라 byte로 재는 이유: 한 줄이 수백 자면 줄 수 상한은 통과하면서 주입량만 커진다.
 STEP 4: 키워드 인덱스 갱신 (신규 도메인/심볼 등장 시만)
   이번 작업에서 기존 INDEX/L1에 없는 도메인·핵심 용어가 생겼으면 반영:
   - 신규 도메인: L1/domain-{new}.md 생성(키워드 + 파일/심볼 포인터) + INDEX 키워드->L1 매핑 1행 추가
@@ -4910,6 +4920,7 @@ description: Hybrid session resume protocol. Use at session start (ON START) to 
 | .claude/pawpad/backup/               | -Force 시 자동 백업          | 복구 필요 시         |
 
 ## ON START 절차 (agent가 순차 실행 — CLAUDE.md/AGENTS.md Session Protocol과 동일 순서)
+0. read .ctxdb/INDEX.md -> 첫 메시지 키워드 매칭 -> L1<=1 / L2<=2개만 로드 (전체 로드 금지. 규칙: ctxdb-navigator 스킬)
 1. read .claude/pawpad/_wip.md (active lane router)
    -> Active Lanes 비어있음: 새 작업 시작 (이후 HYBRID 등 skip)
    -> Active Lanes 존재: assigned lane 읽기
@@ -4918,7 +4929,7 @@ description: Hybrid session resume protocol. Use at session start (ON START) to 
 4. lane state=HANDOFF_TO_* : _wip.md의 handoff 필드 경로로 snapshot read
 5. lane state=SPEC_READY 또는 spec 있으면: read .claude/pawpad/specs/{feature}.md
 6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT). RECENT(완료 이력)는 파일 하단·재개 불요 -> 생략, history 필요 시 on-demand
-7. read .claude/codemap/_index.md (코드 수정 작업 시점만; 질문/분석 세션 skip)
+7. codemap은 코드 수정 작업 시점에 read (질문/분석 세션 skip) — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP+HOT만 부분읽기
 
 ## Lane 신뢰성 게이트 (ON START - stale lane 감지, 다음 작업 제안 전 필수)
 lane은 계획의 SoT지만, ON TASK DONE 누락으로 종결 안 된 lane이 남으면 이미 완료된 작업을 다음 작업으로 재제안하는 사고가 난다.
@@ -4941,7 +4952,7 @@ lane read 직후 신뢰도 순 3단 신호로 대조하고, 통과 후에만 nex
 ## Active Lanes
 - {feature-id}: .claude/pawpad/wip/{feature-id}.md
   - owner: {Claude Code | Codex}
-  - state: WIP | SPEC_READY | HANDOFF_TO_CODEX | HANDOFF_TO_CLAUDE | HANDOFF_TO_NEXT_AGENT | BLOCKED
+  - state: WIP | SPEC_READY | HANDOFF_TO_CODEX | HANDOFF_TO_CLAUDE | HANDOFF_TO_NEXT_AGENT | REVIEW_REQUESTED | REVIEW_DONE | BLOCKED
   - handoff: .claude/pawpad/handoffs/YYYY-MM-DD_HHMM_from_to_feature.md   (state=HANDOFF_* 일 때만)
   - updated: YYYY-MM-DD HH:MM
 
@@ -4956,6 +4967,8 @@ lane read 직후 신뢰도 순 3단 신호로 대조하고, 통과 후에만 nex
 | HANDOFF_TO_CODEX | Codex로 인수 요청 | handoff | Codex가 snapshot read, state=WIP, owner=Codex로 변경 |
 | HANDOFF_TO_CLAUDE | Claude로 인수 요청 | handoff | Claude가 snapshot read, state=WIP, owner=Claude로 변경 |
 | HANDOFF_TO_NEXT_AGENT | 다음 agent 미정 | handoff | 인수 agent가 snapshot read, state=WIP, owner=자기로 변경 |
+| REVIEW_REQUESTED | 리뷰 요청됨 (work owner 불변) | reviewer, review | reviewer가 request read 후 직접 검증, result 작성 -> REVIEW_DONE (review 스킬 설치 시) |
+| REVIEW_DONE | 리뷰 완료 | review | 요청측이 result read 후 수정 또는 종결 |
 | BLOCKED | 외부 의존 대기 | - | 차단 해소 시 owner가 state=WIP로 복귀 |
 
 ## lane 파일 (.claude/pawpad/wip/{feature}.md) 포맷
@@ -4965,7 +4978,7 @@ lane read 직후 신뢰도 순 3단 신호로 대조하고, 통과 후에만 nex
 {Claude Code | Codex}
 
 ## State
-WIP | SPEC_READY | HANDOFF_TO_* | BLOCKED
+WIP | SPEC_READY | HANDOFF_TO_* | REVIEW_REQUESTED | REVIEW_DONE | BLOCKED
 
 ## 작업 중
 - [domain:feature] [설명] ([진행률 %])
@@ -4998,9 +5011,9 @@ WIP | SPEC_READY | HANDOFF_TO_* | BLOCKED
 - 작업 완료 시: .claude/pawpad/wip/{feature-id}.md -> .claude/pawpad/wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md
   - timestamp는 완료 시각
   - 같은 feature 재작업 시 이전 done 파일 보존 (덮어쓰기 방지)
-- _wip.md Active Lanes에서 해당 lane 제거
+- _wip.md Active Lanes에서 해당 lane 제거 — 종결 메모 줄을 남기지 않는다 (종결 기록 = wip/done 파일 + _meta RECENT. router는 매 세션 통째로 읽히므로 진행 중 lane만 둔다)
 - _meta.md RECENT에 1줄 추가
-- 삭제 절대 금지 (history 추적 불가능 방지)
+- lane 파일 삭제 절대 금지 (history 추적 불가능 방지)
 
 예시:
 - 첫 완료: wip/done/feature-auth_2026-05-29_143012.md
@@ -5020,9 +5033,9 @@ WIP | SPEC_READY | HANDOFF_TO_* | BLOCKED
 YYYY-MM-DD: [완료 내용]. [영향 파일]. [agent]
 
 ## _meta.md 업데이트 규칙
-- 태스크 완료 시: RECENT(하단 섹션) 최상단에 1줄 추가 (agent 명시)
-- RECENT > 8줄: 초과분 -> .claude/pawpad/sessions/YYYY-MM.md 상단 이동 (newest first)
-- BLOCKED / NEXT: 상태 변화 시 즉시 갱신
+- 태스크 완료 시: RECENT(하단 섹션) 최상단에 1줄 추가 (agent 명시, 300자 이내 — 상세는 lane/L2에 1벌만)
+- RECENT > 8줄 또는 _meta.md 전체 > 8KB: 오래된 줄부터 -> .claude/pawpad/sessions/YYYY-MM.md 상단 이동 (newest first). 줄 수만 세면 긴 줄로 상한이 무력화되므로 byte도 잰다
+- BLOCKED / NEXT: 상태 변화 시 즉시 갱신. 끝난 NEXT 항목은 취소선으로 남기지 말고 sessions/YYYY-MM.md로 이동 (상단은 매 세션 읽힌다)
 - ON START는 헤더+BLOCKED+NEXT만 읽음 (RECENT 하단 = 재개 불요, history 시 on-demand)
 
 ## Handoff Rules
@@ -5043,7 +5056,7 @@ YYYY-MM-DD: [완료 내용]. [영향 파일]. [agent]
 
 ## Session Rollover
 - 세션 종료 시 lane 파일 + _wip.md + codemap 갱신 강제
-- _meta.md RECENT > 8줄 -> sessions/YYYY-MM.md 상단 이동 (newest first)
+- _meta.md RECENT > 8줄 또는 전체 > 8KB -> sessions/YYYY-MM.md 상단 이동 (newest first)
 - 새 세션 시 ON START 절차 그대로 실행 -> 끊김 없는 재개
 
 ## Backup
@@ -5067,7 +5080,7 @@ agent: [Claude Code | Codex]
 Write-FileContent ".claude\skills\task-done\SKILL.md" -NoBom @'
 ---
 name: task-done
-description: Task completion gate. Use on ON TASK DONE or when user says a task/issue is finished ("작업 종료", "이슈 종료", "마무리해줘", "task done") to execute the full lane closure checklist - verify DoD, move lane to wip/done, remove from _wip, append _meta RECENT, carry tasklog, update codemap, git commit.
+description: Task completion gate. Use on ON TASK DONE or when user says a task/issue is finished ("작업 종료", "이슈 종료", "마무리해줘", "task done") to execute the full lane closure checklist - verify DoD, move lane to wip/done, remove from _wip, append _meta RECENT, carry tasklog, update codemap, save ctxdb, git commit.
 ---
 # Task-Done Skill - ON TASK DONE 실행 게이트
 
@@ -5090,17 +5103,27 @@ ON TASK DONE(Session Protocol)은 선언적 지시라 자연어 종료 요청("�
 1. lane Verification Evidence 최근 2건 유지 — 초과분은 .claude/pawpad/verifications/{feature-id}-archive.md 상단 append + lane에 포인터 1줄
 2. lane 파일 이동: .claude/pawpad/wip/{feature-id}.md -> .claude/pawpad/wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md (timestamp=완료 시각, 삭제 절대 금지)
 3. _wip.md Active Lanes에서 해당 lane 제거 (남은 lane 없으면 "(없음)")
-4. _meta.md RECENT 최상단 1줄 append ([agent] 명시, 2문장 이내 + 커밋 해시 — RECENT는 타임라인, 상세는 L2/lane 1벌만) — 8줄 초과분은 sessions/{YYYY-MM}.md 상단 이동 (newest first)
+   - **종결 메모 줄("({feature-id} … 종결 — …)")을 남기지 않는다.** 종결 기록의 자리는 wip/done 파일과 _meta RECENT다. _wip.md는 매 세션 통째로 읽히므로 진행 중 lane과 Locks만 둔다.
+   - 이전 세션이 남긴 종결 메모가 쌓여 있으면 이번에 함께 지운다 — 지우기 전 그 feature-id의 wip/done 파일이 있는지 확인하고, 없는 것만 _meta RECENT(또는 sessions/)에 1줄로 옮긴 뒤 지운다.
+4. _meta.md RECENT 최상단 1줄 append ([agent] 명시, 2문장·300자 이내 + 커밋 해시 — RECENT는 타임라인, 상세는 L2/lane 1벌만)
+   - RECENT 8줄 초과 또는 _meta.md 전체 8KB 초과 시 오래된 줄부터 sessions/{YYYY-MM}.md 상단 이동 (newest first). 줄 수와 byte를 둘 다 잰다. RECENT 최신 1줄은 남긴다.
+   - 끝난 NEXT 항목은 취소선으로 남기지 말고 sessions/{YYYY-MM}.md로 옮긴다 (_meta 상단은 매 세션 읽힌다).
+   - 그래도 8KB를 넘으면 원인은 상단이다 — 남은 NEXT 항목을 1줄로 줄이고 상세는 lane/spec 포인터로 둔다.
 5. 완료(v) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월 (HYBRID Completed Task Log)
 6. codemap 갱신: 신규/변경 심볼 반영 (해당 없으면 "codemap skip" 선언)
-7. git commit (git repo일 때만). 비-git이면 _meta RECENT에 "git unavailable" 기록 — 완료 차단 안 함
+   - 건드린 codemap 파일의 byte 수를 잰다 — cap(_root.md 2048 / _index.md 30720 / 그외 4096) 초과면 분할 후 진행. 훅이 돌지 않는 환경에서는 이 단계가 유일한 집행이다. 규칙: .claude/skills/codemap/SKILL.md
+7. context-saver 실행: .ctxdb/L2 세션 블록 + INDEX.md AGENT SYNC
+   - 같은 세션에서 이 작업을 이미 /checkpoint로 저장했으면 L2 블록은 생략할 수 있다("ctxdb skip(L2)" 선언). 그래도 INDEX AGENT SYNC 상태 셀은 종결 상태로 덮어쓴다 — checkpoint 때 적은 "진행 중"이 남으면 안 된다.
+   - 이 단계를 빼면 끝낸 작업이 다음 세션에서 키워드로 회수되지 않는다. 8턴 자동 저장은 Stop hook 전용이라 훅이 없으면 여기가 마지막 기회다. 규칙: .claude/skills/context-saver/SKILL.md
+8. git commit (git repo일 때만). 비-git이면 _meta RECENT에 "git unavailable" 기록 — 완료 차단 안 함
 
 ## 보고 형식 (체크리스트 후 1줄)
-task-done: {feature-id} -> wip/done/{파일명} | _meta 기록 | codemap {갱신|skip} | commit {hash|unavailable}
+task-done: {feature-id} -> wip/done/{파일명} | _meta 기록 | codemap {갱신|skip} | ctxdb {저장|skip} | commit {hash|unavailable}
 
 ## 주의
 - 중간 실패 시: 실패 항목 + 사유 보고 후 중단 (이미 수행한 항목은 명시 — 재실행 시 이어서)
-- lane이 없거나 이미 done 이관됨: 상태 그대로 보고, 중복 이관 금지. _wip Active Lanes에 잔존 항목만 있으면 제거로 정합 회복
+- 이미 done 이관됨: 상태 그대로 보고, 중복 이관·중복 기록 금지. _wip Active Lanes에 잔존 항목만 있으면 제거로 정합 회복
+- lane 없이 진행한 작업(연속 개선·소작업)을 종결할 때: 전제 게이트의 lane 항목과 1·2·3·5번은 not applicable, 4·6·7·8번은 실행한다 — lane이 없다고 기록·저장까지 건너뛰지 않는다. 보고는 "task-done: (lane 없음) | _meta 기록 | codemap ... | ctxdb ... | commit ..."
 - 이 스킬은 종결 절차만 담당 — 구현/검증 잔여 작업이 발견되면 종결 중단하고 lane WIP 유지
 '@
 
@@ -5138,7 +5161,7 @@ api:fetchUser      src/api/user_api.<ext>                fetchUser(id)->User: �
 | ui     | 공통 UI 컴포넌트 |
 | core   | 공통 서비스, 유틸 |
 
-## _index.md 구조
+## _index.md 구조 (Phase A flat)
 # MAP (data flow / 한눈 조망)   <- 모듈 흐름 다이어그램 (구조·영향범위 파악, 선택)
 [레이어/화살표. 예: ui --입력--> core --결과--> render]
 # HOT (최근 접근 3~5개)
@@ -5147,9 +5170,20 @@ api:fetchUser      src/api/user_api.<ext>                fetchUser(id)->User: �
 [전체: domain:symbol  file_path  시그니처: 역할]
 
 ## ON START 읽기 (토큰 절감)
-- ON START/재개 시 MAP+HOT(조망)만 부분읽기(상단). INDEX는 context에 올리지 않음.
-- 특정 심볼 위치 필요 시 INDEX를 Grep(domain:symbol 또는 파일명) — 매칭 줄만 반환 = 전체 로드보다 쌈.
-- HOT 규율 필수: 최근 3~5개·각 1줄. 비대하면 부분읽기 효과 반감 -> 초과·노후 항목은 INDEX로 강등.
+- Phase B(_root.md 존재): _root.md만 read. _index.md는 라우팅 스텁이라 읽지 않는다.
+- Phase A: ON START/재개 시 MAP+HOT(조망)만 부분읽기(상단). INDEX는 context에 올리지 않음.
+- 특정 심볼 위치 필요 시 INDEX(Phase B는 features/)를 Grep(domain:symbol 또는 파일명) — 매칭 줄만 반환 = 전체 로드보다 쌈.
+- HOT 규율 필수: 최근 3~5개·각 1줄(200자 이내). 밀려난 항목은 Phase A면 INDEX로 강등, Phase B면 버린다 — 위치는 leaf에, 경위는 ctxdb L2에 이미 있다.
+  버리기 전 그 심볼이 leaf에 있는지 Grep으로 확인하고, 없으면 leaf에 1줄 추가한 뒤 버린다.
+  hot-archive 같은 보관 파일을 만들지 않는다(lookup에 쓰이지 않고 size cap만 넘긴다).
+  이미 만들어 둔 보관 파일은 leaf와 대조해 빠진 심볼만 leaf로 옮기고 라우팅 스텁(3줄 이내)으로 줄인다.
+
+## 다른 문서의 _index.md 지칭 읽는 법 (Phase B)
+CLAUDE.md/AGENTS.md DoD와 다른 스킬(checkpoint·handoff·task-done·context-saver·lean-code 등)의 "codemap/_index.md 갱신·확인"은 Phase A 표기다. Phase B에서는 이렇게 읽는다:
+- 심볼 추가·수정 = 해당 features/{feature-id}.md leaf
+- HOT 최신화 = _root.md HOT
+- 위치 확인 = 아래 Lookup 알고리즘 (keywords.md -> leaf)
+- _index.md 스텁에는 심볼을 쓰지 않는다 (스텁이 다시 자라면 분할이 무효가 된다).
 
 ## 권한 (Owner 분리)
 | 작업 | 허용 |
@@ -5207,6 +5241,7 @@ fallback rg: rg -n "kw|Symbol" lib -g "!*.g.dart" -g "!*.freezed.dart" -g "!lib/
 root 2KB / keywords·feature 4KB hard cap. 초과 시 split 후 완료.
 검사: .claude/codemap 하위 *.md 각 파일 byte 수 cap — _root.md=2048 / _index.md=30720(Phase A flat 상한, 초과 시 Phase B 전환) / 그외=4096. 초과 시 FAIL.
 자동 집행(v2.49): stop-check 훅이 매 Stop마다 검사해 [codemap split needed] 차단 블록을 낸다(세션당 시그니처 1회 dedupe, Claude ps1/sh + Codex 3표면). 수동 스크립트 불요.
+훅이 돌지 않는 환경(조직 정책 차단·hook 미신뢰)에는 자동 집행이 없다 — task-done 6번·checkpoint 2번·handoff 6번에서 이번에 건드린 codemap 파일의 byte 수를 직접 재고, 초과면 그 자리에서 분할한다.
 분할 시 상위 파일은 삭제하지 말고 라우팅 스텁으로 남긴다 — 다른 leaf·문서가 가리키던 포인터가 그대로 산다.
 
 ## 초기 부트스트랩 (기존 코드베이스에 처음 도입할 때)
@@ -5573,8 +5608,9 @@ description: Cross-agent state transfer. Use when handing work to another agent 
    - handoff: .claude/pawpad/handoffs/{snapshot 경로}
    - owner: 현재 그대로 유지 (송신자 = 현재 owner)
    - updated: YYYY-MM-DD HH:MM
-6. codemap 갱신 (.claude/codemap/_index.md):
+6. codemap 갱신 (Phase B면 features leaf + _root.md HOT, Phase A면 _index.md — 규칙: .claude/skills/codemap/SKILL.md):
    - 이번 작업에서 만들거나 옮긴 심볼 반영 + HOT 최신화 (해당 없으면 "codemap skip" 선언)
+   - 건드린 codemap 파일 byte 수 점검 — cap(_root.md 2048 / _index.md 30720 / 그외 4096) 초과 시 분할 후 인계
    - 인수 agent는 새 세션이라, codemap이 구본이면 심볼을 못 찾고 소스를 통째로 뒤진다.
 7. context-saver 실행 (.ctxdb/L2 저장 + INDEX.md AGENT SYNC 갱신):
    - snapshot은 이 작업 한 건의 인계장이고, ctxdb는 인수 agent가 **키워드로 과거를 부르는 경로**다. 둘은 대체재가 아니다.
@@ -5666,14 +5702,15 @@ LLM 자체 측정 불가. agent가 다음 신호로 추정:
    - 완료/미완 정리 — 완료(✅) 작업항목은 최근 세션분만 lane 유지, 이전 것은 .claude/pawpad/verifications/{feature-id}-tasklog.md로 이월(HYBRID Completed Task Log). 검증근거도 동일(HYBRID Verification Evidence).
    - 다음 단계 명시
    - 수정 중 파일 목록
-2. codemap/_index.md 갱신:
+2. codemap 갱신 (Phase B면 features leaf + _root.md HOT, Phase A면 _index.md — 규칙: .claude/skills/codemap/SKILL.md):
    - 신규 심볼 추가
-   - HOT 섹션 최신화
+   - HOT 섹션 최신화 (3~5개·각 1줄. 밀려난 항목 처리는 codemap 스킬 HOT 규율)
+   - 건드린 codemap 파일 byte 수 점검 — cap(_root.md 2048 / _index.md 30720 / 그외 4096) 초과 시 분할. 훅이 돌지 않는 환경에서는 이 점검이 유일한 집행이다.
 3. context-saver 실행 (.ctxdb/L2 저장 + INDEX.md AGENT SYNC 갱신):
    - lane/codemap만 갱신하고 ctxdb를 빼면 다음 세션이 **키워드로 이 작업을 찾지 못한다**(checkpoint 목적 자체가 무효).
    - L2 세션 블록 ≤40줄 digest + 신규 도메인/용어면 INDEX·L1 키워드 갱신. 규칙: .claude/skills/context-saver/SKILL.md
 4. _meta.md 갱신 (해당 시):
-   - 완료 항목 RECENT에 추가
+   - 완료 항목 RECENT에 추가 (1줄 300자 이내 · 파일 8KB 상한 — 규칙: .claude/skills/resume/SKILL.md "_meta.md 업데이트 규칙")
 5. _wip.md Active Lanes의 updated 필드 갱신
 6. 60% 초과 추정 시 -> agent가 /handoff 권장 (사용자 안내)
 7. 결과:
@@ -8664,7 +8701,7 @@ $tmplSkillsManifest = @'
 | 스킬 | 위치 | 용도 |
 |------|------|------|
 | **resume** | `.claude/skills/resume/` | WIP 상태 관리, 세션 재개(ON START) 프로토콜 + Lane 신뢰성 게이트(stale lane 감지) |
-| **task-done** | `.claude/skills/task-done/` | 작업 종결 게이트 (ON TASK DONE 체크리스트 강제: lane→done 이관+_wip 제거+_meta+tasklog+codemap+commit) |
+| **task-done** | `.claude/skills/task-done/` | 작업 종결 게이트 (ON TASK DONE 체크리스트 강제: lane→done 이관+_wip 제거+_meta+tasklog+codemap+ctxdb 저장+commit) |
 | **codemap** | `.claude/skills/codemap/` | 심볼 위치 레지스트리, owner 분리 권한 |
 | **codebase-map** | `.claude/skills/codebase-map/` | 7축 고수준 코드베이스 맵(아키텍처/구조/관례/관심사), digest-only 주입 |
 | **caveman** | `.claude/skills/caveman/` | 압축 통신 모드 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Response Style` |
@@ -9097,6 +9134,7 @@ if ($failed -eq 0) {
         Write-Host "  - device-qa 스킬 신규 (v2.52): 기기 QA 실행 프로토콜 (21->22, qa 번들 = full 전용). 검증 채널 우선순위(자동화 테스트 -> logcat/dumpsys -> 앱 DB -> uiautomator dump -> 축소 스크린샷) + 스크린샷 예산제(세션 8장, 읽기 전 32% 축소) + 셸 규율(자기완결 스니펫/Git Bash 기기경로 // /덤프 원문 금지) + 안전 가드. 근거: 스크린샷 루프로 5시간 한도 소진 실측. 상세: docs/CHANGELOG_v2.52.md" -ForegroundColor Cyan
         Write-Host "  - Codex 표면 opt-in (v2.53): 기본 설치는 Claude 전용 — AGENTS.md / .agents/skills / .codex/* 는 -WithCodex 지정 시에만 생성. 이미 Codex 산출물이 있는 기존 설치는 자동 감지되어 계속 갱신(사용자 자산 무손실). 스킬 22 불변, Claude 산출물 바이트 불변." -ForegroundColor Cyan
         Write-Host "  - Codex 전용 번들 축 (v2.54): -CodexPreset / -CodexBundles 로 Claude와 Codex에 다른 스킬 세트 설치 (미지정 시 Claude 축 상속 = 종전과 동일). 예: -Preset full -CodexPreset lean -> Claude 22 / Codex 12. codexSel ⊆ claudeSel 강제(초과분 교집합+경고). 번들 선택은 pawpad-config.json에 기록되어 -Upgrade에서 재사용된다." -ForegroundColor Cyan
+        Write-Host "  - 세션 시작 비용 / 훅 없는 환경 안전망 (v2.55): INDEX AGENT SYNC 에이전트당 1행 + 8KB 상한, _wip 종결 메모 금지, _meta 1줄 300자 + 8KB(줄 수와 byte 함께). task-done에 ctxdb 저장과 codemap 크기 점검 단계 추가(7 -> 8단계). codemap Phase B 문구 정리 + HOT 넘침 규칙. 스킬 22 불변, 훅 불변. 상세: docs/CHANGELOG_v2.55.md" -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 22 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review,qa" -ForegroundColor Cyan

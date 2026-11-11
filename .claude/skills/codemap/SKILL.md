@@ -29,7 +29,7 @@ api:fetchUser      src/api/user_api.<ext>                fetchUser(id)->User: �
 | ui     | 공통 UI 컴포넌트 |
 | core   | 공통 서비스, 유틸 |
 
-## _index.md 구조
+## _index.md 구조 (Phase A flat)
 # MAP (data flow / 한눈 조망)   <- 모듈 흐름 다이어그램 (구조·영향범위 파악, 선택)
 [레이어/화살표. 예: ui --입력--> core --결과--> render]
 # HOT (최근 접근 3~5개)
@@ -38,9 +38,20 @@ api:fetchUser      src/api/user_api.<ext>                fetchUser(id)->User: �
 [전체: domain:symbol  file_path  시그니처: 역할]
 
 ## ON START 읽기 (토큰 절감)
-- ON START/재개 시 MAP+HOT(조망)만 부분읽기(상단). INDEX는 context에 올리지 않음.
-- 특정 심볼 위치 필요 시 INDEX를 Grep(domain:symbol 또는 파일명) — 매칭 줄만 반환 = 전체 로드보다 쌈.
-- HOT 규율 필수: 최근 3~5개·각 1줄. 비대하면 부분읽기 효과 반감 -> 초과·노후 항목은 INDEX로 강등.
+- Phase B(_root.md 존재): _root.md만 read. _index.md는 라우팅 스텁이라 읽지 않는다.
+- Phase A: ON START/재개 시 MAP+HOT(조망)만 부분읽기(상단). INDEX는 context에 올리지 않음.
+- 특정 심볼 위치 필요 시 INDEX(Phase B는 features/)를 Grep(domain:symbol 또는 파일명) — 매칭 줄만 반환 = 전체 로드보다 쌈.
+- HOT 규율 필수: 최근 3~5개·각 1줄(200자 이내). 밀려난 항목은 Phase A면 INDEX로 강등, Phase B면 버린다 — 위치는 leaf에, 경위는 ctxdb L2에 이미 있다.
+  버리기 전 그 심볼이 leaf에 있는지 Grep으로 확인하고, 없으면 leaf에 1줄 추가한 뒤 버린다.
+  hot-archive 같은 보관 파일을 만들지 않는다(lookup에 쓰이지 않고 size cap만 넘긴다).
+  이미 만들어 둔 보관 파일은 leaf와 대조해 빠진 심볼만 leaf로 옮기고 라우팅 스텁(3줄 이내)으로 줄인다.
+
+## 다른 문서의 _index.md 지칭 읽는 법 (Phase B)
+CLAUDE.md/AGENTS.md DoD와 다른 스킬(checkpoint·handoff·task-done·context-saver·lean-code 등)의 "codemap/_index.md 갱신·확인"은 Phase A 표기다. Phase B에서는 이렇게 읽는다:
+- 심볼 추가·수정 = 해당 features/{feature-id}.md leaf
+- HOT 최신화 = _root.md HOT
+- 위치 확인 = 아래 Lookup 알고리즘 (keywords.md -> leaf)
+- _index.md 스텁에는 심볼을 쓰지 않는다 (스텁이 다시 자라면 분할이 무효가 된다).
 
 ## 권한 (Owner 분리)
 | 작업 | 허용 |
@@ -98,6 +109,7 @@ fallback rg: rg -n "kw|Symbol" lib -g "!*.g.dart" -g "!*.freezed.dart" -g "!lib/
 root 2KB / keywords·feature 4KB hard cap. 초과 시 split 후 완료.
 검사: .claude/codemap 하위 *.md 각 파일 byte 수 cap — _root.md=2048 / _index.md=30720(Phase A flat 상한, 초과 시 Phase B 전환) / 그외=4096. 초과 시 FAIL.
 자동 집행(v2.49): stop-check 훅이 매 Stop마다 검사해 [codemap split needed] 차단 블록을 낸다(세션당 시그니처 1회 dedupe, Claude ps1/sh + Codex 3표면). 수동 스크립트 불요.
+훅이 돌지 않는 환경(조직 정책 차단·hook 미신뢰)에는 자동 집행이 없다 — task-done 6번·checkpoint 2번·handoff 6번에서 이번에 건드린 codemap 파일의 byte 수를 직접 재고, 초과면 그 자리에서 분할한다.
 분할 시 상위 파일은 삭제하지 말고 라우팅 스텁으로 남긴다 — 다른 leaf·문서가 가리키던 포인터가 그대로 산다.
 
 ## 초기 부트스트랩 (기존 코드베이스에 처음 도입할 때)

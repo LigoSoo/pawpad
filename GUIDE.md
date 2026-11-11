@@ -1,17 +1,14 @@
 ﻿# 프로젝트 설계→완성 워크플로 가이드
 
-이 문서는 PawPad — Agentic Engineering Toolkit(v2.54 FROZEN)를 설치한 프로젝트에서, **하나의 기능/프로젝트를 기획부터 완성·배포까지** 진행하는 전체 절차와 각 단계의 스킬 사용 예시를 설명한다.
+이 문서는 PawPad — Agentic Engineering Toolkit(v2.55 FROZEN)를 설치한 프로젝트에서, **하나의 기능/프로젝트를 기획부터 완성·배포까지** 진행하는 전체 절차와 각 단계의 스킬 사용 예시를 설명한다.
 
 > 설치/배포 방법은 [`README.md`](README.md) 참조. 이 문서는 설치 후 **작업 워크플로** 중심이다.
 > 대상 스택: 프리셋(flutter/node/python/wpf/tauri/electron/avalonia/generic) — 다른 스택도 `CLAUDE.md`의 `<YOUR_*>`만 채우면 동일 절차 적용
 > 협업 모델: Claude Code ⇄ Codex 하이브리드 (파일 시스템 기반 상태 공유, 단독 사용도 가능)
 > 버전 이력: 전체 표는 [PAWPAD_VERSIONS.md](PAWPAD_VERSIONS.md), 버전별 상세는 docs/CHANGELOG_v{N}.md. 아래는 최근 3개만.
+> v2.55: **세션 시작 비용 · 훅 없는 환경 안전망**(스킬 22 불변) — 훅이 차단된 설치처에서 세션 시작 3파일이 43KB까지 자란 것을 실측하고 쓰는 쪽 규칙을 고쳤다. `INDEX.md` AGENT SYNC는 에이전트당 1행 + 8KB 상한, `_wip.md`에는 종결 메모를 남기지 않고, `_meta.md`는 1줄 300자 · 8KB(줄 수와 byte를 함께 잰다). `task-done`에 ctxdb 저장과 codemap 크기 점검 단계를 넣어(7→8단계) 훅 없이도 기억과 상한이 유지된다. codemap은 Phase B 문구를 정리하고 HOT이 넘칠 때 규칙을 정했다. 상세: docs/CHANGELOG_v2.55.md
 > v2.54: **Codex 전용 번들 축**(`-CodexPreset` / `-CodexBundles`) — Claude와 Codex에 서로 다른 스킬 세트를 깔 수 있다. 예: `-Preset full -CodexPreset lean` → Claude 22 / Codex 12(Core). 미지정 시 Claude 축 상속(종전과 동일 산출물). **v2.53이 기각했던 “부분 제외”를 수행**한 것 — 죽은 경로가 남는 문제는 prune이 `AGENTS.md`·`config.json`을 Codex 집합 기준으로 다시 긎어 해소했다. 제약은 codexSel ⊆ claudeSel(미러 소스가 `.claude/skills`) — 초과분은 자동 교집합 + 경고. Codex 축만 줄여도 **Claude 산출물은 바이트 불변**이고, 번들 선택은 `pawpad-config.json`에 기록돼 `-Upgrade`에서 재사용된다. 상세: docs/CHANGELOG_v2.54.md
 > v2.53: **Codex 표면 기본 미설치(opt-in)**(스킬 22 불변, Claude 산출물 바이트 불변) — 기본 설치는 Claude 전용이고 `AGENTS.md` · `.agents/skills` 미러 · `.codex/*`는 `-WithCodex`를 줄 때만 생성된다. 부분 제외는 기각했다(`AGENTS.md` 본문과 `config.json`의 skills 배열이 미러 경로를 다수 참조해 죽은 경로가 남는다). **기존 설치는 자동 감지되어 스위치 없이도 계속 갱신** — `-Upgrade`가 사용자 자산을 말없이 지우지 않는 규율과 같은 방향이고, 덕분에 기본값 변경이 배포된 설치처의 동작을 바꾸지 않는다. 진행 바 29→25단계. 상세: docs/CHANGELOG_v2.53.md
-> v2.52: **device-qa 스킬 신규**(21→22, 새 `qa` 번들 = full 전용) — 기기 QA에서 스크린샷 루프가 5시간 사용 한도를 한 세션에 태우는 사고를 차단한다(설치처 실측: PNG 98장 생성·약 50장 read). 읽은 이미지는 **이후 모든 도구 호출에 재전송**되므로 비용이 `이미지 수 x 남은 호출 수`로 쌓이고, QA는 도구 호출이 가장 많은 작업이라 이 곱이 최대가 된다. **위임은 기각**(서브 컨텍스트도 같은 한도를 먹는다). 대신 검증 채널을 고정한다: 기기 자동화 테스트 → logcat/dumpsys → 앱 DB → `uiautomator dump` → **축소 스크린샷**(기본 32%) → 원본. 편입 전 에뮬레이터 실측으로 원안 결함 6건을 고쳤다 — Flutter 홈에서 `uiautomator dump` **12/12 실패**(`could not get idle state`)라 dump를 4순위로 내리고 화면 1회 프로브를 넣었고, Git Bash가 기기 경로 `/sdcard/...`를 변환해 **옛 파일을 읽어 다른 화면으로 PASS**가 나던 경로를 `//` 규칙으로 막았다. 실측 단가: grep 어서션 ~10 / dump 필터 ~250 / 축소샷 ~354 / 원본샷 ~1,476 / **dump 원문 ~8,000 토큰**(원문 투입 금지). 상세: docs/CHANGELOG_v2.52.md
-> v2.51: **design 스킬 원형 기반 재설계**(스킬 21 불변) — 기존 design은 최상위 원칙이 "AI 티 = 불일치"라 **일관되게 틀린 위계**를 통과시켰다: 토큰이 전부 스케일 파생이어도 모든 카드가 같은 크기이고 주 CTA가 파묻히면 정량 체크는 전부 녹색이다. 그 위에 **위계 정합**을 1순위로 얹었다 — 화면은 3초 안에 `지금 어떤 상태 / 다음에 뭘 하나 / 그러면 뭘 얻나`에 답하고 그 순서가 시각 위계와 일치해야 한다. 절차 4단계→**6단계**(원형 분류 → 의미 기반 토큰 → 3영역 레이아웃 → 일관성 5축 → 상태 전수 12종 → anti-slop·원칙8·정량6·최악조건10). `references/` 3파일 신규로 쪼개 **해당 원형 카드 1~2개만 on-demand read** — 게임 만들 때 앱 규칙을 읽지 않는다. 원형 **16종**(앱·도구 A1~A7 + 게임 G1~G9), 게임은 토큰에 economy/rarity 축이 **추가**된다. 검증: live==embed 4/4 byte-equal · 설치처 메인 화면 적용 목업에서 3초3질문 1/3→3/3 · 주 CTA 9→1 · **신규 토큰 0건**. **사후보강#1(버전 불변)**: 게임 경로를 실제 통과시켜 **재질(material) 축 부재**를 적발 — 규칙을 다 지켜도 평면 앱 UI가 나오던 원인이다. 재질 5층 + 스킨 축 분리 + **그래픽 컨셉 게이트**(게임이면 컨셉을 사용자에게 물어 확정) 신설. 상세: docs/CHANGELOG_v2.51.md.
-> v2.50: **ctxdb 회수 정밀도**(스킬 21 불변) — v2.48이 남긴 미결 "오탐률 미측정"을 transcript에서 뽑은 **실제 프롬프트 122건**으로 실측했다(`tests/ctxdb-fpr` 리플레이). 결과 **오탐률 7.4% / 정밀도 64%**. 의심하던 **CJK 2자 하한은 무죄**였다 — 하한 3(v2.47)으로 되돌린 대조군에서 off-domain 61건은 판정이 **완전히 동일**했고, toolkit에서 사라지는 8건 중 6건이 정탐이라 순손실이다. 진범은 `Find-L1Match`의 셀 분해가 **공백까지 구분자**로 써서 `점검 프롬프트`가 `점검`+`프롬프트` 두 키워드로 갈라진 것(오탐 9건 중 5건). 수정: 항목 안 공백은 **구(句)**로 취급 — 통째로 있어야 매칭. 검증: 회귀셋 **20/20 유지**(회수 무손실) + 동일 코퍼스 재측정 **오탐 9→4 · 정밀도 64→80% · 오탐률 7.4→3.3%**, 판정이 바뀐 5건은 전부 오탐. 기각안 2종도 실측 폐기(score>=2 하드컷=정탐 절반 소실 / score=1 차등주입=회귀셋 6/20). 상세: docs/CHANGELOG_v2.50.md.
-> v2.49: **codemap size cap 자동 감시**(스킬 21 불변) — cap 규칙은 v2.40(trim-router)부터 있었으나 **집행하는 장치가 없어** 설치처에서 2개월 만에 41개 중 14개가 상한을 넘었다(초과 합 46,168 B). 같은 `stop-check` 훅이 `.ctxdb/L2`는 150줄/2000토큰을 실측해 `[L2 split needed]` 차단 블록을 내는데 **codemap만 대상에서 빠져 있었다** — 커지는 쪽(8턴 checkpoint가 "codemap 갱신"을 재촉)만 자동이고 줄이는 쪽은 아무도 재지 않는 비대칭이 leaf 단조 증가의 원인. 훅 3표면(`.claude/hooks/stop-check.{ps1,sh}` + `.codex/hooks/stop-check.ps1`)에 크기 검사 추가 — cap `_root.md` 2KB / **`_index.md` 30KB**(Phase A flat 상한; 4KB를 걸면 Phase A 저장소가 전량 오탐) / leaf 4KB, 초과 시 `[codemap split needed]` decision:block **세션당 1회**(시그니처 dedupe). 안내는 "하위 leaf로 쪼개고 원본은 **라우팅 스텁**으로 남긴다"(기존 포인터 보존) + `_index.md` 초과면 Phase B 전환. 실측 근거: 설치처 정리로 대표 조회 경로 **41,912 → 7,167 B(-83%)**, dangling 0. 검증 3런타임 **12/12**. 상세: docs/CHANGELOG_v2.49.md.
 
 ---
 
@@ -40,7 +37,7 @@
 | 스킬 | 언제 |
 |------|------|
 | `/resume` | **세션 시작마다**. `_wip.md`/lane/handoff/meta/codemap 읽고 작업 재개 + **Lane 신뢰성 게이트**(stale lane 감지 — 다음 작업 제안 전 실코드 1회 대조) |
-| `/task-done` | **작업 종결마다**. ON TASK DONE 체크리스트 강제 실행(lane→done 이관+_wip 제거+_meta+tasklog+codemap+commit). "작업/이슈 종료" 자연어로도 발동, Stop hook lane-close 백스톱과 짝 |
+| `/task-done` | **작업 종결마다**. ON TASK DONE 체크리스트 강제 실행(lane→done 이관+_wip 제거+_meta+tasklog+codemap+ctxdb 저장+commit). "작업/이슈 종료" 자연어로도 발동, Stop hook lane-close 백스톱과 짝 |
 | `/device-qa` | **기기 QA 착수 시**(실기기/에뮬 연결). 검증 채널 우선순위(자동화 테스트→logcat/dumpsys→앱 DB→uiautomator dump→축소 스크린샷) + 스크린샷 예산제(세션 8장, 읽기 전 32% 축소) + 안전 가드. `qa` 번들(full 전용) |
 | `/codemap` | 심볼(클래스/함수/위젯) **위치**를 검색 없이 조회. owner 분리 권한 |
 | `/codebase-map` | **7축 고수준 맵**(아키텍처/구조/관례/테스트/관심사). codemap=위치, codebase-map=구조·관례. digest-only 주입 |
@@ -442,7 +439,7 @@ CLAUDE.md / AGENTS.md      # 에이전트 컨텍스트 (read-only)
 .codex/{config.json,config.toml,hooks.json,hooks/}  # Codex 어댑터 (native hooks)
 .agents/skills/{22}/       # Codex repo skill mirror (DO NOT EDIT)
 docs/HOOK_TESTING.md       # hook 회귀 체크리스트
-pawpad-setup.ps1  # 단일 설치 스크립트 (FROZEN v2.54)
+pawpad-setup.ps1  # 단일 설치 스크립트 (FROZEN v2.55)
 ```
 
 상세는 각 `.claude/skills/{skill}/SKILL.md` 참조.

@@ -21,6 +21,7 @@ description: Hybrid session resume protocol. Use at session start (ON START) to 
 | .claude/pawpad/backup/               | -Force 시 자동 백업          | 복구 필요 시         |
 
 ## ON START 절차 (agent가 순차 실행 — CLAUDE.md/AGENTS.md Session Protocol과 동일 순서)
+0. read .ctxdb/INDEX.md -> 첫 메시지 키워드 매칭 -> L1<=1 / L2<=2개만 로드 (전체 로드 금지. 규칙: ctxdb-navigator 스킬)
 1. read .claude/pawpad/_wip.md (active lane router)
    -> Active Lanes 비어있음: 새 작업 시작 (이후 HYBRID 등 skip)
    -> Active Lanes 존재: assigned lane 읽기
@@ -29,7 +30,7 @@ description: Hybrid session resume protocol. Use at session start (ON START) to 
 4. lane state=HANDOFF_TO_* : _wip.md의 handoff 필드 경로로 snapshot read
 5. lane state=SPEC_READY 또는 spec 있으면: read .claude/pawpad/specs/{feature}.md
 6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT). RECENT(완료 이력)는 파일 하단·재개 불요 -> 생략, history 필요 시 on-demand
-7. read .claude/codemap/_index.md (코드 수정 작업 시점만; 질문/분석 세션 skip)
+7. codemap은 코드 수정 작업 시점에 read (질문/분석 세션 skip) — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP+HOT만 부분읽기
 
 ## Lane 신뢰성 게이트 (ON START - stale lane 감지, 다음 작업 제안 전 필수)
 lane은 계획의 SoT지만, ON TASK DONE 누락으로 종결 안 된 lane이 남으면 이미 완료된 작업을 다음 작업으로 재제안하는 사고가 난다.
@@ -52,7 +53,7 @@ lane read 직후 신뢰도 순 3단 신호로 대조하고, 통과 후에만 nex
 ## Active Lanes
 - {feature-id}: .claude/pawpad/wip/{feature-id}.md
   - owner: {Claude Code | Codex}
-  - state: WIP | SPEC_READY | HANDOFF_TO_CODEX | HANDOFF_TO_CLAUDE | HANDOFF_TO_NEXT_AGENT | BLOCKED
+  - state: WIP | SPEC_READY | HANDOFF_TO_CODEX | HANDOFF_TO_CLAUDE | HANDOFF_TO_NEXT_AGENT | REVIEW_REQUESTED | REVIEW_DONE | BLOCKED
   - handoff: .claude/pawpad/handoffs/YYYY-MM-DD_HHMM_from_to_feature.md   (state=HANDOFF_* 일 때만)
   - updated: YYYY-MM-DD HH:MM
 
@@ -67,6 +68,8 @@ lane read 직후 신뢰도 순 3단 신호로 대조하고, 통과 후에만 nex
 | HANDOFF_TO_CODEX | Codex로 인수 요청 | handoff | Codex가 snapshot read, state=WIP, owner=Codex로 변경 |
 | HANDOFF_TO_CLAUDE | Claude로 인수 요청 | handoff | Claude가 snapshot read, state=WIP, owner=Claude로 변경 |
 | HANDOFF_TO_NEXT_AGENT | 다음 agent 미정 | handoff | 인수 agent가 snapshot read, state=WIP, owner=자기로 변경 |
+| REVIEW_REQUESTED | 리뷰 요청됨 (work owner 불변) | reviewer, review | reviewer가 request read 후 직접 검증, result 작성 -> REVIEW_DONE (review 스킬 설치 시) |
+| REVIEW_DONE | 리뷰 완료 | review | 요청측이 result read 후 수정 또는 종결 |
 | BLOCKED | 외부 의존 대기 | - | 차단 해소 시 owner가 state=WIP로 복귀 |
 
 ## lane 파일 (.claude/pawpad/wip/{feature}.md) 포맷
@@ -76,7 +79,7 @@ lane read 직후 신뢰도 순 3단 신호로 대조하고, 통과 후에만 nex
 {Claude Code | Codex}
 
 ## State
-WIP | SPEC_READY | HANDOFF_TO_* | BLOCKED
+WIP | SPEC_READY | HANDOFF_TO_* | REVIEW_REQUESTED | REVIEW_DONE | BLOCKED
 
 ## 작업 중
 - [domain:feature] [설명] ([진행률 %])
@@ -109,9 +112,9 @@ WIP | SPEC_READY | HANDOFF_TO_* | BLOCKED
 - 작업 완료 시: .claude/pawpad/wip/{feature-id}.md -> .claude/pawpad/wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md
   - timestamp는 완료 시각
   - 같은 feature 재작업 시 이전 done 파일 보존 (덮어쓰기 방지)
-- _wip.md Active Lanes에서 해당 lane 제거
+- _wip.md Active Lanes에서 해당 lane 제거 — 종결 메모 줄을 남기지 않는다 (종결 기록 = wip/done 파일 + _meta RECENT. router는 매 세션 통째로 읽히므로 진행 중 lane만 둔다)
 - _meta.md RECENT에 1줄 추가
-- 삭제 절대 금지 (history 추적 불가능 방지)
+- lane 파일 삭제 절대 금지 (history 추적 불가능 방지)
 
 예시:
 - 첫 완료: wip/done/feature-auth_2026-05-29_143012.md
@@ -131,9 +134,9 @@ WIP | SPEC_READY | HANDOFF_TO_* | BLOCKED
 YYYY-MM-DD: [완료 내용]. [영향 파일]. [agent]
 
 ## _meta.md 업데이트 규칙
-- 태스크 완료 시: RECENT(하단 섹션) 최상단에 1줄 추가 (agent 명시)
-- RECENT > 8줄: 초과분 -> .claude/pawpad/sessions/YYYY-MM.md 상단 이동 (newest first)
-- BLOCKED / NEXT: 상태 변화 시 즉시 갱신
+- 태스크 완료 시: RECENT(하단 섹션) 최상단에 1줄 추가 (agent 명시, 300자 이내 — 상세는 lane/L2에 1벌만)
+- RECENT > 8줄 또는 _meta.md 전체 > 8KB: 오래된 줄부터 -> .claude/pawpad/sessions/YYYY-MM.md 상단 이동 (newest first). 줄 수만 세면 긴 줄로 상한이 무력화되므로 byte도 잰다
+- BLOCKED / NEXT: 상태 변화 시 즉시 갱신. 끝난 NEXT 항목은 취소선으로 남기지 말고 sessions/YYYY-MM.md로 이동 (상단은 매 세션 읽힌다)
 - ON START는 헤더+BLOCKED+NEXT만 읽음 (RECENT 하단 = 재개 불요, history 시 on-demand)
 
 ## Handoff Rules
@@ -154,7 +157,7 @@ YYYY-MM-DD: [완료 내용]. [영향 파일]. [agent]
 
 ## Session Rollover
 - 세션 종료 시 lane 파일 + _wip.md + codemap 갱신 강제
-- _meta.md RECENT > 8줄 -> sessions/YYYY-MM.md 상단 이동 (newest first)
+- _meta.md RECENT > 8줄 또는 전체 > 8KB -> sessions/YYYY-MM.md 상단 이동 (newest first)
 - 새 세션 시 ON START 절차 그대로 실행 -> 끊김 없는 재개
 
 ## Backup

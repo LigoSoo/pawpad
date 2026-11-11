@@ -18,7 +18,7 @@
 | 스킬 | 위치 | 용도 |
 |------|------|------|
 | **resume** | `.agents/skills/resume/` | WIP 상태 관리, 세션 재개(ON START) 프로토콜 + Lane 신뢰성 게이트(stale lane 감지) |
-| **task-done** | `.agents/skills/task-done/` | 작업 종결 게이트 (ON TASK DONE 체크리스트 강제: lane→done 이관+_wip 제거+_meta+tasklog+codemap+commit) |
+| **task-done** | `.agents/skills/task-done/` | 작업 종결 게이트 (ON TASK DONE 체크리스트 강제: lane→done 이관+_wip 제거+_meta+tasklog+codemap+ctxdb 저장+commit) |
 | **codemap** | `.agents/skills/codemap/` | 심볼 위치 레지스트리, owner 분리 권한 |
 | **codebase-map** | `.agents/skills/codebase-map/` | 7축 고수준 코드베이스 맵(아키텍처/구조/관례/관심사), digest-only 주입 |
 | **caveman** | `.agents/skills/caveman/` | 압축 통신 모드 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Response Style` |

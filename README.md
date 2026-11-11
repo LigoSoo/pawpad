@@ -8,7 +8,7 @@
   <sub>Agentic Engineering Toolkit</sub>
 </p>
 
-# PawPad — Agentic Engineering Toolkit (v2.54 FROZEN)
+# PawPad — Agentic Engineering Toolkit (v2.55 FROZEN)
 
 Claude Code를 위한 **상태관리 + 토큰절약 하니스** (Codex 하이브리드 협업은 선택).
 하나의 PowerShell 스크립트로 어떤 프로젝트에든 22개 스킬 · PawPad 상태머신 · 양 런타임 자동화 hook · 키워드 컨텍스트 DB · 7축 코드베이스 맵 · 보안 검증 게이트를 설치한다.
@@ -118,7 +118,7 @@ Claude Code를 위한 **상태관리 + 토큰절약 하니스** (Codex 하이브
 ```
 CLAUDE.md                        # 에이전트 컨텍스트 (Claude). 완료 기준(DoD) 8번 = security-check 보안 게이트 포함
 AGENTS.md                        # 〃 Codex용 미러 — -WithCodex 시에만
-pawpad-setup.ps1     # 단일 설치 스크립트 (FROZEN v2.54, 번들 선택 -Preset/-Bundles + Codex 축 -CodexPreset/-CodexBundles + 안내 언어 -Lang + Codex opt-in -WithCodex, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
+pawpad-setup.ps1     # 단일 설치 스크립트 (FROZEN v2.55, 번들 선택 -Preset/-Bundles + Codex 축 -CodexPreset/-CodexBundles + 안내 언어 -Lang + Codex opt-in -WithCodex, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
 .codex/                          # 아래 Codex 표면 전체는 -WithCodex 시에만 생성
 ├── config.json                  # Codex 보조 설정 (skills 22 + context/backup keys)
 ├── config.toml                  # project config layer note
@@ -169,7 +169,7 @@ docs/HOOK_TESTING.md             # hook 회귀 방지 체크리스트 (event/run
 | 스킬 | 용도 |
 |------|------|
 | `/resume` | 세션 시작 재개 프로토콜 (HYBRID/_wip/lane/meta/codemap 읽기) + Lane 신뢰성 게이트(stale lane 감지·실코드 대조) |
-| `/task-done` | **작업 종결 게이트** — ON TASK DONE 체크리스트 강제(lane→done 이관+_wip 제거+_meta+tasklog+codemap+commit). "작업/이슈 종료" 자연어 발동, Stop hook lane-close 백스톱과 짝 |
+| `/task-done` | **작업 종결 게이트** — ON TASK DONE 체크리스트 강제(lane→done 이관+_wip 제거+_meta+tasklog+codemap+ctxdb 저장+commit). "작업/이슈 종료" 자연어 발동, Stop hook lane-close 백스톱과 짝 |
 | `/codemap` | 심볼(클래스/함수/위젯) **위치** 레지스트리, owner 분리 권한 |
 | `/codebase-map` | **7축 고수준 맵** (아키텍처/구조/관례/테스트/관심사). codemap=위치, codebase-map=구조·관례. digest-only 주입 |
 | `/ctxdb-navigator` | **키워드 depth 컨텍스트 최소 로드** (토큰 절약) |
@@ -287,7 +287,7 @@ $j=(Get-Content .claude\settings.json -Raw | ConvertFrom-Json); $j.hooks.PSObjec
 (Get-Content .codex\config.json -Raw | ConvertFrom-Json).skills.Count   # 22
 
 # 스크립트 STATUS
-Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.54 Claude-first ... FROZEN
+Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.55 Claude-first ... FROZEN
 ```
 
 설치 후 첫 작업은 보통 `/clarity` 또는 `/resume`로 시작한다.
@@ -298,11 +298,11 @@ Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.54 Claude-first ... FROZEN
 
 - **처음이면 / 바이브 코딩** → **[`USAGE.md`](USAGE.md)** : 상황별 "이럴 땐 이 스킬" 표 + 흐름 예시 + FAQ
 - **기능 1개 기획→완성→배포** 단계별 워크스루 → **[`GUIDE.md`](GUIDE.md)**
-- 변경 이력: `docs/CHANGELOG_v2.51.md` (이전: v2.18~v2.50)
+- 변경 이력: `docs/CHANGELOG_v2.55.md` (이전: v2.18~v2.54)
 - hook 회귀 체크리스트: `docs/HOOK_TESTING.md`
 - 협업 프로토콜 상세: `.claude/HYBRID.md`
 
 ## 버전 / 변경 정책
 
-`v2.54 FROZEN` (Claude-first Distribution, per-surface skill bundles). 변경 시 **새 버전 번호 + 변경 보고서 + Codex 리뷰** 절차를 따른다. 동결본을 직접 고치지 않는다.
+`v2.55 FROZEN` (Claude-first Distribution, per-surface skill bundles). 변경 시 **새 버전 번호 + 변경 보고서 + Codex 리뷰** 절차를 따른다. 동결본을 직접 고치지 않는다.
 기존 설치 환경의 버전 업그레이드는 `-Upgrade` 모드 사용 (툴킷 파일만 갱신, 사용자 데이터 보존).
