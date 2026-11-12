@@ -130,7 +130,7 @@ try {
     if ($needsCheckpoint -or $needsSplit -or $needsCmap) {
         $reasonParts = New-Object System.Collections.Generic.List[string]
         if ($needsCheckpoint) {
-            $reasonParts.Add("Codex checkpoint: $turn turns reached. Run context-saver: append current session summary to .ctxdb/L2, update .ctxdb/INDEX.md Codex row, refresh lane/_wip.md, and update codemap for new symbols.")
+            $reasonParts.Add("Codex checkpoint: $turn turns reached. Run context-saver: append current session summary to .ctxdb/L2, update .ctxdb/INDEX.md Codex row, refresh lane/_wip.md, and update the codemap leaf only if this work added an area, moved/renamed/deleted a file or found a pitfall (otherwise skip).")
         }
         if ($needsSplit) {
             $reasonParts.Add("L2 split needed: " + ($oversized -join ", ") + " exceeds 150 lines or 2000 tokens. Split old entries or route via L1/L3 before continuing.")

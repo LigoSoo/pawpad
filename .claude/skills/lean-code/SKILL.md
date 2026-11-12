@@ -24,7 +24,7 @@ description: LLM coding anti-pattern reference. Enforcement lives in CLAUDE.md/A
 ### 3. VERIFY BEFORE IMPLEMENTING
 구현 전 먼저 파악.
 - 기존 코드 패턴/의존성 먼저 읽기
-- .claude/codemap/_index.md로 관련 파일 위치 먼저 확인
+- 관련 파일 위치는 검색으로 먼저 찾는다. 검색이 헤매거나 그 영역을 처음 고칠 때는 codemap leaf를 본다 (.claude/skills/codemap/SKILL.md)
 - 가정으로 시작하지 않음
 
 ### 4. CONFIRM SCOPE WHEN UNCERTAIN

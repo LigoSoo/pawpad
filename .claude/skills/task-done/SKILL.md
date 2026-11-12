@@ -30,7 +30,8 @@ ON TASK DONE(Session Protocol)은 선언적 지시라 자연어 종료 요청("�
    - 끝난 NEXT 항목은 취소선으로 남기지 말고 sessions/{YYYY-MM}.md로 옮긴다 (_meta 상단은 매 세션 읽힌다).
    - 그래도 8KB를 넘으면 원인은 상단이다 — 남은 NEXT 항목을 1줄로 줄이고 상세는 lane/spec 포인터로 둔다.
 5. 완료(v) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월 (HYBRID Completed Task Log)
-6. codemap 갱신: 신규/변경 심볼 반영 (해당 없으면 "codemap skip" 선언)
+6. codemap 갱신: 새 영역·파일 이동/개명/삭제·새 주의사항이 있을 때만 leaf를 고친다 (해당 없으면 "codemap skip" 선언 — 작업마다 갱신하지 않는다)
+   - 건드린 leaf의 src: 경로가 실제로 있는지 확인한다
    - 건드린 codemap 파일의 byte 수를 잰다 — cap(_root.md 2048 / _index.md 30720 / 그외 4096) 초과면 분할 후 진행. 훅이 돌지 않는 환경에서는 이 단계가 유일한 집행이다. 규칙: .claude/skills/codemap/SKILL.md
 7. context-saver 실행: .ctxdb/L2 세션 블록 + INDEX.md AGENT SYNC
    - 같은 세션에서 이 작업을 이미 /checkpoint로 저장했으면 L2 블록은 생략할 수 있다("ctxdb skip(L2)" 선언). 그래도 INDEX AGENT SYNC 상태 셀은 종결 상태로 덮어쓴다 — checkpoint 때 적은 "진행 중"이 남으면 안 된다.

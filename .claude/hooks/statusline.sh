@@ -76,4 +76,52 @@ if [ $(( cden + srcn )) -gt 0 ]; then
   fi
   out="$out | 📡 $seg"
 fi
+# cache 모드 (opt-in: env PAWPAD_CACHE_STATUS=1|on|true). statusline.ps1 cache 블록 포트 — 규칙 동일.
+# R=이번 응답 cache_read, W=이번 응답 cache_creation, TTL=최근 쓰기의 ephemeral_1h/5m 판별(없으면 5m 가정).
+# 남은 시간 = 마지막 응답 시각 + TTL - 지금 (읽기도 TTL 재충전). 서버 조기 축출은 감지 불가 -> 추정값.
+# reset = 직전 응답 대비 read 급감 + write 급증 (prefix 변경/모델 전환/TTL 만료 등으로 캐시 깨짐).
+case "${PAWPAD_CACHE_STATUS:-}" in
+  1|on|true)
+    cseg="${D}cache -${Z}"
+    tp="$(printf '%s' "$raw" | jq -r '.transcript_path // empty' 2>/dev/null)"
+    if [ -n "$tp" ] && [ -f "$tp" ]; then
+      # 같은 message.id가 content block마다 반복 기록됨 -> 1건으로 합침
+      cinfo="$(tail -n 200 "$tp" 2>/dev/null | jq -rRs '
+        [ split("\n")[] | fromjson? | select(.type == "assistant" and .message.usage != null) ]
+        | reduce .[] as $o ([]; if length > 0 and $o.message.id != null and .[-1].message.id == $o.message.id then .[:-1] + [$o] else . + [$o] end)
+        | map({ r: (.message.usage.cache_read_input_tokens // 0), w: (.message.usage.cache_creation_input_tokens // 0),
+                h: (.message.usage.cache_creation.ephemeral_1h_input_tokens // 0), m: (.message.usage.cache_creation.ephemeral_5m_input_tokens // 0),
+                t: ((.timestamp // "") | sub("\\.[0-9]+"; "") | (fromdateiso8601? // 0)) })
+        | if length == 0 then empty else
+            .[-1] as $c
+            | (if length > 1 then .[-2] else {r: 0, w: 0} end) as $p
+            | ([.[] | select(.h > 0 or .m > 0)] | last) as $k
+            | (if $k != null and $k.h > 0 then 3600 else 300 end) as $ttl
+            | "\($c.r) \($c.w) \($ttl) \($c.t) \($p.r) \($p.w) \(length)"
+          end' 2>/dev/null)"
+      set -- $cinfo
+      if [ "$#" -eq 7 ]; then
+        cr=$1; cw=$2; ttl=$3; ct=$4; pr=$5; pw=$6; cn=$7
+        if [ $(( cr + cw )) -gt 0 ]; then
+          kf() { if [ "$1" -lt 1000 ]; then printf '%s' "$1"; else printf '%sk' $(( ($1 + 500) / 1000 )); fi; }
+          if [ "$ttl" -ge 3600 ]; then tl=1h; else tl=5m; fi
+          cseg="${D}cache${Z} R $(kf "$cr") ${D}·${Z} W $(kf "$cw")${D}(${tl})${Z}"
+          if [ "$cn" -gt 1 ] && [ "$cw" -ge 1024 ] && [ $(( cr * 2 )) -lt "$pr" ] && [ $(( cw * 2 )) -gt $(( pr + pw )) ]; then
+            cseg="$cseg ${R}💥reset${Z}"
+          fi
+          if [ "$ct" -gt 0 ]; then
+            rem=$(( ct + ttl - $(date +%s) ))
+            if [ "$rem" -le 0 ]; then
+              cseg="$cseg ${D}·${Z} ${R}⏳ expired${Z}"
+            else
+              if [ $(( rem * 100 )) -ge $(( ttl * 25 )) ]; then tcol="$G"; elif [ $(( rem * 100 )) -ge $(( ttl * 10 )) ]; then tcol="$Y"; else tcol="$R"; fi
+              cseg="$cseg ${D}·${Z} ${tcol}⏳ $(printf '%02d:%02d' $(( rem / 60 )) $(( rem % 60 )))${Z}"
+            fi
+          fi
+        fi
+      fi
+    fi
+    out="$out | $cseg"
+    ;;
+esac
 printf '%s' "$out"

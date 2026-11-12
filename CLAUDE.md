@@ -17,7 +17,7 @@ Task complete when ALL pass:
 2. Test (Commands의 Test) - all green
 3. No files outside stated scope modified
 4. lane 파일 갱신 또는 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동
-5. .claude/codemap/_index.md updated for new/changed symbols
+5. codemap 갱신 — 새 영역·파일 이동/개명/삭제·새 주의사항이 있을 때만 (없으면 "codemap skip" 선언). 규칙: .claude/skills/codemap/SKILL.md
 6. 핸드오프 발생 시 .claude/pawpad/handoffs/ snapshot 작성
 7. lane `## Verification Evidence`에 검증 근거 기록 — 최근 2건만 lane 유지, 초과분은 .claude/pawpad/verifications/{feature-id}-archive.md 상단 append + 포인터 1줄 (분석전용/소작업은 `not applicable: analysis-only`). 규칙: .claude/HYBRID.md Verification Evidence.
 8. 코드 변경 시 /security-check 🔴 zero (분석전용/문서전용 면제). 규칙: .claude/skills/security-check/SKILL.md
@@ -82,12 +82,12 @@ ON START (agent가 순차 실행):
   4. _wip.md Active Lanes에 state=HANDOFF_TO_* 발견 시 -> handoff 필드 경로 read
   5. state=SPEC_READY 또는 spec 있으면 read .claude/pawpad/specs/{feature}.md
   6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT; RECENT 완료이력은 하단·재개 불요 -> 생략, history 시 on-demand)
-  7. codemap은 코드 수정 작업 시작 시점에 read — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP+HOT(조망)만 부분읽기(상단). 전체 심볼표는 심볼 필요 시 Grep on-demand (질문/분석 전용 세션은 skip). 등록 심볼<10 & 소스≥30이면 codemap SKILL 초기 부트스트랩 1회 제안
+  7. codemap은 코드 수정 작업 시작 시점에 조망만 read — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP만 부분읽기(상단). 위치는 검색 먼저, codemap leaf는 조건부(Retrieval 표시 절) (질문/분석 전용 세션은 skip). 등록 항목(leaf·영역 블록·심볼 행)<3 & 소스≥30이면 codemap SKILL 초기 부트스트랩 1회 제안
 ON NEW TOPIC (세션 중): 새 주제 등장 + hook 주입 블록(=== PawPad ... Auto Context ===) 부재면 -> .ctxdb/keywords.md 의미매칭 1회로 최소 로드 (hook 차단·비Windows 폴백). 같은 주제 재발동 금지. 규칙: ctxdb-navigator SKILL.
 ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
-ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함) — 실행은 task-done 스킬 체크리스트로(부분 실행/누락 방지; "작업/이슈 종료" 자연어 요청 = task-done 발동)
+ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + codemap 갱신(해당 시) + context-saver(.ctxdb/L2 저장) + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함) — 실행은 task-done 스킬 체크리스트로(부분 실행/누락 방지; "작업/이슈 종료" 자연어 요청 = task-done 발동)
 ON STOP:         agent가 lane 파일 (state + reason) 갱신
-ON 8턴/60% CONTEXT: Stop hook이 8턴마다 checkpoint block -> context-saver(.ctxdb/L2 저장) + codemap 갱신. PreCompact hook이 native compaction 직전 동일 저장 유도(최근 8턴 내 발생 시 Stop checkpoint 중복 생략). 60% 시 /checkpoint -> 필요시 /handoff
+ON 8턴/60% CONTEXT: Stop hook이 8턴마다 checkpoint block -> context-saver(.ctxdb/L2 저장) + codemap 갱신(해당 시만). PreCompact hook이 native compaction 직전 동일 저장 유도(최근 8턴 내 발생 시 Stop checkpoint 중복 생략). 60% 시 /checkpoint -> 필요시 /handoff
 -> Detail: .claude/skills/resume/SKILL.md | .claude/skills/task-done/SKILL.md | .claude/skills/codemap/SKILL.md | .claude/skills/ctxdb-navigator/SKILL.md | .claude/skills/context-saver/SKILL.md | .claude/skills/handoff/SKILL.md | .claude/skills/checkpoint/SKILL.md
 
 ## Hybrid Lane Rule
@@ -107,17 +107,17 @@ ACTIVE EVERY RESPONSE. Off: "normal mode"
 -> Full rules: .claude/skills/caveman/SKILL.md
 
 ### Active Skills 표시 (매 응답 최상단 1줄)
-형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad). 단계 첨자: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming r2/3`, `design`, `mockup lo/hi`, `review`.
+형식: `🐾 Active Skills: {활성 스킬 | 구분}` (🐾=pawpad). 단계 표시: `clarity r2/5`, `grill-me`, `to-prd`, `brainstorming r2/3`, `design`, `mockup lo/hi`, `review`.
 caveman 항상 포함. off 시 라인에 `normal mode (caveman 압축 off)`로 표기(자기설명). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.
 
 ### Retrieval 표시 (탐색 수행 응답만, Active Skills 라인 아래 1줄)
-형식: `📡 Retrieval: codemap {hit(경로)|miss|미사용} | ctxdb {hit(파일)|miss|미사용} | src {read N (codemap 경유)|full-scan N (사유)}`
-- 소스 탐색 전 codemap lookup 의무. miss여도 곧장 full-scan 금지 — keywords/INDEX 의미매칭 재시도 후에도 miss면 **사유와 함께 full-scan 선언**.
+형식: `📡 Retrieval: codemap {hit(경로)|miss|불요(검색 직행)} | ctxdb {hit(파일)|miss|미사용} | src {read N|full-scan N (사유)}`
+- **검색 먼저.** 요청에 화면 문구·식별자가 있으면 소스를 바로 검색한다(codemap `불요`). codemap은 ① 요청에 검색할 말이 없을 때 ② 첫 검색이 0건이거나 여러 영역(파일 8개 초과)에 흩어질 때 ③ 어떤 영역의 파일을 처음 고치기 직전(그 파일명으로 leaf를 Grep해 주의사항 확인)에만 본다. codemap은 토큰 절감 장치가 아니라 길잡이 + 주의사항 기록이다. 규칙: .claude/skills/codemap/SKILL.md
 - 코드/컨텍스트 탐색이 없는 응답(순수 문답·이미 아는 파일 재편집)은 라인 생략.
-- 허위 선언·누락 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. `codemap lookup 0 + src 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')`이면 Stop hook이 decision:block으로 선언을 1회 요구(retrieval 백스톱). 선언 라인은 **라인 선두 앵커 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. statusline `📡 codemap 활용 N% (경유 X · 직행 Y) · 소스 읽기 N`의 활용률은 응답 단위 집계 — 경유=hit 선언, 직행=miss 선언+미선언 풀스캔(Stop hook이 read-track 실측으로 계수). 선언을 빼먹으면 직행으로 분모에 들어가 활용률이 내려간다(분모 3 미만은 % 대신 건수만).
+- 허위 선언 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. 선언 라인은 **줄 맨 앞에서 시작 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. 검색 직행은 정상 경로라 Stop hook이 차단하지 않는다(v2.56 — 이전의 retrieval 최종 차단 해제). statusline `📡 codemap 활용 N% (경유 X · 직행 Y) · 소스 읽기 N`은 건수 참고용이다 — 경유=hit 선언, 직행=그 외 소스 읽기. 직행이 분모에 들어가므로 낮은 값이 문제를 뜻하지 않는다.
 ## Idea → PRD Routing
 아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선).
-판정: 방향 미정(무엇을/누구에게/왜 미충족)·기능 누락/스코프 점검 필요→brainstorming(발산+스윕) / 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
+판정: 방향 미정(무엇을/누구에게/왜 미충족)·기능 누락/스코프 점검 필요→brainstorming(발산+누락 점검) / 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
 - 큰 덩어리: clarity 전 "분해 권장"(굵은 조각+순서, 조각별 반복).
 - brainstorming 종결 후: →clarity.
 - clarity PASS 후: grill-me 신호(결정 상호의존·트레이드오프 연쇄·스택/아키텍처/스키마 비가역) 있으면 →grill-me, 없으면 →to-prd.
@@ -142,10 +142,10 @@ agent가 흐름 중 다음 시점에 다음 스킬 또는 목업을 **1회 추�
 
 ## Architecture Principles (Feature-First)
 신규/변경 코드만 적용(레거시 강제 리팩토링 X). 상세·결정트리: .claude/skills/feature-architecture/SKILL.md
-1. 모듈 경계: 기능 폴더 응집(colocation) + 단일 public boundary(스택 관례). 내부 직접 import 금지.
-2. 횡단 import 금지: 기능 간 내부 참조 X (public boundary 의존은 OK). 공통은 소속 범위 따라 hoist.
+1. 모듈 경계: 기능별 한 폴더에 모으기(colocation) + 단일 public boundary(스택 관례). 내부 직접 import 금지.
+2. 기능 간 내부 import 금지: 다른 기능의 내부 파일 참조 X (public boundary 의존은 OK). 공통 코드는 쓰이는 범위에 맞는 상위 폴더로 올린다.
 3. Rule of Three: 2곳 중복 유지, 3곳째 추출.
-4. 신규 = 가산적: feature 내부 추가 중심 + route/menu registry 등 최소 integration edit 허용. integration 파일에 로직 늘면 경계 재검토.
+4. 신규 = 추가 위주: feature 내부 추가 중심 + route/menu registry 등 최소 integration edit 허용. integration 파일에 로직 늘면 경계 재검토.
 새 기능 위치: 기존 도메인 하위 / 새 도메인 폴더 / 도메인 비소속 shared 중 하나. 결정트리는 skill 참조.
 
 

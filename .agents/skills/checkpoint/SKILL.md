@@ -39,9 +39,9 @@ LLM 자체 측정 불가. agent가 다음 신호로 추정:
    - 완료/미완 정리 — 완료(✅) 작업항목은 최근 세션분만 lane 유지, 이전 것은 .claude/pawpad/verifications/{feature-id}-tasklog.md로 이월(HYBRID Completed Task Log). 검증근거도 동일(HYBRID Verification Evidence).
    - 다음 단계 명시
    - 수정 중 파일 목록
-2. codemap 갱신 (Phase B면 features leaf + _root.md HOT, Phase A면 _index.md — 규칙: .claude/skills/codemap/SKILL.md):
-   - 신규 심볼 추가
-   - HOT 섹션 최신화 (3~5개·각 1줄. 밀려난 항목 처리는 codemap 스킬 HOT 규율)
+2. codemap 갱신 (Phase B면 features leaf, Phase A면 _index.md — 규칙: .claude/skills/codemap/SKILL.md):
+   - 새 영역·파일 이동/개명/삭제·새 주의사항이 있을 때만 leaf를 고친다 (없으면 "codemap skip")
+   - 건드린 leaf의 src: 경로 존재 확인
    - 건드린 codemap 파일 byte 수 점검 — cap(_root.md 2048 / _index.md 30720 / 그외 4096) 초과 시 분할. 훅이 돌지 않는 환경에서는 이 점검이 유일한 집행이다.
 3. context-saver 실행 (.ctxdb/L2 저장 + INDEX.md AGENT SYNC 갱신):
    - lane/codemap만 갱신하고 ctxdb를 빼면 다음 세션이 **키워드로 이 작업을 찾지 못한다**(checkpoint 목적 자체가 무효).

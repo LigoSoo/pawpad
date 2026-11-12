@@ -19,7 +19,7 @@
 |------|------|------|
 | **resume** | `.claude/skills/resume/` | WIP 상태 관리, 세션 재개(ON START) 프로토콜 + Lane 신뢰성 게이트(stale lane 감지) |
 | **task-done** | `.claude/skills/task-done/` | 작업 종결 게이트 (ON TASK DONE 체크리스트 강제: lane→done 이관+_wip 제거+_meta+tasklog+codemap+ctxdb 저장+commit) |
-| **codemap** | `.claude/skills/codemap/` | 심볼 위치 레지스트리, owner 분리 권한 |
+| **codemap** | `.claude/skills/codemap/` | 검색이 막힐 때의 길잡이 + 주의사항 기록 (검색 먼저, 조건부 조회), owner 분리 권한 |
 | **codebase-map** | `.claude/skills/codebase-map/` | 7축 고수준 코드베이스 맵(아키텍처/구조/관례/관심사), digest-only 주입 |
 | **caveman** | `.claude/skills/caveman/` | 압축 통신 모드 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Response Style` |
 | **lean-code** | `.claude/skills/lean-code/` | LLM 코딩 안티패턴 (참조, 구 karpathy). 실제 강제는 CLAUDE.md/AGENTS.md `Coding Principles` |
@@ -36,7 +36,7 @@
 |------|------|------|
 | **handoff** | `.claude/skills/handoff/` | 세션/에이전트 인수인계 (PawPad snapshot + owner transfer) |
 | **checkpoint** | `.claude/skills/checkpoint/` | 컨텍스트 60% 롤오버 게이트 (상태 보존) |
-| **brainstorming** | `.claude/skills/brainstorming/` | 아이디어 발산 게이트 (방향 발산 + 누락 스윕[인접기능·비해피패스 8축] + MoSCoW 스코프 확정, clarity 이전 단계) |
+| **brainstorming** | `.claude/skills/brainstorming/` | 아이디어 발산 게이트 (방향 발산 + 누락 점검[인접기능·비해피패스 8축] + MoSCoW 스코프 확정, clarity 이전 단계) |
 | **grill-me** | `.claude/skills/grill-me/` | 계획/설계 스트레스 테스트 (재귀적 질문 + 용어 canonical 좁힘 + 코드 모순 표면화) |
 | **to-prd** | `.claude/skills/to-prd/` | 대화 → PRD (`.claude/pawpad/specs/` 저장 + SPEC_READY) |
 | **mockup** | `.claude/skills/mockup/` | PRD-tree→단일 HTML 목업 시각화 (lo/hi-fi, Feature ID 태깅 + drift 경고) |
@@ -64,7 +64,7 @@
 
 ### 협업/기획
 ```
-/brainstorming   # 아이디어 발산 + 누락 스윕 + 스코프 확정 (clarity 이전 단계)
+/brainstorming   # 아이디어 발산 + 누락 점검 + 스코프 확정 (clarity 이전 단계)
 /grill-me        # 설계 스트레스 테스트 (용어 좁힘·코드 모순 표면화 포함)
 /to-prd          # 대화 → PRD + SPEC_READY 등록
 /checkpoint      # 60% 컨텍스트 정리

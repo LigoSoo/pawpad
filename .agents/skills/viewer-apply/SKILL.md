@@ -20,7 +20,7 @@ Instruction skill. agent가 JSON read 후 spec/lane 동기. 삭제 반영(spec �
 
 ## 입력 (고정명, on-demand)
 `src/viewer/prd.json` · `fts.json`(기능그룹→스팩) · `userflow.json`(메뉴 계층 트리 `{root,tree:[{id,label,feature?,tab?,children?}]}`) · `wire.json`(화면별 `{frame,components:[{type,...}]}`).
-**ON START/resume 자동 로드 금지** — 이 스킬 실행 시점에만 read(기획 강화·context 비대화 방지).
+**ON START/resume 자동 로드 금지** — 이 스킬 실행 시점에만 read(기획 강화·context 낭비 방지).
 
 ## 동기 절차
 1. 4 JSON read. `fts.json`의 스팩 노드 = 설계/개발 단위, `prd.json` = 요구 문단, `userflow`/`wire` = 흐름·화면.

@@ -29,7 +29,7 @@ description: Hybrid session resume protocol. Use at session start (ON START) to 
 4. lane state=HANDOFF_TO_* : _wip.md의 handoff 필드 경로로 snapshot read
 5. lane state=SPEC_READY 또는 spec 있으면: read .claude/pawpad/specs/{feature}.md
 6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT). RECENT(완료 이력)는 파일 하단·재개 불요 -> 생략, history 필요 시 on-demand
-7. codemap은 코드 수정 작업 시점에 read (질문/분석 세션 skip) — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP+HOT만 부분읽기
+7. codemap은 코드 수정 작업 시점에 조망만 read (질문/분석 세션 skip) — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP만 부분읽기. 위치는 검색 먼저, leaf는 조건부 (codemap 스킬 "언제 보는가")
 
 ## Lane 신뢰성 게이트 (ON START - stale lane 감지, 다음 작업 제안 전 필수)
 lane은 계획의 SoT지만, ON TASK DONE 누락으로 종결 안 된 lane이 남으면 이미 완료된 작업을 다음 작업으로 재제안하는 사고가 난다.

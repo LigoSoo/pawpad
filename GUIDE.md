@@ -1,14 +1,14 @@
 ﻿# 프로젝트 설계→완성 워크플로 가이드
 
-이 문서는 PawPad — Agentic Engineering Toolkit(v2.55 FROZEN)를 설치한 프로젝트에서, **하나의 기능/프로젝트를 기획부터 완성·배포까지** 진행하는 전체 절차와 각 단계의 스킬 사용 예시를 설명한다.
+이 문서는 PawPad — Agentic Engineering Toolkit(v2.58 FROZEN)를 설치한 프로젝트에서, **하나의 기능/프로젝트를 기획부터 완성·배포까지** 진행하는 전체 절차와 각 단계의 스킬 사용 예시를 설명한다.
 
 > 설치/배포 방법은 [`README.md`](README.md) 참조. 이 문서는 설치 후 **작업 워크플로** 중심이다.
 > 대상 스택: 프리셋(flutter/node/python/wpf/tauri/electron/avalonia/generic) — 다른 스택도 `CLAUDE.md`의 `<YOUR_*>`만 채우면 동일 절차 적용
 > 협업 모델: Claude Code ⇄ Codex 하이브리드 (파일 시스템 기반 상태 공유, 단독 사용도 가능)
 > 버전 이력: 전체 표는 [PAWPAD_VERSIONS.md](PAWPAD_VERSIONS.md), 버전별 상세는 docs/CHANGELOG_v{N}.md. 아래는 최근 3개만.
-> v2.55: **세션 시작 비용 · 훅 없는 환경 안전망**(스킬 22 불변) — 훅이 차단된 설치처에서 세션 시작 3파일이 43KB까지 자란 것을 실측하고 쓰는 쪽 규칙을 고쳤다. `INDEX.md` AGENT SYNC는 에이전트당 1행 + 8KB 상한, `_wip.md`에는 종결 메모를 남기지 않고, `_meta.md`는 1줄 300자 · 8KB(줄 수와 byte를 함께 잰다). `task-done`에 ctxdb 저장과 codemap 크기 점검 단계를 넣어(7→8단계) 훅 없이도 기억과 상한이 유지된다. codemap은 Phase B 문구를 정리하고 HOT이 넘칠 때 규칙을 정했다. 상세: docs/CHANGELOG_v2.55.md
-> v2.54: **Codex 전용 번들 축**(`-CodexPreset` / `-CodexBundles`) — Claude와 Codex에 서로 다른 스킬 세트를 깔 수 있다. 예: `-Preset full -CodexPreset lean` → Claude 22 / Codex 12(Core). 미지정 시 Claude 축 상속(종전과 동일 산출물). **v2.53이 기각했던 “부분 제외”를 수행**한 것 — 죽은 경로가 남는 문제는 prune이 `AGENTS.md`·`config.json`을 Codex 집합 기준으로 다시 긎어 해소했다. 제약은 codexSel ⊆ claudeSel(미러 소스가 `.claude/skills`) — 초과분은 자동 교집합 + 경고. Codex 축만 줄여도 **Claude 산출물은 바이트 불변**이고, 번들 선택은 `pawpad-config.json`에 기록돼 `-Upgrade`에서 재사용된다. 상세: docs/CHANGELOG_v2.54.md
-> v2.53: **Codex 표면 기본 미설치(opt-in)**(스킬 22 불변, Claude 산출물 바이트 불변) — 기본 설치는 Claude 전용이고 `AGENTS.md` · `.agents/skills` 미러 · `.codex/*`는 `-WithCodex`를 줄 때만 생성된다. 부분 제외는 기각했다(`AGENTS.md` 본문과 `config.json`의 skills 배열이 미러 경로를 다수 참조해 죽은 경로가 남는다). **기존 설치는 자동 감지되어 스위치 없이도 계속 갱신** — `-Upgrade`가 사용자 자산을 말없이 지우지 않는 규율과 같은 방향이고, 덕분에 기본값 변경이 배포된 설치처의 동작을 바꾸지 않는다. 진행 바 29→25단계. 상세: docs/CHANGELOG_v2.53.md
+> v2.58: **statusline 캐시 모드(opt-in)**(스킬 22 불변, 기본 출력 불변) — 환경변수 `PAWPAD_CACHE_STATUS=1`이면 상태줄 끝에 이번 응답의 캐시 읽기·쓰기 토큰, 캐시 TTL(1h/5m), 캐시가 살아 있는 남은 시간(추정값), 캐시가 깨졌을 때 `💥reset`을 보여 준다. 상세: docs/CHANGELOG_v2.58.md
+> v2.57: **뜻이 안 잡히는 표현 12개를 쉬운 말로 교체**(스킬 22 불변, 동작 불변) — "함정"처럼 한글인데도 뜻을 유추할 수 없는 말을 골라 바꿨다. 함정→주의사항(codemap leaf 항목 이름 포함) · 스윕→누락 점검 · Codex 표면→Codex용 파일 · 투영→옮겨 그리기/시각화 · 비대→커짐/길어짐 · 횡단 import→기능 간 내부 import · hoist→상위 폴더로 올리기 · 가산적→추가 위주 · 응집→한 폴더에 모으기 · 첨자→단계 표시 · 앵커→줄 맨 앞/링크 · 백스톱→최종 차단/최종 점검. 자주 쓰이는 말(게이트·발산·폴백·종결 등)과 디자인 용어 "표면"은 그대로 둔다. codemap leaf의 항목 이름도 `주의사항:`으로 바뀌며, 이전 leaf의 `함정:` 줄은 같은 뜻으로 읽는다.
+> v2.56: **codemap 재설계 — 검색 먼저, 길잡이 + 주의사항 기록**(스킬 22 불변) — 같은 요청 3건을 두 모델로 실측하니 codemap을 거쳐 위치를 찾는 사용량이 검색만 쓸 때와 같았다(−2.4% ~ −0.1%). 그래서 조회를 의무에서 조건부로 바꿨다: 요청에 검색할 말이 없을 때, 첫 검색이 0건이거나 흩어질 때, 어떤 영역을 처음 고치기 직전에만 본다. leaf는 `src:` 줄(소스 경로와 기준 심볼) + `증상:` 줄(사용자 말투) + 주의사항 5줄 이내로 줄이고, leaf를 직접 검색해 두 번 안에 도착한다. HOT 절은 없앴고 갱신은 새 영역·파일 이동·새 주의사항일 때만 한다. codemap을 "토큰 절감 장치"로 설명하던 문구를 내렸다. 상세: docs/CHANGELOG_v2.56.md
 
 ---
 
@@ -37,9 +37,9 @@
 | 스킬 | 언제 |
 |------|------|
 | `/resume` | **세션 시작마다**. `_wip.md`/lane/handoff/meta/codemap 읽고 작업 재개 + **Lane 신뢰성 게이트**(stale lane 감지 — 다음 작업 제안 전 실코드 1회 대조) |
-| `/task-done` | **작업 종결마다**. ON TASK DONE 체크리스트 강제 실행(lane→done 이관+_wip 제거+_meta+tasklog+codemap+ctxdb 저장+commit). "작업/이슈 종료" 자연어로도 발동, Stop hook lane-close 백스톱과 짝 |
+| `/task-done` | **작업 종결마다**. ON TASK DONE 체크리스트 강제 실행(lane→done 이관+_wip 제거+_meta+tasklog+codemap+ctxdb 저장+commit). "작업/이슈 종료" 자연어로도 발동, Stop hook의 lane 종료 최종 점검과 짝 |
 | `/device-qa` | **기기 QA 착수 시**(실기기/에뮬 연결). 검증 채널 우선순위(자동화 테스트→logcat/dumpsys→앱 DB→uiautomator dump→축소 스크린샷) + 스크린샷 예산제(세션 8장, 읽기 전 32% 축소) + 안전 가드. `qa` 번들(full 전용) |
-| `/codemap` | 심볼(클래스/함수/위젯) **위치**를 검색 없이 조회. owner 분리 권한 |
+| `/codemap` | 검색이 막힐 때의 **길잡이**(영역별 소스 주소) + 고치기 전에 볼 **주의사항**. 검색 먼저, 조회는 조건부. owner 분리 권한 |
 | `/codebase-map` | **7축 고수준 맵**(아키텍처/구조/관례/테스트/관심사). codemap=위치, codebase-map=구조·관례. digest-only 주입 |
 | `/ctxdb-navigator` | 세션시작 **키워드 매칭으로 최소 컨텍스트(L1≤1/L2≤2)만 로드** (토큰 절약) |
 | `/context-saver` | 세션 작업을 `.ctxdb/L2`에 저장 + `INDEX.md` AGENT SYNC 갱신 |
@@ -55,7 +55,7 @@
 ### Workflow — 협업/기획
 | 스킬 | 언제 |
 |------|------|
-| `/brainstorming` | **아이디어 발산 게이트** (clarity 이전). 방향 발산 **최대 3라운드 왕복**(2-3 대안+추천 1개)→누락 스윕(인접기능+비해피패스 8축)→후보 확정 게이트→MoSCoW 스코프 확정(Won't 명시). **직접 호출 시 발산부터**, 자동 추천 경로의 구체화된 문서만 스윕 직행 |
+| `/brainstorming` | **아이디어 발산 게이트** (clarity 이전). 방향 발산 **최대 3라운드 왕복**(2-3 대안+추천 1개)→누락 점검(인접기능+비해피패스 8축)→후보 확정 게이트→MoSCoW 스코프 확정(Won't 명시). **직접 호출 시 발산부터**, 자동 추천 경로의 구체화된 문서만 누락 점검 직행 |
 | `/grill-me` | 계획/설계를 **재귀 심문**으로 스트레스 테스트 (모호 용어 canonical 좁힘·엣지케이스 시나리오·진술 vs 코드 모순 표면화 포함) |
 | `/to-prd` | 대화를 **PRD로 변환** → `specs/`에 저장 + lane `SPEC_READY` 등록 |
 | `/checkpoint` | 컨텍스트 **50~60% 도달** 시 lane/codemap/meta 저장 (롤오버 게이트) |
@@ -89,7 +89,7 @@
 4. `state=HANDOFF_TO_*` 발견 시 → `handoff` 경로 read
 5. `state=SPEC_READY` 또는 spec 있으면 → `specs/{feature}.md`
 6. `.claude/pawpad/_meta.md` 상단(SPRINT/PHASE/BLOCKED/NEXT; RECENT 완료이력은 하단·재개 불요 → 생략, history 시 on-demand)
-7. `.claude/codemap/_index.md` (심볼 위치, 코드 작업 시)
+7. `.claude/codemap/` 조망(MAP)만 (코드 작업 시. 위치는 검색 먼저, leaf는 조건부)
 
 > 결과: "지난 세션에 club-member-list가 SPEC_READY 상태로 남아있음. spec 읽고 구현 인수하겠음" 처럼 **끊김 없이 재개**.
 
@@ -99,7 +99,7 @@
 
 기획은 두 방향으로 진행된다: **펼치기**(빠진 기능이 없는지 — brainstorming) → **좁히기**(모호함이 없는지 — clarity/grill-me).
 
-#### 1a. 아이디어 발산·누락 스윕 — `/brainstorming` (clarity 이전, 막연할 때)
+#### 1a. 아이디어 발산·누락 점검 — `/brainstorming` (clarity 이전, 막연할 때)
 
 ```
 사용자: 클럽 커뮤니티 기능 만들고 싶어
@@ -107,9 +107,9 @@
 ```
 
 `/brainstorming`이 3단계로 "완전한 기능 후보 목록"을 만든다:
-1. **발산 (최대 3라운드 왕복)** — 방향 후보 2-3개(트레이드오프 + 추천 1개) 제시 → 체크박스 선택(마지막 옵션은 항상 "이대로 확정") → 반영 → 다음 라운드. "확정" 선택·변경 0·r3 도달 중 하나로 종료하며 "무엇을/누구에게/왜"를 확정한다. **`/brainstorming`을 직접 치면 입력이 구체적이어도 발산부터 돈다** (스킬 이름을 부른 것이 이미 발산 요청). 에이전트 추천을 수락한 경로에서 구체화된 기획문서(.md)를 준 경우에만 이 단계를 건너뛰고 스윕 직행
-2. **누락 스윕** — 인접기능(사용자 여정 전/후, 관리자 관점, 데이터 입출력 짝) + 비해피패스 8축(빈 상태/에러/권한/CRUD 대칭/데이터 수명주기/알림/설정/운영) 점검 → "생각 못 한 기능"을 지금 찾음
-2c. **후보 확정 게이트** — 스윕이 모은 후보 전량을 체크박스(다중선택)로 채택/보류 결정. 여기서 Other로 새 아이디어를 추가할 수 있다
+1. **발산 (최대 3라운드 왕복)** — 방향 후보 2-3개(트레이드오프 + 추천 1개) 제시 → 체크박스 선택(마지막 옵션은 항상 "이대로 확정") → 반영 → 다음 라운드. "확정" 선택·변경 0·r3 도달 중 하나로 종료하며 "무엇을/누구에게/왜"를 확정한다. **`/brainstorming`을 직접 치면 입력이 구체적이어도 발산부터 돈다** (스킬 이름을 부른 것이 이미 발산 요청). 에이전트 추천을 수락한 경로에서 구체화된 기획문서(.md)를 준 경우에만 이 단계를 건너뛰고 누락 점검 직행
+2. **누락 점검** — 인접기능(사용자 여정 전/후, 관리자 관점, 데이터 입출력 짝) + 비해피패스 8축(빈 상태/에러/권한/CRUD 대칭/데이터 수명주기/알림/설정/운영) 점검 → "생각 못 한 기능"을 지금 찾음
+2c. **후보 확정 게이트** — 누락 점검이 모은 후보 전량을 체크박스(다중선택)로 채택/보류 결정. 여기서 Other로 새 아이디어를 추가할 수 있다
 3. **MoSCoW 스코프** — 채택분을 Must/Should/Could/**Won't** 확정(보류분은 Won't 기본값). Won't("이번엔 안 만듦") 명시가 구현 후반 기능 추가/삭제로 갈아엎는 사고를 차단
 
 ```
@@ -203,7 +203,7 @@
 사용자: /mockup all lo
 ```
 
-`/mockup`이 PRD-tree를 **단일 HTML 목업**으로 투영한다:
+`/mockup`이 PRD-tree를 **단일 HTML 목업**으로 옮겨 그린다:
 - 화면별 `Feature ID` 라벨 + 메뉴/내비 위치 표현 → "이 기능이 **어느 메뉴에** 있는지" 코딩 전 확인
 - **drift 검사**: PRD-tree ID 집합 ↔ 목업 화면 집합 비교 → 누락/고아 경고 (기획에 빠진 화면 발견)
 - 기본 **lo-fi**(와이어프레임). 구조 확정되면 `/mockup all hi`로 **hi-fi**(design 토큰 적용)
@@ -219,7 +219,7 @@
 사용자: /viewer-apply
 ```
 
-`/mockup`의 **viewer 모드**는 PRD-tree/spec을 `src/viewer/{prd,fts,userflow,wire}.json`으로 투영하고, 범용 `spec-viewer.html`(File System Access API)이 4탭(PRD / 기능명세서 / 메뉴구성도 / 와이어프레임)으로 띄운다:
+`/mockup`의 **viewer 모드**는 PRD-tree/spec을 `src/viewer/{prd,fts,userflow,wire}.json`으로 옮기고, 범용 `spec-viewer.html`(File System Access API)이 4탭(PRD / 기능명세서 / 메뉴구성도 / 와이어프레임)으로 띄운다:
 - 폴더 1회 선택 → 자동 로드 → 편집(수정/삭제/추가) → **같은 파일 제자리 저장**(다운로드·백엔드 없음) → 재로드. 폴더 핸들은 IndexedDB에 기억되어 `↻ 다시 열기` 1클릭 복원
 - **메뉴구성도** = 계층 트리 드래그앤드랍(순서·뎁스 재배치, 뎁스별 색), **와이어프레임** = 디바이스 프레임(mobile/web) + 컴포넌트 lo-fi
 - 브라우저에서 결정을 마치면 `/viewer-apply`가 저장된 JSON을 읽어 **스팩에 동기** — JSON에 남은 항목은 spec 생성/갱신, 삭제한 항목은 spec에서 제거/아카이브(비파괴·confirm)
@@ -242,11 +242,11 @@
 
 ```
 /lean-code  ← 요청된 것만. 추가 추상화·범위 밖 파일 수정 금지 확인
-/codemap    ← MemberCard / memberListProvider 위치 조회 (검색 없이)
+/codemap    ← 검색이 헤맬 때, 또는 그 영역을 처음 고치기 전에 주의사항 확인
 /caveman    ← 압축 피드백 (기본 ON)
 ```
 
-`/codemap`은 새 심볼을 등록하기도 한다:
+`/codemap`은 새 영역이 생기면 leaf를 추가한다(v2.56부터 `src:` / `증상:` / 주의사항 3줄 규격 — 아래는 선택 사항인 심볼 표 예시):
 ```
 ADD lib/features/club/widgets/member_card.dart : MemberCard (멤버 1명 카드)
 ADD lib/features/club/providers/member_list_provider.dart : memberListProvider
@@ -283,7 +283,7 @@ CLAUDE.md의 DoD 8개가 **전부** 통과해야 완료:
 2. test (스택의 test 명령)        → 전부 green
 3. 명시 범위 밖 파일 미수정
 4. lane → wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md 이동
-5. codemap/_index.md 신규/변경 심볼 갱신
+5. codemap 갱신 — 새 영역·파일 이동/개명/삭제·새 주의사항이 있을 때만 (없으면 skip)
 6. (핸드오프 발생 시) handoffs/ snapshot 작성
 7. lane `## Verification Evidence` 섹션에 검증 근거 기록 (분석전용/소작업은 `not applicable: analysis-only`)
 8. 코드 변경 시 /security-check 🔴 zero (분석전용/문서전용 면제) — 검출 시 조치(env var 이관/마스킹) 후 재검증
@@ -319,7 +319,7 @@ CLAUDE.md의 DoD 8개가 **전부** 통과해야 완료:
 
 ```
 ■ 기획 → 구현 (가장 흔한 흐름)
-  /brainstorming(막연한 아이디어면 — 발산·누락 스윕·스코프) → /clarity → /grill-me → /to-prd → /mockup → (통합 4탭 검토: /mockup viewer → /viewer-apply 로 스팩 동기) → (구현세션) /resume 인수 → /code-delegate(코딩 위임, 선택) → 코딩 → /security-check → /review(고위험) → DoD → /task-done(종결)
+  /brainstorming(막연한 아이디어면 — 발산·누락 점검·스코프) → /clarity → /grill-me → /to-prd → /mockup → (통합 4탭 검토: /mockup viewer → /viewer-apply 로 스팩 동기) → (구현세션) /resume 인수 → /code-delegate(코딩 위임, 선택) → 코딩 → /security-check → /review(고위험) → DoD → /task-done(종결)
 
 ■ UI 화면 작업
   /brainstorming(신규 기능이면) → /clarity → /design → /to-prd → /mockup(lo→hi) → /code-delegate(코딩 위임, 선택) → 구현(/lean-code /codemap) → /security-check → /review(고위험) → DoD → /task-done(종결)
@@ -417,7 +417,7 @@ State enum: `WIP` · `SPEC_READY` · `HANDOFF_TO_CODEX` · `HANDOFF_TO_CLAUDE` �
 │   ├── stop-check.ps1     # Stop: 8턴 체크포인트 + L2 분할 품질강제
 │   └── statusline.ps1     # ctx 사용%(+ .sh wrapper들)
 ├── skills/{22개}/SKILL.md  # 스킬 정의
-├── codemap/_index.md      # 심볼 위치 레지스트리
+├── codemap/_index.md      # 길잡이 + 주의사항 기록
 └── pawpad/
     ├── _wip.md            # active lane router
     ├── _meta.md           # 이력 + STACK/SPRINT
@@ -439,7 +439,7 @@ CLAUDE.md / AGENTS.md      # 에이전트 컨텍스트 (read-only)
 .codex/{config.json,config.toml,hooks.json,hooks/}  # Codex 어댑터 (native hooks)
 .agents/skills/{22}/       # Codex repo skill mirror (DO NOT EDIT)
 docs/HOOK_TESTING.md       # hook 회귀 체크리스트
-pawpad-setup.ps1  # 단일 설치 스크립트 (FROZEN v2.55)
+pawpad-setup.ps1  # 단일 설치 스크립트 (FROZEN v2.58)
 ```
 
 상세는 각 `.claude/skills/{skill}/SKILL.md` 참조.

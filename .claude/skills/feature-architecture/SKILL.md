@@ -10,20 +10,20 @@ description: Feature-first structure reference. Enforcement lives in CLAUDE.md/A
 
 ## 코어 규칙 (CLAUDE.md/AGENTS.md가 강제, 여기선 참조)
 1. **모듈 경계**: colocation + 단일 public boundary
-2. **횡단 import 금지** (단 public boundary 의존은 허용)
+2. **기능 간 내부 import 금지** (단 public boundary 의존은 허용)
 3. **Rule of Three**
-4. **신규 = 가산적 + 최소 integration edit 허용**
+4. **신규 = 추가 위주 + 최소 integration edit 허용**
 
 ## 상세 규칙
-### 5. 파일 1책임 + 비대화 시 분할
-한 파일 = 한 책임. 커지면 분할. codemap 심볼과 1:1 유지 → 색인 정확도.
+### 5. 파일 1책임 + 커지면 분할
+한 파일 = 한 책임. 커지면 분할.
 
-### 6. codemap 도메인 명명 정렬
-파일/심볼명이 `domain:symbol`로 깔끔히 매핑되게 명명. 예: `src/menu-c/c-export/export.logic` → `menu-c:exportLogic`. DoD#5(codemap 갱신)와 짝 → "codemap 이용 개발"의 명명 브릿지.
+### 6. 검색되는 이름
+파일/심볼명은 화면 문구·도메인 용어와 맞춰 검색 한 번에 걸리게 짓는다. 예: 화면이 "내보내기"면 `src/menu-c/c-export/export.logic`. 사용자 말과 코드 이름이 어긋나는 곳은 codemap leaf의 `증상:` 줄에 그 말을 적어 둔다(DoD#5).
 
 ### 7. anti-pattern 체크리스트
 - **god-module**: 한 파일/폴더가 여러 도메인 책임 → 분할
-- **순환참조**: A→B→A → public boundary 또는 hoist로 단방향화
+- **순환참조**: A→B→A → public boundary 또는 상위 폴더로 올려 단방향화
 - **premature 추상화**: 2곳 중복에 성급한 공통화 (Rule of Three 위반)
 - **layer-first 회귀**: controllers/·services/ 식 레이어 우선 분할로 복귀
 - **shared-dump 회귀**: cross-menu 2회 사용을 즉시 global shared로 올림
@@ -42,7 +42,7 @@ description: Feature-first structure reference. Enforcement lives in CLAUDE.md/A
 새 기능이...
 ├─ 기존 메뉴(도메인) 소속 → 그 메뉴 폴더 아래 하위 폴더 추가 (형제 로직 불변)
 ├─ 새 메뉴(도메인)        → 새 도메인 폴더 + 첫 기능 하위 폴더
-└─ 메뉴 횡단(공통)        → core/ 또는 shared/ (특정 메뉴 소속 아님)
+└─ 여러 메뉴 공통        → core/ 또는 shared/ (특정 메뉴 소속 아님)
 
 어느 경우든: route/menu registry, module manifest, DI registration,
             public export 같은 최소 integration edit은 허용 (규칙4).
@@ -63,4 +63,4 @@ description: Feature-first structure reference. Enforcement lives in CLAUDE.md/A
 **cross-menu 2회 사용을 즉시 global로 올리지 말 것** (Rule of Three 게이트).
 
 ## 프레임워크 관례 우선 (배포 안전)
-Next.js(app/ 라우팅), Rails(MVC 규칙) 등 **프레임워크가 구조를 강제하면 그것을 우선** 따르고, 그 관례 **안에서** feature-first 원칙(colocation/단일 경계/횡단 격리)을 적용한다. 프레임워크 관례를 거슬러 강제하지 않는다.
+Next.js(app/ 라우팅), Rails(MVC 규칙) 등 **프레임워크가 구조를 강제하면 그것을 우선** 따르고, 그 관례 **안에서** feature-first 원칙(colocation/단일 경계/기능 간 격리)을 적용한다. 프레임워크 관례를 거슬러 강제하지 않는다.

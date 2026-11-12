@@ -124,7 +124,10 @@ if command -v jq >/dev/null 2>&1; then
       # retrieval 백스톱 (v2.43): hit율은 선언 기반이라 선언을 빼먹으면 조용히 0이 된다. read-track 실측과 대조해
       # "codemap lookup 0 + src 직접읽기 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')" = 미선언 full-scan으로
       # 보고 리마인더 1회 (uuid dedupe). src 1건은 면제 (이미 아는 파일 재편집 — CLAUDE.md가 라인 생략을 허용하는 케이스).
-      if [ "${freshDecl:-0}" -eq 0 ] && [ "${srcDelta:-0}" -ge 2 ] && [ "${cmapDelta:-0}" -eq 0 ] && [ -n "$u2" ]; then
+      # v2.56: 차단 해제. "검색 먼저"가 정상 경로가 되어 codemap 미조회 + 소스 읽기는 위반이 아니다.
+      # 계측(cmap:direct)은 위에서 그대로 남는다. 다시 켜려면 retrBackstop=1.
+      retrBackstop=0
+      if [ "$retrBackstop" -eq 1 ] && [ "${freshDecl:-0}" -eq 0 ] && [ "${srcDelta:-0}" -ge 2 ] && [ "${cmapDelta:-0}" -eq 0 ] && [ -n "$u2" ]; then
         # 세션당 최대 2회 하드캡. uuid dedupe는 "같은 응답 재경고"만 막고, 매 턴 새 uuid로 block이
         # 재발행되는 교착은 못 막는다 (block 1회 = 전체 응답 재생성 -> 수십 분 정지로 나타남).
         rwP="$stateDir/claude-retrieval-warned"; rwSession=""; rwSeen=""; rwCount=0
@@ -213,7 +216,7 @@ if [ -n "$cmOver" ]; then
 fi
 parts=""
 if [ "$needCheckpoint" -eq 1 ]; then
-  parts="[checkpoint $turn turns] Update .claude/codemap/_index.md for new/changed symbols + refresh lane/_wip.md (on done: move to wip/done + _meta.md + git commit) + run context-saver to write .ctxdb/L2 and update INDEX.md AGENT SYNC."
+  parts="[checkpoint $turn turns] Update the codemap leaf only if this work added an area, moved/renamed/deleted a file or found a pitfall (otherwise skip; rule: .claude/skills/codemap/SKILL.md) + refresh lane/_wip.md (on done: run the task-done skill) + run context-saver to write .ctxdb/L2 and update INDEX.md AGENT SYNC."
 fi
 if [ "$needSplit" -eq 1 ]; then
   parts="$parts [L2 split needed]$oversized : exceeds 150 lines / 2000 tokens -> keyword load still pulls the whole file, defeating token savings. Split old entries into .ctxdb/L3/{name}-YYYY-MM.md or split by domain, then update INDEX/L1 pointers."
@@ -222,10 +225,10 @@ if [ "$needCmap" -eq 1 ]; then
   parts="$parts [codemap split needed]$cmOver : exceeds codemap size cap (_root.md 2KB / _index.md 30KB / others 4KB). Phase B leaves are read whole on lookup, so an oversized leaf is paid on every lookup. Split into .claude/codemap/features/{id}/{subtopic}.md and keep the original file as a routing stub so existing pointers survive; if _index.md is over, switch to Phase B (trim-router). Rule: .claude/skills/codemap/SKILL.md size cap."
 fi
 if [ "${laneClose:-0}" -eq 1 ]; then
-  parts="$parts [lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + git commit). If not done, ignore this and continue."
+  parts="$parts [lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + ctxdb save + git commit). If not done, ignore this and continue."
 fi
 if [ -n "${retrMiss:-}" ]; then
-  parts="$parts [retrieval] read-track measured $retrMiss source reads this turn with zero .claude/codemap lookup and no codemap hit/miss declaration (line missing, or declared '미사용'). codemap lookup must precede source search. Grep .claude/codemap/_index.md for the symbol; if it is genuinely a miss, emit the Retrieval line declaring full-scan with the reason."
+  parts="$parts [retrieval] read-track measured $retrMiss source reads this turn with zero .claude/codemap lookup and no codemap hit/miss declaration (line missing, or declared '미사용'). (This reminder is off since v2.56: searching the source first is the normal path.) Add the Retrieval line stating codemap hit, miss or not-needed."
 fi
 if [ -z "$parts" ]; then
   exit 0

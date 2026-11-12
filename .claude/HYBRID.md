@@ -41,7 +41,7 @@ hook 미신뢰/비활성 시 agent가 SKILL.md를 따라 수동으로 파일을 
 
 1. Context 50-60% 도달 추정 -> agent가 /checkpoint 절차 수행
 2. lane 파일 (.claude/pawpad/wip/{feature}.md) 갱신
-3. codemap/_index.md 갱신 (신규 심볼)
+3. codemap 갱신 (해당 시만 — 새 영역·파일 이동/개명/삭제·새 주의사항. 규칙: codemap 스킬)
 4. agent가 /handoff {to-agent} {feature} {reason} 절차 수행:
    - snapshot 작성: .claude/pawpad/handoffs/YYYY-MM-DD_HHMM_from_to_feature.md
    - _wip.md Active Lanes에 state=HANDOFF_TO_* + handoff 필드 추가
@@ -172,7 +172,7 @@ snapshot 파일 경로는 같은 lane의 handoff 필드에 기록 (HANDOFF_TO_* 
 
 ## Verification Evidence
 
-lane "## Verification Evidence" 섹션은 검증 근거(테스트/분석/리뷰 결과)를 기록한다. 무제한 누적 시 lane 파일이 비대해져 매 세션 ON START 로드 비용이 커지므로 경량 유지한다.
+lane "## Verification Evidence" 섹션은 검증 근거(테스트/분석/리뷰 결과)를 기록한다. 무제한 누적 시 lane 파일이 커져 매 세션 ON START 로드 비용이 커지므로 경량 유지한다.
 
 규칙:
 1. lane 본문에는 최근 2건만 유지.

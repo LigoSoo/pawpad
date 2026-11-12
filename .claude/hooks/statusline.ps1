@@ -113,4 +113,62 @@ if (($cdenom + $srcN) -gt 0) {
     }
     $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) $seg"
 }
+# cache 모드 (opt-in: env PAWPAD_CACHE_STATUS=1|on|true). transcript 마지막 응답 usage 기준.
+# R=이번 응답 cache_read, W=이번 응답 cache_creation, TTL=최근 쓰기의 ephemeral_1h/5m 판별(없으면 5m 가정).
+# 남은 시간 = 마지막 응답 시각 + TTL - 지금 (읽기도 TTL 재충전). 서버 조기 축출은 감지 불가 -> 추정값.
+# reset = 직전 응답 대비 read 급감 + write 급증 (prefix 변경/모델 전환/TTL 만료 등으로 캐시 깨짐).
+if ([string]$env:PAWPAD_CACHE_STATUS -match '^(1|on|true)$') {
+    $cseg = "${D}cache -${Z}"
+    $tp = $j.transcript_path
+    if ($tp -and (Test-Path -LiteralPath $tp)) {
+        $us = New-Object System.Collections.ArrayList
+        $lastId = $null
+        foreach ($ln in @(Get-TailLines $tp 200)) {
+            if ($ln -notlike '*"usage"*') { continue }
+            try { $o = $ln | ConvertFrom-Json } catch { continue }
+            if ($o.type -ne 'assistant' -or -not $o.message.usage) { continue }
+            $u = $o.message.usage
+            $rec = [pscustomobject]@{
+                r = [long]$u.cache_read_input_tokens; w = [long]$u.cache_creation_input_tokens
+                h = [long]$u.cache_creation.ephemeral_1h_input_tokens; m = [long]$u.cache_creation.ephemeral_5m_input_tokens
+                t = $o.timestamp
+            }
+            # 같은 message.id가 content block마다 반복 기록됨 -> 1건으로 합침
+            if ($lastId -and $o.message.id -eq $lastId) { $us[$us.Count - 1] = $rec } else { [void]$us.Add($rec) }
+            $lastId = $o.message.id
+        }
+        if ($us.Count -gt 0) {
+            $c = $us[$us.Count - 1]
+            if (($c.r + $c.w) -gt 0) {
+                $ttl = 300
+                for ($i = $us.Count - 1; $i -ge 0; $i--) {
+                    if ($us[$i].h -gt 0) { $ttl = 3600; break }
+                    if ($us[$i].m -gt 0) { break }
+                }
+                $kf = { param($n) if ($n -lt 1000) { "$n" } else { "$([math]::Round($n / 1000.0))k" } }
+                $ttlLabel = if ($ttl -ge 3600) { '1h' } else { '5m' }
+                $cseg = "${D}cache${Z} R $(& $kf $c.r) ${D}·${Z} W $(& $kf $c.w)${D}($ttlLabel)${Z}"
+                if ($us.Count -gt 1) {
+                    $p = $us[$us.Count - 2]
+                    if ($c.w -ge 1024 -and $c.r -lt ($p.r * 0.5) -and $c.w -gt (($p.r + $p.w) * 0.5)) {
+                        $cseg += " ${R}$([char]::ConvertFromUtf32(0x1F4A5))reset${Z}"
+                    }
+                }
+                try {
+                    $remain = ([datetime]$c.t).ToUniversalTime().AddSeconds($ttl) - [datetime]::UtcNow
+                    $hg = [char]0x23F3
+                    if ($remain.TotalSeconds -le 0) {
+                        $cseg += " ${D}·${Z} ${R}$hg expired${Z}"
+                    } else {
+                        $frac = $remain.TotalSeconds / $ttl
+                        $tcol = if ($frac -ge 0.25) { $G } elseif ($frac -ge 0.1) { $Y } else { $R }
+                        $mmss = '{0:00}:{1:00}' -f [math]::Floor($remain.TotalMinutes), $remain.Seconds
+                        $cseg += " ${D}·${Z} ${tcol}$hg $mmss${Z}"
+                    }
+                } catch { }
+            }
+        }
+    }
+    $out += " | $cseg"
+}
 Write-Output $out

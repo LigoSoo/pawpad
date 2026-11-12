@@ -1,13 +1,16 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.55 (Claude-first Distribution, per-surface skill bundles, PowerShell)
-# STATUS: FROZEN (v2.55. v2.54 기반 + **세션 시작 비용 · 훅 없는 환경 안전망** — 스킬 22 불변, 본문만 6개 수정(context-saver · task-done · resume · codemap · checkpoint · handoff). 설치처 실측(2026-11-11): 훅이 조직 정책으로 차단된 머신에서 세션 시작 3파일이 43KB(INDEX 12.7KB · _wip 21.7KB · _meta 8.5KB)까지 자랐고 codemap 93파일 중 8개가 상한을 넘었다. (1) INDEX AGENT SYNC 에이전트당 1행 + 8KB 상한 (2) _wip 종결 메모 금지 (3) _meta 1줄 300자 · 8KB — 줄 수와 byte를 함께 잰다 (4) task-done에 ctxdb 저장 · codemap 크기 점검 단계(7 -> 8단계) (5) codemap Phase B 문구 정리 + HOT 넘침 규칙. 훅 · CLAUDE.md/AGENTS.md 템플릿 불변. 상세: docs/CHANGELOG_v2.55.md)
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.58 (Claude-first Distribution, per-surface skill bundles, PowerShell)
+# STATUS: FROZEN (v2.58. v2.57 기반 + **statusline 캐시 모드(opt-in)** — 스킬 22 불변, 기본 출력 불변. 환경변수 PAWPAD_CACHE_STATUS=1|on|true 이면 statusline 끝에 캐시 칸 추가: 이번 응답 읽기(R)·쓰기(W) 토큰, TTL(1h/5m — transcript의 ephemeral_1h/5m로 판별), 남은 시간(마지막 응답 시각 + TTL, 추정값), 직전 응답 대비 read 급감 + write 급증이면 reset 표시. .ps1/.sh 같은 규칙. 상세: docs/CHANGELOG_v2.58.md)
+#         이전: v2.57. v2.56 기반 + **뜻이 안 잡히는 표현 12개를 쉬운 말로 교체** — 스킬 22 불변, 동작 불변(문구만). 함정→주의사항(codemap leaf 항목 이름 포함) · 스윕→누락 점검 · Codex 표면→Codex용 파일 · 투영→옮겨 그리기/시각화 · 비대→커짐/길어짐 · 횡단 import→기능 간 내부 import · hoist→상위 폴더로 올리기 · 가산적→추가 위주 · 응집→한 폴더에 모으기 · 첨자→단계 표시 · 앵커→줄 맨 앞/링크 · 백스톱→최종 차단/최종 점검. 이전 버전 leaf의 "함정:" 줄은 같은 뜻으로 읽는다. 유지: 디자인 용어 "표면" · "표면화" · 훅 코드 주석. 상세: docs/CHANGELOG_v2.57.md)
+#         이전: v2.56. v2.55 기반 + **codemap 재설계 — 검색 먼저, 길잡이 + 주의사항 기록** — 스킬 22 불변. 실측(요청 3 x 모델 2 x 2회): codemap 경유의 위치 찾기 사용량은 검색만 쓸 때와 같았고(-2.4% ~ -0.1%), 검색이 바로 맞는 요청에서는 안내 파일 4~5장을 읽는 통행료만 냈다. (1) 조회를 의무에서 조건부로(검색어 없음 / 첫 검색 0건·흩어짐 / 처음 고치기 직전) (2) leaf를 직접 검색해 2 read 안에 도착 (3) leaf 규격 = src 줄 + 증상 줄 + 주의사항 5줄 (4) HOT 절 폐지 (5) 갱신은 새 영역·파일 이동·새 주의사항일 때만 (6) Stop 훅의 retrieval 차단 해제. "토큰 절감" 표현을 내리고 역할을 길잡이 + 주의사항 기록으로 적는다. 기존 설치처 leaf는 점진 이행. 상세: docs/CHANGELOG_v2.56.md)
+#         이전: v2.55. v2.54 기반 +**세션 시작 비용 · 훅 없는 환경 안전망** — 스킬 22 불변, 본문만 6개 수정(context-saver · task-done · resume · codemap · checkpoint · handoff). 설치처 실측(2026-11-11): 훅이 조직 정책으로 차단된 머신에서 세션 시작 3파일이 43KB(INDEX 12.7KB · _wip 21.7KB · _meta 8.5KB)까지 자랐고 codemap 93파일 중 8개가 상한을 넘었다. (1) INDEX AGENT SYNC 에이전트당 1행 + 8KB 상한 (2) _wip 종결 메모 금지 (3) _meta 1줄 300자 · 8KB — 줄 수와 byte를 함께 잰다 (4) task-done에 ctxdb 저장 · codemap 크기 점검 단계(7 -> 8단계) (5) codemap Phase B 문구 정리 + HOT 넘침 규칙. 훅 · CLAUDE.md/AGENTS.md 템플릿 불변. 상세: docs/CHANGELOG_v2.55.md)
 #         이전: v2.54. v2.53 기반 + **Codex 전용 번들 축** (`-CodexPreset` / `-CodexBundles`) — Claude와 Codex에 서로 다른 스킬 세트를 설치한다. v2.53까지 축은 1개(`-Preset`/`-Bundles`)뿐이고 미러는 `.claude/skills` 전 디렉터리 1:1 복사였다 — 두 표면이 항상 동일 세트. 예: `-Preset full -CodexPreset lean` → Claude 22 / Codex 12(Core). **v2.53이 기각했던 “부분 제외”를 이번에 수행**했다 — 기각 사유였던 죽은 경로(AGENTS.md 본문·config.json `skills[]`)를 prune이 keepX 기준으로 다시 긎게 했고, 정규식 트림 로직 자체는 무변경이다(파일별로 다른 집합을 먹일 뿐). 제약: codexSel ⊆ claudeSel(미러 소스가 `.claude/skills`) — 초과분은 자동 교집합 + 경고 1줄. Codex 축을 줄여도 **Claude 산출물은 바이트 불변**(제거할 게 없는 표면은 파일을 열지도 않는다 — 불필요 재기록은 BOM을 떨구어뜨렸다). `.agents/SKILLS_MANIFEST.md` 신규(keepX 기준) + `config.json` `contextFiles.skillsManifest` 포인터 전환 — Codex가 호출 불가 스킬을 목록에서 보지 않는다. 번들 선택은 `.claude/pawpad-config.json` `bundles`에 기록되고 `-Upgrade`에서 인자 생략 시 재사용된다(인자 우선) — v2.39부터 있던 “업그레이드하면 말없이 full로 되돌아가는” 결함도 같이 해소된다. 스킬 22 불변, 진행 바 단계 불변(25/29). 보고서: docs/CHANGELOG_v2.54.md.)
-#         이전: v2.53. v2.52 기반 + **Codex 표면 기본 미설치(opt-in)** — 스킬 22 불변, Claude 산출물 바이트 불변. 사용자 요구: "Codex에서 현재 스킬을 사용하는 건 불안하다". 기본 설치는 Claude 전용이고 Codex 표면 4종(AGENTS.md / .agents/skills 미러 / .codex/config.json / .codex/config.toml·hooks.json·hooks/*)은 `-WithCodex` 지정 시에만 생성한다. 부분 제외는 기각했다 — AGENTS.md 본문과 config.json의 skills 배열이 .agents/skills 경로를 다수 참조하므로 A만 빼면 죽은 경로가 남는다. **기존 설치는 자동 감지로 계속 갱신**한다(AGENTS.md / .agents/skills / .codex/config.json / .codex/hooks.json 중 하나라도 있으면 on): -Upgrade가 사용자 자산을 말없이 지우지 않는 기존 규율과 같은 방향이고, 이 때문에 기본값 변경이 기존 설치처의 동작을 바꾸지 않는다. 진행 바 단계는 29 -> 25로 줄고(Codex 4단계 제외) 체크리스트도 그만큼 사라진다. 전역 Codex 스킬 섀도잉 경고도 Codex 표면 설치 시에만 발화한다. Claude 측(CLAUDE.md/.claude/skills/.claude/hooks)은 **한 바이트도 바뀌지 않는다** — 스킬 본문의 "CLAUDE.md/AGENTS.md가 강제" 같은 산문은 그대로 두었다(조건부 텍스트로 만들면 두 모드의 스킬 바이트가 갈라져 live==embed 대조와 회귀 테스트가 무의미해진다). 보고서: docs/CHANGELOG_v2.53.md.
+#         이전: v2.53. v2.52 기반 + **Codex용 파일 기본 미설치(opt-in)** — 스킬 22 불변, Claude 산출물 바이트 불변. 사용자 요구: "Codex에서 현재 스킬을 사용하는 건 불안하다". 기본 설치는 Claude 전용이고 Codex용 파일 4종(AGENTS.md / .agents/skills 미러 / .codex/config.json / .codex/config.toml·hooks.json·hooks/*)은 `-WithCodex` 지정 시에만 생성한다. 부분 제외는 기각했다 — AGENTS.md 본문과 config.json의 skills 배열이 .agents/skills 경로를 다수 참조하므로 A만 빼면 죽은 경로가 남는다. **기존 설치는 자동 감지로 계속 갱신**한다(AGENTS.md / .agents/skills / .codex/config.json / .codex/hooks.json 중 하나라도 있으면 on): -Upgrade가 사용자 자산을 말없이 지우지 않는 기존 규율과 같은 방향이고, 이 때문에 기본값 변경이 기존 설치처의 동작을 바꾸지 않는다. 진행 바 단계는 29 -> 25로 줄고(Codex 4단계 제외) 체크리스트도 그만큼 사라진다. 전역 Codex 스킬 섀도잉 경고도 Codex용 파일 설치 시에만 발화한다. Claude 측(CLAUDE.md/.claude/skills/.claude/hooks)은 **한 바이트도 바뀌지 않는다** — 스킬 본문의 "CLAUDE.md/AGENTS.md가 강제" 같은 산문은 그대로 두었다(조건부 텍스트로 만들면 두 모드의 스킬 바이트가 갈라져 live==embed 대조와 회귀 테스트가 무의미해진다). 보고서: docs/CHANGELOG_v2.53.md.
 #         이전: v2.52. v2.51 기반 + device-qa 스킬 신규(21→22, 새 qa 번들 = full 전용) — 기기 QA에서 스크린샷 루프가 5시간 사용 한도를 한 세션에 태우는 사고를 차단한다(설치처 TodayQuest 2026-09-02 실측: PNG 98장 생성·약 50장 read). 읽은 이미지는 이후 모든 도구 호출에 재전송되므로 비용이 `이미지 수 × 남은 호출 수`로 누적되고, QA는 도구 호출이 가장 많은 작업이라 이 곱이 최대가 된다. **위임(qa-delegate)은 기각** — 서브 컨텍스트도 같은 한도를 먹으므로 비용이 숨을 뿐이다. 대신 검증 채널 우선순위를 고정한다: 기기 자동화 테스트(integration_test/am instrument) → logcat/dumpsys → 앱 DB → uiautomator dump → **축소 스크린샷**(기본 32%) → 원본. 편입 전 에뮬레이터 실측(Android 16 / 1080x2400 / Flutter 앱)으로 원안 결함 6건을 수정했다: ①원안 1순위였던 `uiautomator dump`가 Flutter 홈에서 `could not get idle state` **12/12 실패**(plain 6 + --compressed 6, 애니메이션 스케일 0에서도. 네이티브 설정 앱·런처는 성공) → dump를 4순위로 내리고 **화면 1회 프로브** 후 불가면 축소 스크린샷으로 전환 ②성공한 dump도 Flutter Text가 안 올라와 앱 문자열 0건 → 기대 문자열 부재 시 판정 근거 불가 명시 ③Git Bash가 기기 경로 `/sdcard/x.xml`을 `/Files/Git/sdcard/...`로 변환해 **옛 파일을 읽어 다른 화면으로 PASS**가 나던 경로 → 기기 경로 `//` 규칙 + dump 전 옛 파일 삭제 ④에이전트 Bash 도구는 호출 간 변수·함수를 보존하지 않음 → 스니펫 자기완결 규율(원안의 `D=<serial>`·`dump()` 헬퍼는 다음 호출에서 소멸) ⑤`integration_test` 채널 누락 → 1순위로 신설 ⑥"크롭·축소" 지시에 명령이 없어 원본을 read하던 경로 → .NET 리사이즈 스니펫 제공(실측 1,476→354 토큰, 판독성 유지). 실측 단가표를 스킬 본문에 포함: grep 어서션 ~10 / dump 필터 ~250 / 축소샷 ~354 / 원본샷 ~1,476 / **dump 원문 ~8,000**(스크린샷의 5배 — 원문 투입 금지가 🔴 규칙). 미검증: 노트8(Android 9) dump 거동, 실패 원인의 Flutter 애니메이션 특정(정황). 보고서: docs/CHANGELOG_v2.52.md.)
 #         이전: v2.51. v2.50 기반 + design 스킬 원형 기반 재설계 — 스킬 21 불변. 기존 design은 최상위 원칙이 "AI 티 = 불일치"(일관성)라 **일관되게 틀린 위계**를 통과시켰다: 토큰이 전부 스케일 파생이어도 모든 카드가 같은 크기이고 주 CTA가 보조 행동에 파묻히면 정량 체크는 전부 녹색이다. v2.51은 그 위에 **위계 정합**을 1순위로 얹는다 — 화면은 3초 안에 "지금 어떤 상태 / 다음에 뭘 하나 / 그러면 뭘 얻나"에 답하고 그 순서가 시각 위계와 일치해야 한다. 절차도 4단계→**6단계**: (1) **제품 원형 분류**(7문항 + 게임 5문항) → (2) 의미 기반 토큰(색 정의 순서 고정·다크 재정의 6항) → (3) **3영역 레이아웃**(상태/맥락/행동) → (4) 일관성 5축 → (5) **상태 전수 12종**(기존 4종에서 확장 — 부분 데이터·권한 거부·오프라인 포함) → (6) anti-slop + 원칙 8 + 정량 6 + 최악조건 10. 패키징은 `SKILL.md`(코어) + **`references/` 3파일 신규**(archetypes 16,943 B / tokens 6,937 B / checklists 9,747 B)로 쪼개 해당 원형 카드 1~2개만 on-demand read — 게임 만들 때 앱 규칙을 읽지 않는다. 원형 **16종**: 앱·도구 A1~A7(과업완료·발견중심·반복실행·지속상태·습관형성·조건탐색·**관측진단**) + 게임 G1~G9(콘텐츠중심미니멀·코지시스템·에디토리얼미니멀·상태반응·액션로비·진행루프·태스크중심·원버튼진행·고밀도라이브서비스). 게임 축은 토큰에 economy/rarity가 **추가**되고 checklists에 컴포넌트 9종 필수 상태·배지 정책·안티패턴 9종이 붙는다. 미러는 `SKILL.md`만 복사하므로 references 참조는 mockup의 `spec-viewer.html` 선례대로 `.claude/skills/design/references/` **절대 경로**로 적었다. 검증: live==embed **4/4 byte-equal** · PSParser 0 · 설치처 메인 화면 적용 목업으로 3초3질문 1/3→3/3 · 동일 강조도 주 CTA 9→1 · **신규 토큰 0건**. 보고서: docs/CHANGELOG_v2.51.md. 사후수정#1(2026-09-01, 버전 불변): 배포본 빌드 베이스가 v2.50 Addendum(brainstorming 왕복 라운드) 이전이라 임베드·첨자가 회귀 — 해당 SKILL 임베드 + CLAUDE/AGENTS 템플릿 첨자 2를 복원(design 변경분 무영향).
 #         이전: v2.48. v2.47 기반 + ctxdb 키워드 회수 복구 + 계층 성장 규약(스킬 21 불변) — 설치처 실측에서 "프롬프트 키워드로 과거를 부른다"가 사실상 죽어 있었다: 한글 2음절 키워드가 길이 하한 3에 전량 탈락(관측 레포 INDEX 키워드 38%), L1이 자라 포인터가 읽기범위 밖으로 밀리면 무주입인데 진단이 `{}` 하나뿐, 매칭 성공이 폴백을 끄고(가장 관련 있는 프롬프트에서 실패), 이월한 L3는 회수 정규식(`L2/`만)에 안 걸려 영구 회수불가 — 즉 규정대로 이월할수록 장기기억이 사라졌다. 훅 양 런타임 수정: CJK 2자/라틴 3자 하한 분리 + 조사 스트립(원형+어간 양쪽 후보) + 전 행 점수화 매칭(첫 히트 즉시반환 폐기) + `L[234]/` 회수 + L3/L4 `## ` 블록 단위 추출(파일 통째 금지) + L1 포인터 탐색범위와 주입범위 분리 + 폴백 상시 적용 + 무주입 사유 `.ctxdb/.state/{claude|codex}-last-decision` 기록(`{}` 출력계약 유지). 규약: INDEX `L2/L3 경로` 컬럼(포인터를 본문 길이와 분리) + `.ctxdb/keywords.md` 의미매칭 층 신설(agent 전용 — hook 차단·비Windows 폴백, codemap keywords 패턴 이식) + context-saver STEP5 계층 승격(L2 150줄→L3, L3 400줄→L4, L1 60줄/키워드 30개 초과 시 도메인 분할 제안, 이월 시 INDEX·L1 포인터 갱신 의무) + checkpoint 절차 context-saver 누락 보정 + Session Protocol ON NEW TOPIC 폴백. 회귀셋 `tests/ctxdb-recall` 21케이스(toolkit 개발 자산, 배포본 미포함): Claude 20/20(+Codex 전용 1 SKIP)·Codex 21/21, mutation 6/6 검출. 사후수정#1(버전 불변): 영문 어간+한글 조사(React를/Flutter로/Docker에서) 조사 스트립 실패 수정(훅 4표면) + .gitignore `.ctxdb/L4/` 누락 보정. 사후수정#2(버전 불변): handoff 절차에 codemap 갱신 + context-saver 호출 누락 보정(checkpoint D-8과 동형 — 인수 agent는 새 세션이라 영향이 더 크다). Codex exec 교차 리뷰 review-01 PASS_WITH_FIXES 84%(H 0) findings 7건 전건 반영 — mixed L2/L3 아카이브 절단·조사 오분해(전문가→전문)·무주입 진단 불일치·clean clone 러너 실패가 실버그였다. 보고서: docs/CHANGELOG_v2.48.md.
 #         이전: v2.47. v2.46 기반 + codemap 초기 부트스트랩 절차 신설(스킬 21 불변) — 설치가 codemap 템플릿만 만들고 기존 코드베이스를 스캔하지 않아, 이미 코드가 쌓인 프로젝트는 백필 없이 방치되던 공백을 메움(실관측: 설치 후 수 주간 1개 도메인만 등록). codemap SKILL에 "## 초기 부트스트랩" 섹션 추가 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START에 1회 제안, 거절 시 재제안 금지) + 스캔범위/등록기준(public 진입점만) + 규모 분기(소스<40 인라인 / >=40 code-delegate 배치 위임, 서브는 _staging에 직접 Write하고 4줄 요약만 반환) + 병합 규율(기존 MAP/HOT/수기 섹션 보존) + 크기 판정(30KB 초과 즉시 Phase B) + 검증 게이트(size cap 전수 + 무작위 심볼 path:line 실측 전건 일치). 부수: Phase B 전환 시 _index.md를 삭제하지 않고 라우팅 스텁으로 남기는 규약 명문화 + Session Protocol step7을 "_root.md 우선, 없으면 _index.md"로 수정(경로 사멸 차단, live+tmpl 4표면). 근거: TeamPitch_2.0 실증 백필(115파일 -> 283 심볼, trim-router 전환, 서브 3배치 위임). 보고서: docs/CHANGELOG_v2.47.md.
 #         이전: v2.46. v2.45 기반 + design 스킬 시각 품질 재설계(스킬 21 불변) — 외부 사양서를 pawpad lean 단일 SKILL.md 구조로 흡수. 최상위 3원칙(Consistency First: 모양·크기·간격은 스케일 토큰에서만 파생 / Intentional Direction: 코드 전 방향 명시+사유 / Anti-slop: 제네릭·불일치 차단) + 2-pass 워크플로우(계획→자기비평→구현→재비평) + 일관성 시스템 5축(간격/크기/모양/정렬/상태, Token-first raw 값 금지) + anti-slop 체크(불일치=AI 티 최우선 정규화, 과용 폰트 회피는 신규 선택 한정, 경계 기본값 3종, 금지 레이아웃/이모지 아이콘/그라디언트 남발) + 정량 assertion(spacing 임의값 0·radius 고유값<=4·컨트롤 높이<=3) + 신규 프로젝트 토큰 부트스트랩 + 선택지 체크박스·3옵션 상한 + 파이프라인 관계 4자 확장(brainstorming/mockup 연결, 외부 문서 게이트 진입 명시). 근거: "AI 티는 화려함이 아니라 불일치" — 적용 전/후 비교 검증(구현 전 사용자 확인) 수행. 보고서: docs/CHANGELOG_v2.46.md.
-#         이전: v2.45. v2.44 기반 + brainstorming 스킬 신규(20→21, prd 번들) — 발산(방향 2-3 대안+추천 1개, 초과 시 상위 3 shortlist) + 누락 스윕(인접기능·저니 워크스루 + 비해피패스 8축 체크리스트) + MoSCoW 스코프 게이트(Won't 명시 의무)를 단일 스킬로 통합. 진입 판정(방향 3요소: 무엇을/누구에게/왜)으로 막연한 아이디어는 발산부터, 구체화된 기획문서는 스윕 직행(+사용자 오버라이드). 파이프라인 brainstorming→clarity→grill-me→to-prd→mockup — clarity 이전 발산 단계 공백 해소, 구현 후반 기능 추가/삭제 churn(누락형)을 기획 단계에서 차단(사용자 실관측 pain). Idea→PRD Routing 판정 4표면(live+tmpl CLAUDE/AGENTS) 동기, 자동제안 dangling 이름 실체화. 보고서: docs/CHANGELOG_v2.45.md.
+#         이전: v2.45. v2.44 기반 + brainstorming 스킬 신규(20→21, prd 번들) — 발산(방향 2-3 대안+추천 1개, 초과 시 상위 3 shortlist) + 누락 점검(인접기능·저니 워크스루 + 비해피패스 8축 체크리스트) + MoSCoW 스코프 게이트(Won't 명시 의무)를 단일 스킬로 통합. 진입 판정(방향 3요소: 무엇을/누구에게/왜)으로 막연한 아이디어는 발산부터, 구체화된 기획문서는 누락 점검 직행(+사용자 오버라이드). 파이프라인 brainstorming→clarity→grill-me→to-prd→mockup — clarity 이전 발산 단계 공백 해소, 구현 후반 기능 추가/삭제 churn(누락형)을 기획 단계에서 차단(사용자 실관측 pain). Idea→PRD Routing 판정 4표면(live+tmpl CLAUDE/AGENTS) 동기, 자동제안 dangling 이름 실체화. 보고서: docs/CHANGELOG_v2.45.md.
 #         이전: v2.44. v2.43 기반 + 외부 문서 구현 진입 게이트 + 선택지 체크박스 전면화 + 데스크탑 스택 4종. ① 외부 문서(md/spec/기획서) 참조 구현 요청 시 clarity 채점 의무(PASS=무질문 통과·BLOCK=재질문, clarity SKILL "외부 문서 모드" 신설) + design/code-delegate 경계 추천, code-delegate written 설계에 외부 문서 인정 — phase 분해·task 저장만으로 게이트 우회하던 사용자 실관측 사고 대응. ② 선택지 질문 규칙 스코프 확장: 기획 스킬 한정→스킬 무관 전면, 추천 1개 "(추천)" first + Other 자유 입력 명시. ③ -Stack 데스크탑 4종 추가: wpf|tauri|electron|avalonia (Commands/Boundaries/Directories/Conventions/ADR 프로파일, 대화형 1~8). 보고서: docs/CHANGELOG_v2.44.md.
 #         이전: v2.43. v2.42 기반 + task-done 종결 게이트 3종(A+B+C) — ON TASK DONE 미실행→stale lane→resume이 완료 작업 재제안하는 사고 계층 방어. A: 신규 task-done 스킬(19→20, Core): ON TASK DONE 체크리스트 강제 실행("작업/이슈 종료" 자연어 라우팅, lane→done 이관+_wip 제거+_meta+tasklog+codemap+commit 전항). B: stop-check lane-close 백스톱: 완료 선언 감지+Active Lanes 잔존 시 decision:block 1회(uuid dedupe, 'task-done' 언급 제거 후 매칭). C: resume Lane 신뢰성 게이트: ON START 3단 신호(_meta DONE+lane 잔존=확정 누락 / next steps 전항 체크=완료 의심 / stale+실코드 대조=사용자 확인), 다음 작업 제안 전 실상태 1회 대조. D(추가): retrieval 계측 결함 4종 — ①선언 파서 앵커+3세그먼트 구조 검증(훅 논하는 산문이 cmap:hit로 오탐돼 지표가 거짓이 되던 경로 차단) ②read-track 실측 watermark 대조로 "cmap 0 + src>=2 + hit/miss 선언 없음"=미선언 full-scan 시 decision:block 1회(uuid dedupe) + statusline 분모0+src>0 시 "codemap 미선언" 라벨 ③'미사용' 허위 선언도 누락과 동일 취급 ④stop_hook_active는 판정만 생략하고 계측은 수행(교정 응답 선언 파싱 보장). 보고서: docs/CHANGELOG_v2.43.md.
 #         이전: v2.42 retrieval routing 가시화 — statusline "📡 codemap N% · routed/full-scan · src N"(선언 기반 경유율+백스톱), stop-check가 완료 응답 "📡 Retrieval:" 라인 파싱→claude-retrieval-stats(uuid dedupe·미사용 제외·'{}' 예시 제외·고정순서 위치분해). 보고서: docs/CHANGELOG_v2.42.md.
@@ -44,9 +47,9 @@
 # - .codex/config.toml, .codex/hooks.json, .codex/hooks/* (Codex native lifecycle hooks) -- -WithCodex 시에만
 # - .gitignore (PawPad backup 디렉토리 제외)
 #
-# -WithCodex : Codex 표면 설치(AGENTS.md + .agents/skills + .codex/*). 기본은 Claude 전용.
+# -WithCodex : Codex용 파일 설치(AGENTS.md + .agents/skills + .codex/*). 기본은 Claude 전용.
 #              이미 Codex 산출물이 있는 기존 설치는 자동 감지되어 지정 없이도 계속 갱신된다.
-# -CodexPreset / -CodexBundles : Codex 표면에만 적용하는 별도 번들 축(v2.54).
+# -CodexPreset / -CodexBundles : Codex용 파일에만 적용하는 별도 번들 축(v2.54).
 #              미지정 시 Claude 축(-Preset/-Bundles)을 그대로 상속한다(= v2.53 이하와 동일 산출물).
 #              지정 시 -WithCodex 암묵 적용. 예: -Preset full -CodexPreset lean -> Claude 22 / Codex 12(Core).
 #              Claude 설치 범위를 초과할 수 없다(미러 소스가 .claude/skills) -> 자동 교집합 + 경고.
@@ -72,7 +75,7 @@ if ($Force -and $Upgrade) {
     exit 1
 }
 
-$ver = "2.55"
+$ver = "2.58"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -82,8 +85,8 @@ $mergePending = @()
 $today = Get-Date -Format "yyyy-MM-dd"
 $projectName = Split-Path (Get-Location) -Leaf
 
-# ── Codex 표면 설치 여부 (v2.53) ─────────────────────────────────────────────────
-# 기본은 Claude 전용. Codex 표면(AGENTS.md / .agents/skills / .codex/*)은 -WithCodex 지정 시에만 설치한다.
+# ── Codex용 파일 설치 여부 (v2.53) ─────────────────────────────────────────────────
+# 기본은 Claude 전용. Codex용 파일(AGENTS.md / .agents/skills / .codex/*)은 -WithCodex 지정 시에만 설치한다.
 # 예외: 이미 Codex 산출물이 깔린 기존 설치는 자동 감지해 계속 갱신한다(-Upgrade가 사용자 자산을 말없이 지우지 않는 규율).
 # v2.54: Codex 번들 축(-CodexPreset/-CodexBundles)을 지정하면 의도가 명백하므로 -WithCodex를 암묵 적용한다.
 $script:codexAxisArg = [bool]$CodexPreset -or [bool]$CodexBundles
@@ -620,7 +623,7 @@ function Show-PawBanner {
 }
 
 # 진행 단계: Step-Begin 호출 수와 $stepTotal 일치 유지 (불일치 시 % 표시만 어긋남, 동작 무관)
-# Codex 표면 4단계(AGENTS.md / Codex native adapter / Codex skill mirror / Codex config.json)는 미설치 시 제외.
+# Codex용 파일 4단계(AGENTS.md / Codex native adapter / Codex skill mirror / Codex config.json)는 미설치 시 제외.
 $script:stepTotal = if ($script:installCodex) { 29 } else { 25 }
 $script:stepIndex = 0
 $script:stepResults = @()
@@ -718,15 +721,15 @@ $TR = @{
         inputNumName = "번호 또는 이름"; unknownStack = "알 수 없는 스택 '{0}' -> generic 사용"
         bundlePrompt = "스킬 번들 선택 (Enter=full 전체 설치):"; bundleOpts = "  1) lean (Core 12)   2) standard (Core+PRD+위임+리뷰 18)   3) full (전체 22)"
         unknownPreset = "알 수 없는 preset '{0}' -> full 사용"; bundleLine = "번들 설치: {0} = {1} 스킬 (제거 {2}: {3})"
-        codexBundleLine = "  └ Codex 표면: {0} = {1} 스킬 (제외 {2}: {3})"
+        codexBundleLine = "  └ Codex용 파일: {0} = {1} 스킬 (제외 {2}: {3})"
         codexIntersectWarn = "Codex 번들이 Claude 설치 범위를 초과 -> 교집합으로 축소 ({0} 제외. 미러 소스가 .claude/skills이라 초과 불가)"
-        codexImpliedLine = "-CodexPreset/-CodexBundles 지정 -> Codex 표면 설치 활성화 (-WithCodex 암묵 적용)"
+        codexImpliedLine = "-CodexPreset/-CodexBundles 지정 -> Codex용 파일 설치 활성화 (-WithCodex 암묵 적용)"
         bundleRecalled = "이전 설치의 번들 선택 재사용 (.claude/pawpad-config.json): Claude={0} / Codex={1}. 변경은 -Preset/-CodexPreset 지정."
         coreOnly = "Core 전용"; corePlus = "Core + "
         complete = "프로젝트 초기화 완료 (PawPad v{0})"; failed = "{0} 개 항목 실패. 권한 확인 후 다시 시도하세요."
-        codexOff = "  - Codex 표면 미설치 (Claude 전용 기본값). 필요 시 -WithCodex: AGENTS.md + .agents/skills + .codex/*"
-        codexOn = "  - Codex 표면 설치됨 (-WithCodex): AGENTS.md + .agents/skills mirror + .codex/hooks.json (/hooks trust 필요)"
-        codexKept = "  - Codex 표면 기존 설치 감지 -> 계속 갱신 (기본값은 Claude 전용. 신규 설치에는 -WithCodex 필요)"
+        codexOff = "  - Codex용 파일 미설치 (Claude 전용 기본값). 필요 시 -WithCodex: AGENTS.md + .agents/skills + .codex/*"
+        codexOn = "  - Codex용 파일 설치됨 (-WithCodex): AGENTS.md + .agents/skills mirror + .codex/hooks.json (/hooks trust 필요)"
+        codexKept = "  - Codex용 파일 기존 설치 감지 -> 계속 갱신 (기본값은 Claude 전용. 신규 설치에는 -WithCodex 필요)"
         genericNote1 = "[generic] CLAUDE.md / AGENTS.md / config.json 의 <YOUR_*> 플레이스홀더를 실제 값으로 채우세요."
         genericNote2 = "          (analyze 명령 미지정 -> PostToolUse 자동검사 hook은 생략됨)"
         nextSteps = "다음 단계:"
@@ -1788,7 +1791,7 @@ Task complete when ALL pass:
 2. Test (Commands의 Test) - all green
 3. No files outside stated scope modified
 4. lane 파일 갱신 또는 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동
-5. .claude/codemap/_index.md updated for new/changed symbols
+5. codemap 갱신 — 새 영역·파일 이동/개명/삭제·새 주의사항이 있을 때만 (없으면 "codemap skip" 선언). 규칙: .claude/skills/codemap/SKILL.md
 6. 핸드오프 발생 시 .claude/pawpad/handoffs/ snapshot 작성
 7. lane ``## Verification Evidence``에 검증 근거 기록 — 최근 2건만 lane 유지, 초과분은 .claude/pawpad/verifications/{feature-id}-archive.md 상단 append + 포인터 1줄 (분석전용/소작업은 ``not applicable: analysis-only``). 규칙: .claude/HYBRID.md Verification Evidence.
 8. 코드 변경 시 /security-check 🔴 zero (분석전용/문서전용 면제). 규칙: .claude/skills/security-check/SKILL.md
@@ -1821,10 +1824,10 @@ $($p.Conventions)
 
 ## Architecture Principles (Feature-First)
 신규/변경 코드만 적용(레거시 강제 리팩토링 X). 상세·결정트리: .claude/skills/feature-architecture/SKILL.md
-1. 모듈 경계: 기능 폴더 응집(colocation) + 단일 public boundary(스택 관례). 내부 직접 import 금지.
-2. 횡단 import 금지: 기능 간 내부 참조 X (public boundary 의존은 OK). 공통은 소속 범위 따라 hoist.
+1. 모듈 경계: 기능별 한 폴더에 모으기(colocation) + 단일 public boundary(스택 관례). 내부 직접 import 금지.
+2. 기능 간 내부 import 금지: 다른 기능의 내부 파일 참조 X (public boundary 의존은 OK). 공통 코드는 쓰이는 범위에 맞는 상위 폴더로 올린다.
 3. Rule of Three: 2곳 중복 유지, 3곳째 추출.
-4. 신규 = 가산적: feature 내부 추가 중심 + route/menu registry 등 최소 integration edit 허용. integration 파일에 로직 늘면 경계 재검토.
+4. 신규 = 추가 위주: feature 내부 추가 중심 + route/menu registry 등 최소 integration edit 허용. integration 파일에 로직 늘면 경계 재검토.
 새 기능 위치: 기존 도메인 하위 / 새 도메인 폴더 / 도메인 비소속 shared 중 하나. 결정트리는 skill 참조.
 
 ## Doc Update Rules
@@ -1852,12 +1855,12 @@ ON START (agent가 순차 실행):
   4. _wip.md Active Lanes에 state=HANDOFF_TO_* 발견 시 -> handoff 필드 경로 read
   5. state=SPEC_READY 또는 spec 있으면 read .claude/pawpad/specs/{feature}.md
   6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT; RECENT 완료이력은 하단·재개 불요 -> 생략, history 시 on-demand)
-  7. codemap은 코드 수정 작업 시작 시점에 read — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP+HOT(조망)만 부분읽기(상단). 전체 심볼표는 심볼 필요 시 Grep on-demand (질문/분석 전용 세션은 skip). 등록 심볼<10 & 소스≥30이면 codemap SKILL 초기 부트스트랩 1회 제안
+  7. codemap은 코드 수정 작업 시작 시점에 조망만 read — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP만 부분읽기(상단). 위치는 검색 먼저, codemap leaf는 조건부(Retrieval 표시 절) (질문/분석 전용 세션은 skip). 등록 항목(leaf·영역 블록·심볼 행)<3 & 소스≥30이면 codemap SKILL 초기 부트스트랩 1회 제안
 ON NEW TOPIC (세션 중): 새 주제 등장 + hook 주입 블록(`=== PawPad ... Auto Context ===`) 부재면 -> .ctxdb/keywords.md 의미매칭 1회로 최소 로드 (hook 차단·비Windows 폴백). 같은 주제 재발동 금지. 규칙: ctxdb-navigator SKILL.
 ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
-ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함) — 실행은 task-done 스킬 체크리스트로(부분 실행/누락 방지; "작업/이슈 종료" 자연어 요청 = task-done 발동)
+ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + codemap 갱신(해당 시) + context-saver(.ctxdb/L2 저장) + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함) — 실행은 task-done 스킬 체크리스트로(부분 실행/누락 방지; "작업/이슈 종료" 자연어 요청 = task-done 발동)
 ON STOP:         agent가 lane 파일 (state + reason) 갱신
-ON 8턴/60% CONTEXT: Stop hook이 8턴마다 checkpoint block -> context-saver(.ctxdb/L2 저장) + codemap 갱신. PreCompact hook이 native compaction 직전 동일 저장 유도(최근 8턴 내 발생 시 Stop checkpoint 중복 생략). 60% 시 /checkpoint -> 필요시 /handoff
+ON 8턴/60% CONTEXT: Stop hook이 8턴마다 checkpoint block -> context-saver(.ctxdb/L2 저장) + codemap 갱신(해당 시만). PreCompact hook이 native compaction 직전 동일 저장 유도(최근 8턴 내 발생 시 Stop checkpoint 중복 생략). 60% 시 /checkpoint -> 필요시 /handoff
 -> Detail: .claude/skills/resume/SKILL.md | .claude/skills/task-done/SKILL.md | .claude/skills/codemap/SKILL.md | .claude/skills/ctxdb-navigator/SKILL.md | .claude/skills/context-saver/SKILL.md | .claude/skills/handoff/SKILL.md | .claude/skills/checkpoint/SKILL.md
 
 ## Hybrid Lane Rule
@@ -1871,7 +1874,7 @@ ON 8턴/60% CONTEXT: Stop hook이 8턴마다 checkpoint block -> context-saver(.
 
 ## Idea → PRD Routing
 아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선).
-판정: 방향 미정(무엇을/누구에게/왜 미충족)·기능 누락/스코프 점검 필요→brainstorming(발산+스윕) / 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
+판정: 방향 미정(무엇을/누구에게/왜 미충족)·기능 누락/스코프 점검 필요→brainstorming(발산+누락 점검) / 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
 - 큰 덩어리: clarity 전 "분해 권장"(굵은 조각+순서, 조각별 반복).
 - brainstorming 종결 후: →clarity.
 - clarity PASS 후: grill-me 신호(결정 상호의존·트레이드오프 연쇄·스택/아키텍처/스키마 비가역) 있으면 →grill-me, 없으면 →to-prd.
@@ -1902,14 +1905,14 @@ ACTIVE EVERY RESPONSE. Off: "normal mode"
 -> Full rules: .claude/skills/caveman/SKILL.md
 
 ### Active Skills 표시 (매 응답 최상단 1줄)
-형식: ``🐾 Active Skills: {활성 스킬 | 구분}`` (🐾=pawpad). 단계 첨자: ``clarity r2/5``, ``grill-me``, ``to-prd``, ``brainstorming r2/3``, ``design``, ``mockup lo/hi``, ``review``.
+형식: ``🐾 Active Skills: {활성 스킬 | 구분}`` (🐾=pawpad). 단계 표시: ``clarity r2/5``, ``grill-me``, ``to-prd``, ``brainstorming r2/3``, ``design``, ``mockup lo/hi``, ``review``.
 caveman 항상 포함. off 시 라인에 ``normal mode (caveman 압축 off)``로 표기(자기설명). 스킬 없으면 caveman만. ON START는 📂 ctxdb 라인 아래.
 
 ### Retrieval 표시 (탐색 수행 응답만, Active Skills 라인 아래 1줄)
-형식: ``📡 Retrieval: codemap {hit(경로)|miss|미사용} | ctxdb {hit(파일)|miss|미사용} | src {read N (codemap 경유)|full-scan N (사유)}``
-- 소스 탐색 전 codemap lookup 의무. miss여도 곧장 full-scan 금지 — keywords/INDEX 의미매칭 재시도 후에도 miss면 **사유와 함께 full-scan 선언**.
+형식: ``📡 Retrieval: codemap {hit(경로)|miss|불요(검색 직행)} | ctxdb {hit(파일)|miss|미사용} | src {read N|full-scan N (사유)}``
+- **검색 먼저.** 요청에 화면 문구·식별자가 있으면 소스를 바로 검색한다(codemap ``불요``). codemap은 ① 요청에 검색할 말이 없을 때 ② 첫 검색이 0건이거나 여러 영역(파일 8개 초과)에 흩어질 때 ③ 어떤 영역의 파일을 처음 고치기 직전(그 파일명으로 leaf를 Grep해 주의사항 확인)에만 본다. codemap은 토큰 절감 장치가 아니라 길잡이 + 주의사항 기록이다. 규칙: .claude/skills/codemap/SKILL.md
 - 코드/컨텍스트 탐색이 없는 응답(순수 문답·이미 아는 파일 재편집)은 라인 생략.
-- 허위 선언·누락 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. ``codemap lookup 0 + src 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')``이면 Stop hook이 decision:block으로 선언을 1회 요구(retrieval 백스톱). 선언 라인은 **라인 선두 앵커 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. statusline ``📡 codemap 활용 N% (경유 X · 직행 Y) · 소스 읽기 N``의 활용률은 응답 단위 집계 — 경유=hit 선언, 직행=miss 선언+미선언 풀스캔(Stop hook이 read-track 실측으로 계수). 선언을 빼먹으면 직행으로 분모에 들어가 활용률이 내려간다(분모 3 미만은 % 대신 건수만).
+- 허위 선언 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. 선언 라인은 **줄 맨 앞에서 시작 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. 검색 직행은 정상 경로라 Stop hook이 차단하지 않는다(v2.56 — 이전의 retrieval 최종 차단 해제). statusline ``📡 codemap 활용 N% (경유 X · 직행 Y) · 소스 읽기 N``은 건수 참고용이다 — 경유=hit 선언, 직행=그 외 소스 읽기. 직행이 분모에 들어가므로 낮은 값이 문제를 뜻하지 않는다.
 "@
 Write-FileContent "CLAUDE.md" $tmplClaudeMd
 
@@ -1929,7 +1932,7 @@ Task complete when ALL pass:
 2. Test (Commands의 Test) - all green
 3. No files outside stated scope modified
 4. lane 파일 갱신 또는 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동
-5. .claude/codemap/_index.md updated for new/changed symbols
+5. codemap 갱신 — 새 영역·파일 이동/개명/삭제·새 주의사항이 있을 때만 (없으면 "codemap skip" 선언). 규칙: .claude/skills/codemap/SKILL.md
 6. 핸드오프 발생 시 .claude/pawpad/handoffs/ snapshot 작성
 7. lane ``## Verification Evidence``에 검증 근거 기록 — 최근 2건만 lane 유지, 초과분은 .claude/pawpad/verifications/{feature-id}-archive.md 상단 append + 포인터 1줄 (분석전용/소작업은 ``not applicable: analysis-only``). 규칙: .claude/HYBRID.md Verification Evidence.
 8. 코드 변경 시 /security-check 🔴 zero (분석전용/문서전용 면제). 규칙: .agents/skills/security-check/SKILL.md
@@ -1962,10 +1965,10 @@ $($p.Conventions)
 
 ## Architecture Principles (Feature-First)
 신규/변경 코드만 적용(레거시 강제 리팩토링 X). 상세·결정트리: .agents/skills/feature-architecture/SKILL.md
-1. 모듈 경계: 기능 폴더 응집(colocation) + 단일 public boundary(스택 관례). 내부 직접 import 금지.
-2. 횡단 import 금지: 기능 간 내부 참조 X (public boundary 의존은 OK). 공통은 소속 범위 따라 hoist.
+1. 모듈 경계: 기능별 한 폴더에 모으기(colocation) + 단일 public boundary(스택 관례). 내부 직접 import 금지.
+2. 기능 간 내부 import 금지: 다른 기능의 내부 파일 참조 X (public boundary 의존은 OK). 공통 코드는 쓰이는 범위에 맞는 상위 폴더로 올린다.
 3. Rule of Three: 2곳 중복 유지, 3곳째 추출.
-4. 신규 = 가산적: feature 내부 추가 중심 + route/menu registry 등 최소 integration edit 허용. integration 파일에 로직 늘면 경계 재검토.
+4. 신규 = 추가 위주: feature 내부 추가 중심 + route/menu registry 등 최소 integration edit 허용. integration 파일에 로직 늘면 경계 재검토.
 새 기능 위치: 기존 도메인 하위 / 새 도메인 폴더 / 도메인 비소속 shared 중 하나. 결정트리는 skill 참조.
 
 ## Doc Update Rules
@@ -1993,10 +1996,10 @@ ON START (agent가 순차 실행):
   4. _wip.md Active Lanes에 state=HANDOFF_TO_* 발견 시 -> handoff 필드 경로 read
   5. state=SPEC_READY 또는 spec 있으면 read .claude/pawpad/specs/{feature}.md
   6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT; RECENT 완료이력은 하단·재개 불요 -> 생략, history 시 on-demand)
-  7. codemap은 코드 수정 작업 시작 시점에 read — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP+HOT(조망)만 부분읽기(상단). 전체 심볼표는 심볼 필요 시 Grep on-demand (질문/분석 전용 세션은 skip). 등록 심볼<10 & 소스≥30이면 codemap SKILL 초기 부트스트랩 1회 제안
+  7. codemap은 코드 수정 작업 시작 시점에 조망만 read — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP만 부분읽기(상단). 위치는 검색 먼저, codemap leaf는 조건부(Retrieval 표시 절) (질문/분석 전용 세션은 skip). 등록 항목(leaf·영역 블록·심볼 행)<3 & 소스≥30이면 codemap SKILL 초기 부트스트랩 1회 제안
 ON NEW TOPIC (세션 중): 새 주제 등장 + hook 주입 블록(`=== PawPad ... Auto Context ===`) 부재면 -> .ctxdb/keywords.md 의미매칭 1회로 최소 로드 (hook 차단·비Windows 폴백). 같은 주제 재발동 금지. 규칙: ctxdb-navigator SKILL.
 ON SUBTASK DONE: agent가 lane 파일 next steps 갱신
-ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + _index.md 갱신 + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함) — 실행은 task-done 스킬 체크리스트로(부분 실행/누락 방지; "작업/이슈 종료" 자연어 요청 = task-done 발동)
+ON TASK DONE:    agent가 lane 파일을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append (RECENT 8줄 초과 시 초과분을 sessions/{YYYY-MM}.md 상단으로 이동, newest first 유지) + 완료(✅) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월(HYBRID Completed Task Log) + codemap 갱신(해당 시) + context-saver(.ctxdb/L2 저장) + git commit (git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록, 완료 차단 안 함) — 실행은 task-done 스킬 체크리스트로(부분 실행/누락 방지; "작업/이슈 종료" 자연어 요청 = task-done 발동)
 ON STOP:         agent가 lane 파일 (state + reason) 갱신
 ON 8턴/60% CONTEXT:
   - Claude Code: Stop hook이 8턴마다 checkpoint block -> context-saver(.ctxdb/L2 저장) + codemap 갱신.
@@ -2030,7 +2033,7 @@ state 마커: HANDOFF_TO_CODEX(Claude→Codex), HANDOFF_TO_CLAUDE(Codex→Claude
 
 ## Idea → PRD Routing
 아이디어→PRD 구체화 시 agent가 다음 스킬 추천(강제 X, 명시 호출 우선). skill mirror: ``.agents/skills/{brainstorming,clarity,grill-me,to-prd,design,mockup}/``.
-판정: 방향 미정(무엇을/누구에게/왜 미충족)·기능 누락/스코프 점검 필요→brainstorming(발산+스윕) / 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
+판정: 방향 미정(무엇을/누구에게/왜 미충족)·기능 누락/스코프 점검 필요→brainstorming(발산+누락 점검) / 정보 부족→clarity / 설계 결정 어려움→grill-me / 둘 다 충족→to-prd.
 - 큰 덩어리: clarity 전 "분해 권장"(굵은 조각+순서, 조각별 반복).
 - brainstorming 종결 후: →clarity.
 - clarity PASS 후: grill-me 신호(결정 상호의존·트레이드오프 연쇄·스택/아키텍처/스키마 비가역) 있으면 →grill-me, 없으면 →to-prd.
@@ -2050,19 +2053,19 @@ Pattern: [대상] [동작] [이유]. [다음 단계].
 ACTIVE EVERY RESPONSE.
 
 ### Active Skills 표시 (매 응답 최상단 1줄)
-형식: ``🐾 Active Skills: {활성 스킬 | 구분}`` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 첨자: ``clarity r2/5``, ``grill-me``, ``to-prd``, ``brainstorming r2/3``, ``design``, ``mockup lo/hi``, ``review``.
+형식: ``🐾 Active Skills: {활성 스킬 | 구분}`` (🐾=pawpad, Codex는 statusLine 없어 라인 표시). 단계 표시: ``clarity r2/5``, ``grill-me``, ``to-prd``, ``brainstorming r2/3``, ``design``, ``mockup lo/hi``, ``review``.
 스킬 없으면 생략 가능. ON START는 📂 ctxdb 라인 아래.
 
 ### Retrieval 표시 (탐색 수행 응답만, Active Skills 라인 아래 1줄)
-형식: ``📡 Retrieval: codemap {hit(경로)|miss|미사용} | ctxdb {hit(파일)|miss|미사용} | src {read N (codemap 경유)|full-scan N (사유)}``
-- 소스 탐색 전 codemap lookup 의무. miss여도 곧장 full-scan 금지 — keywords/INDEX 의미매칭 재시도 후에도 miss면 **사유와 함께 full-scan 선언**.
+형식: ``📡 Retrieval: codemap {hit(경로)|miss|불요(검색 직행)} | ctxdb {hit(파일)|miss|미사용} | src {read N|full-scan N (사유)}``
+- **검색 먼저.** 요청에 화면 문구·식별자가 있으면 소스를 바로 검색한다(codemap ``불요``). codemap은 ① 요청에 검색할 말이 없을 때 ② 첫 검색이 0건이거나 여러 영역(파일 8개 초과)에 흩어질 때 ③ 어떤 영역의 파일을 처음 고치기 직전(그 파일명으로 leaf를 Grep해 주의사항 확인)에만 본다. codemap은 토큰 절감 장치가 아니라 길잡이 + 주의사항 기록이다. 규칙: .claude/skills/codemap/SKILL.md
 - 코드/컨텍스트 탐색이 없는 응답(순수 문답·이미 아는 파일 재편집)은 라인 생략.
-- 허위 선언·누락 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. ``codemap lookup 0 + src 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')``이면 Stop hook이 decision:block으로 선언을 1회 요구(retrieval 백스톱). 선언 라인은 **라인 선두 앵커 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. statusline ``📡 codemap 활용 N% (경유 X · 직행 Y) · 소스 읽기 N``의 활용률은 응답 단위 집계 — 경유=hit 선언, 직행=miss 선언+미선언 풀스캔(Stop hook이 read-track 실측으로 계수). 선언을 빼먹으면 직행으로 분모에 들어가 활용률이 내려간다(분모 3 미만은 % 대신 건수만).
+- 허위 선언 금지: PostToolUse read-track hook이 codemap/src 실제 읽기를 계측한다. 선언 라인은 **줄 맨 앞에서 시작 + 3세그먼트 구조**로만 인정 — 산문 속 인용은 계측되지 않는다. 검색 직행은 정상 경로라 Stop hook이 차단하지 않는다(v2.56 — 이전의 retrieval 최종 차단 해제). statusline ``📡 codemap 활용 N% (경유 X · 직행 Y) · 소스 읽기 N``은 건수 참고용이다 — 경유=hit 선언, 직행=그 외 소스 읽기. 직행이 분모에 들어가므로 낮은 값이 문제를 뜻하지 않는다.
 
 ## Checkpoint (매 응답 종료 전 확인 - hooks 대체)
 자세한 운영은 .claude/HYBRID.md 참조.
 - [ ] lane 파일 (또는 _wip.md) 현재 상태 반영됐나?
-- [ ] 신규 파일 생성 시 _index.md 심볼 추가됐나?
+- [ ] 새 영역·파일 이동/개명/삭제·새 주의사항이 있었다면 codemap leaf에 반영됐나? (없으면 skip)
 - [ ] 태스크 완료 시 lane을 wip/done/{feature-id}_{YYYY-MM-DD_HHMMSS}.md로 이동 + _meta.md 1줄 append + git commit(git repo일 때만; 비-git이면 _meta RECENT에 "git unavailable" 기록) 됐나?
 - [ ] context 60% 추정 초과 시 /handoff 또는 /checkpoint 실행했나?
 - [ ] 핸드오프 인수 시 owner를 자기 이름으로 변경했나?
@@ -2621,8 +2624,11 @@ if ($tp -and (Test-Path -LiteralPath $tp)) {
         # retrieval 백스톱 (v2.43): hit율은 선언 기반이라 선언을 빼먹으면 조용히 0이 된다. read-track 실측과 대조해
         # "codemap lookup 0 + src 직접읽기 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')" = 미선언 full-scan으로
         # 보고 리마인더 1회 (uuid dedupe). src 1건은 면제 (이미 아는 파일 재편집 — CLAUDE.md가 라인 생략을 허용하는 케이스).
+        # v2.56: 차단 해제. "검색 먼저"가 정상 경로가 되어 codemap 미조회 + 소스 읽기는 위반이 아니다.
+        # 계측(cmap:direct)은 위에서 그대로 남는다. 다시 켜려면 $retrBackstop = $true.
+        $retrBackstop = $false
         try {
-            if (-not $script:freshDecl -and $srcDelta -ge 2 -and $cmapDelta -eq 0 -and $dUuid) {
+            if ($retrBackstop -and -not $script:freshDecl -and $srcDelta -ge 2 -and $cmapDelta -eq 0 -and $dUuid) {
                 # 세션당 최대 2회 하드캡. uuid dedupe는 "같은 응답 재경고"만 막을 뿐, 매 턴 새 uuid로
                 # block이 재발행되는 교착(선언이 계속 거부되는 경우)은 못 막는다. block 1회 = 전체 응답 재생성이라
                 # 무한 루프는 사용자에게 수십 분의 정지로 나타난다. 원인 불문 상한을 둔다.
@@ -2712,7 +2718,7 @@ if ($needsCmap) {
 }
 $parts = @()
 if ($needsCheckpoint) {
-    $parts += "[checkpoint $turn turns] Update .claude/codemap/_index.md for new/changed symbols + refresh lane/_wip.md (on done: move to wip/done + _meta.md + git commit) + run context-saver to write .ctxdb/L2 and update INDEX.md AGENT SYNC."
+    $parts += "[checkpoint $turn turns] Update the codemap leaf only if this work added an area, moved/renamed/deleted a file or found a pitfall (otherwise skip; rule: .claude/skills/codemap/SKILL.md) + refresh lane/_wip.md (on done: run the task-done skill) + run context-saver to write .ctxdb/L2 and update INDEX.md AGENT SYNC."
 }
 if ($needsSplit) {
     $parts += ("[L2 split needed] " + ($oversized -join ", ") + " : exceeds 150 lines / 2000 tokens -> keyword load still pulls the whole file, defeating token savings. Split old entries into .ctxdb/L3/{name}-YYYY-MM.md or split by domain, then update INDEX/L1 pointers.")
@@ -2721,10 +2727,10 @@ if ($needsCmap) {
     $parts += ("[codemap split needed] " + ($cmOver -join ", ") + " : exceeds codemap size cap (_root.md 2KB / _index.md 30KB / others 4KB). Phase B leaves are read whole on lookup, so an oversized leaf is paid on every lookup. Split into .claude/codemap/features/{id}/{subtopic}.md and keep the original file as a routing stub so existing pointers survive; if _index.md is over, switch to Phase B (trim-router). Rule: .claude/skills/codemap/SKILL.md size cap.")
 }
 if ($script:laneClose) {
-    $parts += "[lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + git commit). If not done, ignore this and continue."
+    $parts += "[lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + ctxdb save + git commit). If not done, ignore this and continue."
 }
 if ($script:retrMiss) {
-    $parts += ("[retrieval] read-track measured " + $script:retrMiss + " source reads this turn with zero .claude/codemap lookup and no codemap hit/miss declaration (line missing, or declared '미사용'). codemap lookup must precede source search. Grep .claude/codemap/_index.md for the symbol; if it is genuinely a miss, emit the Retrieval line declaring full-scan with the reason.")
+    $parts += ("[retrieval] read-track measured " + $script:retrMiss + " source reads this turn with zero .claude/codemap lookup and no codemap hit/miss declaration (line missing, or declared '미사용'). (This reminder is off since v2.56: searching the source first is the normal path.) Add the Retrieval line stating codemap hit, miss or not-needed.")
 }
 if ($parts.Count -eq 0) { exit 0 }
 
@@ -3366,7 +3372,10 @@ if command -v jq >/dev/null 2>&1; then
       # retrieval 백스톱 (v2.43): hit율은 선언 기반이라 선언을 빼먹으면 조용히 0이 된다. read-track 실측과 대조해
       # "codemap lookup 0 + src 직접읽기 2건 이상 + codemap hit/miss 선언 없음(누락 또는 '미사용')" = 미선언 full-scan으로
       # 보고 리마인더 1회 (uuid dedupe). src 1건은 면제 (이미 아는 파일 재편집 — CLAUDE.md가 라인 생략을 허용하는 케이스).
-      if [ "${freshDecl:-0}" -eq 0 ] && [ "${srcDelta:-0}" -ge 2 ] && [ "${cmapDelta:-0}" -eq 0 ] && [ -n "$u2" ]; then
+      # v2.56: 차단 해제. "검색 먼저"가 정상 경로가 되어 codemap 미조회 + 소스 읽기는 위반이 아니다.
+      # 계측(cmap:direct)은 위에서 그대로 남는다. 다시 켜려면 retrBackstop=1.
+      retrBackstop=0
+      if [ "$retrBackstop" -eq 1 ] && [ "${freshDecl:-0}" -eq 0 ] && [ "${srcDelta:-0}" -ge 2 ] && [ "${cmapDelta:-0}" -eq 0 ] && [ -n "$u2" ]; then
         # 세션당 최대 2회 하드캡. uuid dedupe는 "같은 응답 재경고"만 막고, 매 턴 새 uuid로 block이
         # 재발행되는 교착은 못 막는다 (block 1회 = 전체 응답 재생성 -> 수십 분 정지로 나타남).
         rwP="$stateDir/claude-retrieval-warned"; rwSession=""; rwSeen=""; rwCount=0
@@ -3455,7 +3464,7 @@ if [ -n "$cmOver" ]; then
 fi
 parts=""
 if [ "$needCheckpoint" -eq 1 ]; then
-  parts="[checkpoint $turn turns] Update .claude/codemap/_index.md for new/changed symbols + refresh lane/_wip.md (on done: move to wip/done + _meta.md + git commit) + run context-saver to write .ctxdb/L2 and update INDEX.md AGENT SYNC."
+  parts="[checkpoint $turn turns] Update the codemap leaf only if this work added an area, moved/renamed/deleted a file or found a pitfall (otherwise skip; rule: .claude/skills/codemap/SKILL.md) + refresh lane/_wip.md (on done: run the task-done skill) + run context-saver to write .ctxdb/L2 and update INDEX.md AGENT SYNC."
 fi
 if [ "$needSplit" -eq 1 ]; then
   parts="$parts [L2 split needed]$oversized : exceeds 150 lines / 2000 tokens -> keyword load still pulls the whole file, defeating token savings. Split old entries into .ctxdb/L3/{name}-YYYY-MM.md or split by domain, then update INDEX/L1 pointers."
@@ -3464,10 +3473,10 @@ if [ "$needCmap" -eq 1 ]; then
   parts="$parts [codemap split needed]$cmOver : exceeds codemap size cap (_root.md 2KB / _index.md 30KB / others 4KB). Phase B leaves are read whole on lookup, so an oversized leaf is paid on every lookup. Split into .claude/codemap/features/{id}/{subtopic}.md and keep the original file as a routing stub so existing pointers survive; if _index.md is over, switch to Phase B (trim-router). Rule: .claude/skills/codemap/SKILL.md size cap."
 fi
 if [ "${laneClose:-0}" -eq 1 ]; then
-  parts="$parts [lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + git commit). If not done, ignore this and continue."
+  parts="$parts [lane-close] The last response declares task completion but active lane(s) remain in .claude/pawpad/_wip.md. If the task is truly done, run the task-done skill now (full closure: lane -> wip/done move + _wip removal + _meta RECENT + tasklog + codemap + ctxdb save + git commit). If not done, ignore this and continue."
 fi
 if [ -n "${retrMiss:-}" ]; then
-  parts="$parts [retrieval] read-track measured $retrMiss source reads this turn with zero .claude/codemap lookup and no codemap hit/miss declaration (line missing, or declared '미사용'). codemap lookup must precede source search. Grep .claude/codemap/_index.md for the symbol; if it is genuinely a miss, emit the Retrieval line declaring full-scan with the reason."
+  parts="$parts [retrieval] read-track measured $retrMiss source reads this turn with zero .claude/codemap lookup and no codemap hit/miss declaration (line missing, or declared '미사용'). (This reminder is off since v2.56: searching the source first is the normal path.) Add the Retrieval line stating codemap hit, miss or not-needed."
 fi
 if [ -z "$parts" ]; then
   exit 0
@@ -3621,6 +3630,64 @@ if (($cdenom + $srcN) -gt 0) {
     }
     $out += " | $([char]::ConvertFromUtf32(0x1F4E1)) $seg"
 }
+# cache 모드 (opt-in: env PAWPAD_CACHE_STATUS=1|on|true). transcript 마지막 응답 usage 기준.
+# R=이번 응답 cache_read, W=이번 응답 cache_creation, TTL=최근 쓰기의 ephemeral_1h/5m 판별(없으면 5m 가정).
+# 남은 시간 = 마지막 응답 시각 + TTL - 지금 (읽기도 TTL 재충전). 서버 조기 축출은 감지 불가 -> 추정값.
+# reset = 직전 응답 대비 read 급감 + write 급증 (prefix 변경/모델 전환/TTL 만료 등으로 캐시 깨짐).
+if ([string]$env:PAWPAD_CACHE_STATUS -match '^(1|on|true)$') {
+    $cseg = "${D}cache -${Z}"
+    $tp = $j.transcript_path
+    if ($tp -and (Test-Path -LiteralPath $tp)) {
+        $us = New-Object System.Collections.ArrayList
+        $lastId = $null
+        foreach ($ln in @(Get-TailLines $tp 200)) {
+            if ($ln -notlike '*"usage"*') { continue }
+            try { $o = $ln | ConvertFrom-Json } catch { continue }
+            if ($o.type -ne 'assistant' -or -not $o.message.usage) { continue }
+            $u = $o.message.usage
+            $rec = [pscustomobject]@{
+                r = [long]$u.cache_read_input_tokens; w = [long]$u.cache_creation_input_tokens
+                h = [long]$u.cache_creation.ephemeral_1h_input_tokens; m = [long]$u.cache_creation.ephemeral_5m_input_tokens
+                t = $o.timestamp
+            }
+            # 같은 message.id가 content block마다 반복 기록됨 -> 1건으로 합침
+            if ($lastId -and $o.message.id -eq $lastId) { $us[$us.Count - 1] = $rec } else { [void]$us.Add($rec) }
+            $lastId = $o.message.id
+        }
+        if ($us.Count -gt 0) {
+            $c = $us[$us.Count - 1]
+            if (($c.r + $c.w) -gt 0) {
+                $ttl = 300
+                for ($i = $us.Count - 1; $i -ge 0; $i--) {
+                    if ($us[$i].h -gt 0) { $ttl = 3600; break }
+                    if ($us[$i].m -gt 0) { break }
+                }
+                $kf = { param($n) if ($n -lt 1000) { "$n" } else { "$([math]::Round($n / 1000.0))k" } }
+                $ttlLabel = if ($ttl -ge 3600) { '1h' } else { '5m' }
+                $cseg = "${D}cache${Z} R $(& $kf $c.r) ${D}·${Z} W $(& $kf $c.w)${D}($ttlLabel)${Z}"
+                if ($us.Count -gt 1) {
+                    $p = $us[$us.Count - 2]
+                    if ($c.w -ge 1024 -and $c.r -lt ($p.r * 0.5) -and $c.w -gt (($p.r + $p.w) * 0.5)) {
+                        $cseg += " ${R}$([char]::ConvertFromUtf32(0x1F4A5))reset${Z}"
+                    }
+                }
+                try {
+                    $remain = ([datetime]$c.t).ToUniversalTime().AddSeconds($ttl) - [datetime]::UtcNow
+                    $hg = [char]0x23F3
+                    if ($remain.TotalSeconds -le 0) {
+                        $cseg += " ${D}·${Z} ${R}$hg expired${Z}"
+                    } else {
+                        $frac = $remain.TotalSeconds / $ttl
+                        $tcol = if ($frac -ge 0.25) { $G } elseif ($frac -ge 0.1) { $Y } else { $R }
+                        $mmss = '{0:00}:{1:00}' -f [math]::Floor($remain.TotalMinutes), $remain.Seconds
+                        $cseg += " ${D}·${Z} ${tcol}$hg $mmss${Z}"
+                    }
+                } catch { }
+            }
+        }
+    }
+    $out += " | $cseg"
+}
 Write-Output $out
 '@
 
@@ -3704,6 +3771,54 @@ if [ $(( cden + srcn )) -gt 0 ]; then
   fi
   out="$out | 📡 $seg"
 fi
+# cache 모드 (opt-in: env PAWPAD_CACHE_STATUS=1|on|true). statusline.ps1 cache 블록 포트 — 규칙 동일.
+# R=이번 응답 cache_read, W=이번 응답 cache_creation, TTL=최근 쓰기의 ephemeral_1h/5m 판별(없으면 5m 가정).
+# 남은 시간 = 마지막 응답 시각 + TTL - 지금 (읽기도 TTL 재충전). 서버 조기 축출은 감지 불가 -> 추정값.
+# reset = 직전 응답 대비 read 급감 + write 급증 (prefix 변경/모델 전환/TTL 만료 등으로 캐시 깨짐).
+case "${PAWPAD_CACHE_STATUS:-}" in
+  1|on|true)
+    cseg="${D}cache -${Z}"
+    tp="$(printf '%s' "$raw" | jq -r '.transcript_path // empty' 2>/dev/null)"
+    if [ -n "$tp" ] && [ -f "$tp" ]; then
+      # 같은 message.id가 content block마다 반복 기록됨 -> 1건으로 합침
+      cinfo="$(tail -n 200 "$tp" 2>/dev/null | jq -rRs '
+        [ split("\n")[] | fromjson? | select(.type == "assistant" and .message.usage != null) ]
+        | reduce .[] as $o ([]; if length > 0 and $o.message.id != null and .[-1].message.id == $o.message.id then .[:-1] + [$o] else . + [$o] end)
+        | map({ r: (.message.usage.cache_read_input_tokens // 0), w: (.message.usage.cache_creation_input_tokens // 0),
+                h: (.message.usage.cache_creation.ephemeral_1h_input_tokens // 0), m: (.message.usage.cache_creation.ephemeral_5m_input_tokens // 0),
+                t: ((.timestamp // "") | sub("\\.[0-9]+"; "") | (fromdateiso8601? // 0)) })
+        | if length == 0 then empty else
+            .[-1] as $c
+            | (if length > 1 then .[-2] else {r: 0, w: 0} end) as $p
+            | ([.[] | select(.h > 0 or .m > 0)] | last) as $k
+            | (if $k != null and $k.h > 0 then 3600 else 300 end) as $ttl
+            | "\($c.r) \($c.w) \($ttl) \($c.t) \($p.r) \($p.w) \(length)"
+          end' 2>/dev/null)"
+      set -- $cinfo
+      if [ "$#" -eq 7 ]; then
+        cr=$1; cw=$2; ttl=$3; ct=$4; pr=$5; pw=$6; cn=$7
+        if [ $(( cr + cw )) -gt 0 ]; then
+          kf() { if [ "$1" -lt 1000 ]; then printf '%s' "$1"; else printf '%sk' $(( ($1 + 500) / 1000 )); fi; }
+          if [ "$ttl" -ge 3600 ]; then tl=1h; else tl=5m; fi
+          cseg="${D}cache${Z} R $(kf "$cr") ${D}·${Z} W $(kf "$cw")${D}(${tl})${Z}"
+          if [ "$cn" -gt 1 ] && [ "$cw" -ge 1024 ] && [ $(( cr * 2 )) -lt "$pr" ] && [ $(( cw * 2 )) -gt $(( pr + pw )) ]; then
+            cseg="$cseg ${R}💥reset${Z}"
+          fi
+          if [ "$ct" -gt 0 ]; then
+            rem=$(( ct + ttl - $(date +%s) ))
+            if [ "$rem" -le 0 ]; then
+              cseg="$cseg ${D}·${Z} ${R}⏳ expired${Z}"
+            else
+              if [ $(( rem * 100 )) -ge $(( ttl * 25 )) ]; then tcol="$G"; elif [ $(( rem * 100 )) -ge $(( ttl * 10 )) ]; then tcol="$Y"; else tcol="$R"; fi
+              cseg="$cseg ${D}·${Z} ${tcol}⏳ $(printf '%02d:%02d' $(( rem / 60 )) $(( rem % 60 )))${Z}"
+            fi
+          fi
+        fi
+      fi
+    fi
+    out="$out | $cseg"
+    ;;
+esac
 printf '%s' "$out"
 '@
 
@@ -4522,7 +4637,7 @@ try {
     if ($needsCheckpoint -or $needsSplit -or $needsCmap) {
         $reasonParts = New-Object System.Collections.Generic.List[string]
         if ($needsCheckpoint) {
-            $reasonParts.Add("Codex checkpoint: $turn turns reached. Run context-saver: append current session summary to .ctxdb/L2, update .ctxdb/INDEX.md Codex row, refresh lane/_wip.md, and update codemap for new symbols.")
+            $reasonParts.Add("Codex checkpoint: $turn turns reached. Run context-saver: append current session summary to .ctxdb/L2, update .ctxdb/INDEX.md Codex row, refresh lane/_wip.md, and update the codemap leaf only if this work added an area, moved/renamed/deleted a file or found a pitfall (otherwise skip).")
         }
         if ($needsSplit) {
             $reasonParts.Add("L2 split needed: " + ($oversized -join ", ") + " exceeds 150 lines or 2000 tokens. Split old entries or route via L1/L3 before continuing.")
@@ -4660,7 +4775,7 @@ Write-FileContent ".ctxdb\keywords.md" @"
 
 ### -> domain-codebase-map  (L1/domain-codebase-map.md)
 - 이 프로젝트 구조가 어떻게 되나 / 어디에 뭘 넣어야 하나 / 폴더 관례
-- 테스트는 어떻게 도나 / 빌드·배포 흐름 / 횡단 관심사(로깅·에러·설정)
+- 테스트는 어떻게 도나 / 빌드·배포 흐름 / 여러 기능에 걸친 공통 사항(로깅·에러·설정)
 - 고수준 아키텍처 설명이 필요하다 (심볼 위치가 아니라 조망)
 
 ### -> domain-sample  (L1/domain-sample.md)
@@ -4865,7 +4980,7 @@ STEP 4: 키워드 인덱스 갱신 (신규 도메인/심볼 등장 시만)
   이번 작업에서 기존 INDEX/L1에 없는 도메인·핵심 용어가 생겼으면 반영:
   - 신규 도메인: L1/domain-{new}.md 생성(키워드 + 파일/심볼 포인터) + INDEX 키워드->L1 매핑 1행 추가
   - 기존 도메인 새 용어: 해당 L1 키워드 열에 누락된 핵심어만 추가 (중복/유사어 금지)
-  - codemap 연계: 이번에 _index.md에 추가한 신규 심볼의 도메인이 INDEX 키워드로 잡히는지 확인, 누락 시 추가
+  - codemap 연계: 이번에 codemap leaf를 새로 만든 영역이 있으면 그 도메인이 INDEX 키워드로 잡히는지 확인, 누락 시 추가
   - 폭주 방지: INDEX는 도메인당 1행. L1 키워드는 검색용 핵심어만 (심볼 전수나열 금지 = codemap 역할). 변화 없으면 이 STEP 건너뜀.
   - 2음절 등록은 **도메인 고유어만**: 한글 2음절부터 매칭되므로 일반어(문서·작업·확인·내용·정리 등)를 넣으면 무관한 프롬프트가 그 도메인을 끌어온다.
     일반어를 꼭 쓰려면 도메인이 그 말로만 불리는지 확인하고, 아니면 3음절 이상 고유어(예: 배포본·적재큐)로 등록한다.
@@ -4891,7 +5006,7 @@ STEP 6: 보고
 
 ## 주의
 - 이월(L2->L3->L4)은 확인 없이 진행 가능(무손실·append-only). 도메인 분할만 사용자 확인.
-- codemap(_index.md)과 역할 분리: codemap=심볼 위치(전수, 정밀), ctxdb 키워드=도메인 라우팅(핵심어 소수). 키워드에 심볼 전부 넣지 말 것.
+- codemap과 역할 분리: codemap=영역별 소스 주소 + 주의사항, ctxdb=작업 경위·결정(키워드로 회수). codemap leaf에서 걷어낸 경위 서술은 여기(L2)로 온다. 키워드에 심볼을 넣지 말 것.
 - Decision Placement(.claude/HYBRID.md Decision Placement Matrix): L2는 세션 재개 digest 전용. 지속 결정(arch ADR / spec scope / 거절기록)은 L2에만 묻지 말고 canonical 위치(decisions/arch.md, specs/, decisions/rejected.md)에도 기록.
 '@
 
@@ -4929,7 +5044,7 @@ description: Hybrid session resume protocol. Use at session start (ON START) to 
 4. lane state=HANDOFF_TO_* : _wip.md의 handoff 필드 경로로 snapshot read
 5. lane state=SPEC_READY 또는 spec 있으면: read .claude/pawpad/specs/{feature}.md
 6. read .claude/pawpad/_meta.md 상단만 (헤더 SPRINT/PHASE/STACK + BLOCKED + NEXT). RECENT(완료 이력)는 파일 하단·재개 불요 -> 생략, history 필요 시 on-demand
-7. codemap은 코드 수정 작업 시점에 read (질문/분석 세션 skip) — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP+HOT만 부분읽기
+7. codemap은 코드 수정 작업 시점에 조망만 read (질문/분석 세션 skip) — .claude/codemap/_root.md(Phase B)가 있으면 그것만, 없으면 _index.md의 MAP만 부분읽기. 위치는 검색 먼저, leaf는 조건부 (codemap 스킬 "언제 보는가")
 
 ## Lane 신뢰성 게이트 (ON START - stale lane 감지, 다음 작업 제안 전 필수)
 lane은 계획의 SoT지만, ON TASK DONE 누락으로 종결 안 된 lane이 남으면 이미 완료된 작업을 다음 작업으로 재제안하는 사고가 난다.
@@ -5110,7 +5225,8 @@ ON TASK DONE(Session Protocol)은 선언적 지시라 자연어 종료 요청("�
    - 끝난 NEXT 항목은 취소선으로 남기지 말고 sessions/{YYYY-MM}.md로 옮긴다 (_meta 상단은 매 세션 읽힌다).
    - 그래도 8KB를 넘으면 원인은 상단이다 — 남은 NEXT 항목을 1줄로 줄이고 상세는 lane/spec 포인터로 둔다.
 5. 완료(v) 작업항목 누적 시 verifications/{feature-id}-tasklog.md 이월 (HYBRID Completed Task Log)
-6. codemap 갱신: 신규/변경 심볼 반영 (해당 없으면 "codemap skip" 선언)
+6. codemap 갱신: 새 영역·파일 이동/개명/삭제·새 주의사항이 있을 때만 leaf를 고친다 (해당 없으면 "codemap skip" 선언 — 작업마다 갱신하지 않는다)
+   - 건드린 leaf의 src: 경로가 실제로 있는지 확인한다
    - 건드린 codemap 파일의 byte 수를 잰다 — cap(_root.md 2048 / _index.md 30720 / 그외 4096) 초과면 분할 후 진행. 훅이 돌지 않는 환경에서는 이 단계가 유일한 집행이다. 규칙: .claude/skills/codemap/SKILL.md
 7. context-saver 실행: .ctxdb/L2 세션 블록 + INDEX.md AGENT SYNC
    - 같은 세션에서 이 작업을 이미 /checkpoint로 저장했으면 L2 블록은 생략할 수 있다("ctxdb skip(L2)" 선언). 그래도 INDEX AGENT SYNC 상태 셀은 종결 상태로 덮어쓴다 — checkpoint 때 적은 "진행 중"이 남으면 안 된다.
@@ -5132,106 +5248,122 @@ Step-Begin "skill: codemap"
 Write-FileContent ".claude\skills\codemap\SKILL.md" -NoBom @"
 ---
 name: codemap
-description: Symbol location registry. Use to record or look up where feature components live without searching files; enforces owner-separated edit permissions for multi-agent work.
+description: Code map - a guide to source when search stalls, plus pitfalls that are not written in the code. Search the source first; consult the map when the request has nothing searchable, the first search is empty or scattered, or right before editing an area. Owner-separated edit permissions for multi-agent work.
 ---
-# CodeMap Skill - Symbol Location Registry
+# CodeMap Skill - 길잡이 + 주의사항 기록
 
 ## 목적
-구현된 기능 컴포넌트 위치를 심볼 테이블로 관리.
-수정/참조 시 파일 탐색 없이 즉시 위치 파악.
+검색이 막힐 때 소스 위치로 데려다 주는 길잡이, 그리고 소스에 적혀 있지 않은 주의사항·실측의 기록.
 
-## 심볼 포맷
+토큰 절감 장치가 아니다. 실측(v2.56, 요청 3건 x 모델 2종 x 2회)에서 사용량은 codemap 없이 검색하는 것과 사실상 같았다(-2.4% ~ -0.1%, 같은 조건 안의 편차보다 작다). 값은 두 곳에 있다:
+1. 검색어가 헛짚는 요청에서 한두 번 만에 도착한다.
+2. 고치기 전에 주의사항을 안다 (재작업 한 번이 위치 찾기 열 번보다 비싸다).
+
+## 언제 보는가 (검색 먼저)
+요청에 화면 문구·식별자가 있으면 소스를 바로 검색한다. codemap은 아래일 때만 본다.
+1. 요청에 검색할 말이 없다 (순수 증상 서술).
+2. 첫 검색이 0건이거나 여러 영역에 흩어진다 (파일 8개 초과가 기준).
+3. 어떤 영역의 파일을 처음 고치기 직전 — 그 파일명으로 leaf를 Grep해 주의사항만 확인한다 (1회).
+검색 직행은 정상 경로다. Retrieval 표시 라인의 codemap 칸에는 "불요"라고 적는다.
+
+## leaf 규격 (머리 3줄 + 주의사항)
+<!-- codemap leaf: {id} -->
+src: {파일 경로} [{기준 심볼}], {파일 경로} [{기준 심볼}]
+증상: {사용자가 실제로 쓰는 말 5~8개, 쉼표 구분}
+주의사항:
+- {이렇게 고치면 안 된다 + 이유 한 구절}
+
+- src: 그 영역을 고칠 때 여는 파일 전부와 기준 심볼. 줄 번호는 쓰지 않는다 (금방 낡는다).
+- 증상: Lookup의 검색 대상이다. 정제된 용어만 적으면 걸리지 않는다 — 화면 문구와 사용자 말투를 둘 다 넣는다 (예: 실행 기록 표, 표가 화면 밖으로 넘친다).
+- 주의사항: 5줄 이내. 소스 주석에 이미 있는 내용은 옮기지 않는다. 판단에 쓰이는 수치 1개는 허용 (예: 기동 대기의 대부분은 저장소 준비 한 곳, 약 2.7초).
+- 이전 버전 leaf의 "함정:" 줄은 "주의사항:"과 같은 뜻이다. 그 leaf를 고칠 때 이름만 바꾼다.
+- 경위·실측 서술은 leaf에 쓰지 않는다. .ctxdb/L2 또는 decisions/arch.md에 둔다. leaf에 포인터도 두지 않는다 (그쪽은 키워드로 회수된다).
+- 크기: 신규·수정 leaf 권장 1.5KB. hard cap은 4096 byte.
+
+## 심볼 표 (선택 — 파일이 여러 개인 영역만)
 [domain]:[symbol]    [file_path]    [핵심 시그니처/타입]: [역할 1줄]
-목적: 에이전트가 파일을 열지 않고 위치+시그니처+역할 파악 -> 토큰 절약. 실제 수정 시에만 해당 파일 read.
-핵심/자주 만지는 심볼만 시그니처+역할 상세. 주변부는 위치만. (codemap=요약, 코드=전체. 로직 복붙 금지)
+파일을 열지 않고 위치+시그니처+역할을 파악하는 용도. 핵심 심볼만, 각 1줄. 로직 복붙 금지.
 
 예시:
 auth:login         src/features/auth/login.<ext>         Login: 로그인 화면(이메일+소셜)
 db:user            src/models/user.<ext>                 User{id,name,role}: 사용자 모델
 api:fetchUser      src/api/user_api.<ext>                fetchUser(id)->User: 유저 조회
 
-## 도메인 분류
-| 도메인 | 대상 |
-|--------|------|
-| auth   | 인증 화면, services |
-| club   | (예시 도메인) |
-| member | (예시 도메인) |
-| db     | 데이터 모델, repository |
-| api    | 외부 API 연동 |
-| ui     | 공통 UI 컴포넌트 |
-| core   | 공통 서비스, 유틸 |
-
 ## _index.md 구조 (Phase A flat)
 # MAP (data flow / 한눈 조망)   <- 모듈 흐름 다이어그램 (구조·영향범위 파악, 선택)
 [레이어/화살표. 예: ui --입력--> core --결과--> render]
-# HOT (최근 접근 3~5개)
-[최근 심볼]
 # INDEX
-[전체: domain:symbol  file_path  시그니처: 역할]
+[영역별 leaf 블록 또는 심볼 표]
 
-## ON START 읽기 (토큰 절감)
-- Phase B(_root.md 존재): _root.md만 read. _index.md는 라우팅 스텁이라 읽지 않는다.
-- Phase A: ON START/재개 시 MAP+HOT(조망)만 부분읽기(상단). INDEX는 context에 올리지 않음.
-- 특정 심볼 위치 필요 시 INDEX(Phase B는 features/)를 Grep(domain:symbol 또는 파일명) — 매칭 줄만 반환 = 전체 로드보다 쌈.
-- HOT 규율 필수: 최근 3~5개·각 1줄(200자 이내). 밀려난 항목은 Phase A면 INDEX로 강등, Phase B면 버린다 — 위치는 leaf에, 경위는 ctxdb L2에 이미 있다.
-  버리기 전 그 심볼이 leaf에 있는지 Grep으로 확인하고, 없으면 leaf에 1줄 추가한 뒤 버린다.
-  hot-archive 같은 보관 파일을 만들지 않는다(lookup에 쓰이지 않고 size cap만 넘긴다).
-  이미 만들어 둔 보관 파일은 leaf와 대조해 빠진 심볼만 leaf로 옮기고 라우팅 스텁(3줄 이내)으로 줄인다.
+## ON START 읽기
+- Phase B(_root.md 존재): _root.md만 read (MAP + ROUTE). _index.md는 라우팅 스텁이라 읽지 않는다.
+- Phase A: MAP만 부분읽기(상단). INDEX는 context에 올리지 않는다.
+- HOT 절은 두지 않는다 (v2.56 폐지). 최근 작업은 _meta.md RECENT와 ctxdb L2에 있다.
+  기존 HOT 절은 다음 codemap 갱신 때 비운다 — 각 항목의 심볼이 leaf에 있는지 Grep으로 확인하고, 없으면 leaf에 1줄 추가한 뒤 지운다.
+  hot-archive 계열 보관 파일도 같은 절차로 leaf와 대조한 뒤 라우팅 스텁(3줄 이내)으로 줄인다. 새로 만들지 않는다.
 
 ## 다른 문서의 _index.md 지칭 읽는 법 (Phase B)
-CLAUDE.md/AGENTS.md DoD와 다른 스킬(checkpoint·handoff·task-done·context-saver·lean-code 등)의 "codemap/_index.md 갱신·확인"은 Phase A 표기다. Phase B에서는 이렇게 읽는다:
-- 심볼 추가·수정 = 해당 features/{feature-id}.md leaf
-- HOT 최신화 = _root.md HOT
-- 위치 확인 = 아래 Lookup 알고리즘 (keywords.md -> leaf)
-- _index.md 스텁에는 심볼을 쓰지 않는다 (스텁이 다시 자라면 분할이 무효가 된다).
+CLAUDE.md/AGENTS.md와 다른 스킬·훅 안내문의 "codemap/_index.md 갱신·확인"은 Phase A 표기다. Phase B에서는 이렇게 읽는다:
+- 추가·수정 = 해당 features/{feature-id}.md leaf
+- 위치 확인 = 아래 Lookup 알고리즘
+- _index.md 스텁에는 아무것도 쓰지 않는다 (스텁이 다시 자라면 분할이 무효가 된다).
 
 ## 권한 (Owner 분리)
 | 작업 | 허용 |
 |------|------|
-| 신규 항목 추가 (append) | 누구나 (어느 lane이든) |
-| 기존 항목 수정 (경로/이름 변경) | lane owner만 |
-| 기존 항목 삭제 | lane owner만 |
-| HOT 섹션 갱신 | 누구나 |
+| leaf 추가, 주의사항 줄 추가 | 누구나 (어느 lane이든) |
+| leaf의 src: 를 실제와 맞춤 (틀린 경로 고침, 자기가 옮기거나 지운 파일 반영) | 누구나 |
+| 주의사항 줄 수정·삭제, leaf 삭제·분할 | lane owner만 |
 
 owner 확인: _wip.md Locks 섹션에서 해당 파일 매핑 확인.
 Lock 없는 파일은 추가만 허용, 수정/삭제 시 _wip.md Locks에 임시 lock 등록 권장.
 
-## 업데이트 규칙
+## 업데이트 규칙 (드물게)
 | 시점 | 액션 | 누가 |
 |------|------|------|
-| 새 화면/컴포넌트/서비스 생성 | INDEX에 추가 | 생성한 lane |
-| 파일 경로/클래스명 변경        | 해당 행 수정 | **owner만** |
-| 파일 삭제                     | 해당 행 제거 | **owner만** |
-| 작업 후                       | HOT 섹션 상단 | 누구나 |
+| 새 영역(폴더·화면·서비스) 생성 | leaf 추가 (src, 증상 2줄부터) | 생성한 lane |
+| 파일 이동·이름 변경 | 해당 leaf의 src: 수정 | 옮긴 lane (자기가 옮긴 파일) |
+| 파일 삭제 | src: 에서 제거 | 지운 lane (자기가 지운 파일) |
+| 주의사항 발견 | 주의사항 줄 추가 (5줄 이내) | 누구나 |
+| leaf를 읽었는데 src: 가 틀렸다 | 그 자리에서 고침 | 누구나 |
+
+위 다섯 경우가 아니면 "codemap skip"을 선언한다. 작업마다 갱신하지 않는다. (다른 문서의 짧은 표기 "새 영역·파일 이동/개명/삭제·새 주의사항"은 이 다섯 경우를 가리킨다 — 틀린 src: 를 발견해 고치는 것은 언제든 한다.)
+task-done 6번 · checkpoint 2번 · handoff 6번에서 건드린 leaf의 src: 경로가 실제로 있는지 확인한다.
+
+기존 leaf의 이행은 점진적이다: 위 경우로 leaf를 건드릴 때 그 leaf만 머리 3줄을 붙이고 서술을 걷어낸다. 걷어낸 서술이 ctxdb L2/L3에 없으면 L2에 1줄 digest로 옮긴 뒤 지운다. 안 건드리는 leaf는 옛 규격으로 둔다 — Lookup의 Grep은 옛 본문에도 걸린다.
 
 ## 동시 수정 충돌 방지 (하이브리드)
-- 두 에이전트가 동시에 _index.md 수정 시:
+- 두 에이전트가 동시에 같은 codemap 파일 수정 시:
   - append 충돌 -> 양쪽 라인 모두 보존
   - 명백한 중복 -> 다음 세션에서 owner가 정리
 - 같은 행을 양쪽이 수정 시 -> owner가 우선, 비owner는 _wip.md에 충돌 보고
 
 ## 성장 전략 (size-aware, trim-router)
 파일 작으면 flat, 커지면 trim-router로 split. page-type별 cap 초과 = task 완료 전 split 필수.
-1차 비대 제어는 entry 1줄 규율(긴 문단 entry가 진짜 bloat 원인 — 상세는 spec/lane, codemap엔 포인터만).
+길어짐을 막는 1차 장치는 leaf 규격이다 (긴 문단이 진짜 bloat 원인 — 서술은 ctxdb, codemap엔 주소와 주의사항만).
 
-### Phase A — flat (~30KB / ~80 entries 이하)
-단일 _index.md. MAP + HOT + feature 섹션(# features/...)으로 그룹. 1줄 규율 엄수.
+### Phase A — flat (~30KB 이하)
+단일 _index.md. MAP + 영역별 블록(# features/...)으로 그룹.
 
 ### Phase B — trim-router (~30KB 초과 또는 통째읽기 사고 빈발)
 작은 페이지로 분할. domain 중간층 없음(feature leaf와 내용 중복·3중쓰기 drift 유발 → 제외).
 구조:
-  .claude/codemap/_root.md      -> route + MAP + HOT. source pointer 금지. hard-cap 2KB
-  .claude/codemap/keywords.md   -> 한국어/동의어를 feature로 라우팅. source pointer 금지. hard-cap 4KB
-  .claude/codemap/features/{feature-id}.md -> source pointer + 최소 판단근거. hard-cap 4KB
+  .claude/codemap/_root.md      -> MAP + ROUTE. source pointer 금지. hard-cap 2KB
+  .claude/codemap/keywords.md   -> 의미 매칭 폴백. 의도·증상 → leaf 경로만. hard-cap 4KB
+  .claude/codemap/features/{feature-id}.md -> leaf (머리 3줄 + 선택 심볼 표). 권장 1.5KB, hard-cap 4KB
 - root: route만, 심볼표 금지.
-- keywords: 사용자 표현/의도/증상 -> feature 경로만 (동의어 나열보다 "의도·증상→feature" 서술 지향; agent가 의미로 매칭하므로 정확 단어 불요. 파일/심볼 금지 → stale에도 source 무영향). 4KB 초과 시에만 도메인별 분할.
-- feature leaf: 실제 수정후보 파일+심볼. leaf 4KB 근접 시 features/{id}/ 하위 ui,data,domain,test로 split.
+- keywords: Lookup 1번이 0건일 때만 읽는 폴백이다. 새 leaf의 증상은 leaf의 증상: 줄에 적고, keywords에는 영역 단위 한 줄만 둔다. keywords/{영역}.md 분할과 스텁 leaf는 새로 만들지 않는다 (기존 것은 그대로 동작한다).
+- feature leaf: leaf 4KB 근접 시 features/{id}/ 하위 ui,data,domain,test로 split.
 
-### Lookup 알고리즘 (최대 3 read)
-1. 한국어/자연어/증상 → keywords.md **통째 read 후 의미·맥락 매칭**(grep 아님 — agent가 프롬프트 의도로 해석) → feature leaf 1개 → source. 정확 단어/공백/표현 흔들림 무관(예: "최근완료"="최근 완료", "축하 효과 잘림"→부화 연출 character). (root는 첫 진입만)
-2. 영문 심볼 알면 → rg로 .claude/codemap/features 직접 grep (정확매칭·페이지 통째읽기 불필요).
-3. 금지: codemap 전체 read / keywords.md를 grep으로 정확매칭(의미매칭이 기본) / 심볼 줄범위 아는데 source 파일 통째 read.
-- 핵심: 자연어=의미매칭(표현 강건), 영문심볼=rg 정확매칭. 분할은 lookup 성능 불변 + 실수로 통째읽기만 차단. 다운사이드 없음.
+### Lookup 알고리즘 (leaf 직접 검색, 최대 2 read)
+Phase A(flat)에는 features/ 와 keywords.md 가 없다 — 아래의 "features/ 를 Grep"은 _index.md 를 Grep하는 것으로 읽고, 걸린 영역 블록만 그 줄 범위로 read한다. 2번(keywords 폴백)은 건너뛴다.
+1. 요청의 낱말 2~3개로 .claude/codemap/features/ 를 Grep한다. 증상: 줄과 src: 줄이 걸린다. 가장 잘 맞는 leaf 1개만 read.
+   사용자 표현 그대로 0건이면 뜻이 같은 다른 낱말로 한 번 더 (예: 관리용 -> 시스템, 안 보이게 -> 숨김).
+2. 그래도 0건이면 keywords.md를 통째 read 후 의미로 골라 leaf 1개 (폴백).
+3. 영문 심볼·파일명을 알면 그것으로 features/ 를 Grep한다 ("언제 보는가" 3번의 주의사항 확인이 이 경로다).
+4. leaf의 src: 줄에 적힌 파일·기준 심볼로 바로 소스를 연다. leaf를 읽고도 소스를 다시 검색해야 했다면 그 leaf는 규격 미달이다 — 그 자리에서 src: 를 채운다.
+- 금지: codemap 전체 read / _root.md·keywords.md를 조회 때마다 read / leaf 여러 개 read / 넓은 패턴으로 Grep해 수십 줄을 받는 것.
+- 목표: 소스 전까지 읽는 양 3KB 이하.
 
 ### generated 제외
 *.g.dart, *.freezed.dart, lib/generated/** 는 source pointer 대상 아님. 필요시 model leaf에 generated companion exists만 기록.
@@ -5240,25 +5372,25 @@ fallback rg: rg -n "kw|Symbol" lib -g "!*.g.dart" -g "!*.freezed.dart" -g "!lib/
 ### size cap (완료 게이트)
 root 2KB / keywords·feature 4KB hard cap. 초과 시 split 후 완료.
 검사: .claude/codemap 하위 *.md 각 파일 byte 수 cap — _root.md=2048 / _index.md=30720(Phase A flat 상한, 초과 시 Phase B 전환) / 그외=4096. 초과 시 FAIL.
-자동 집행(v2.49): stop-check 훅이 매 Stop마다 검사해 [codemap split needed] 차단 블록을 낸다(세션당 시그니처 1회 dedupe, Claude ps1/sh + Codex 3표면). 수동 스크립트 불요.
+자동 집행(v2.49): stop-check 훅이 매 Stop마다 검사해 [codemap split needed] 차단 블록을 낸다(세션당 시그니처 1회 dedupe, Claude ps1/sh + Codex, 훅 3곳). 수동 스크립트 불요.
 훅이 돌지 않는 환경(조직 정책 차단·hook 미신뢰)에는 자동 집행이 없다 — task-done 6번·checkpoint 2번·handoff 6번에서 이번에 건드린 codemap 파일의 byte 수를 직접 재고, 초과면 그 자리에서 분할한다.
 분할 시 상위 파일은 삭제하지 말고 라우팅 스텁으로 남긴다 — 다른 leaf·문서가 가리키던 포인터가 그대로 산다.
 
 ## 초기 부트스트랩 (기존 코드베이스에 처음 도입할 때)
-설치는 codemap 템플릿만 만든다. 이미 코드가 쌓인 프로젝트는 **1회 백필**을 해야 lookup이 동작한다. 백필 없이 두면 miss -> 소스 full-scan 경로가 열린 채 운영된다(실관측: 설치 후 수 주간 1개 도메인만 등록된 상태로 방치).
+설치는 codemap 템플릿만 만든다. 이미 코드가 쌓인 프로젝트는 **1회 백필**을 하면 검색이 헤매는 요청에서 길잡이가 생긴다. 심볼을 전수 등록하지 않는다 — 영역마다 leaf 1개, 머리 2줄(src, 증상)이면 된다. 주의사항은 비워 두고 겪으면서 채운다.
 
 ### 발동 판정 (자동 1회 제안)
-코드 수정 세션 ON START에 **등록 심볼 < 10 && 소스 파일 >= 30**이면 부트스트랩을 1회 제안한다. 거절 시 그 세션에서 재제안 금지. 신규(빈) 프로젝트는 대상 아님 — 증분 등록으로 충분.
+코드 수정 세션 ON START에 **등록 항목(leaf · 영역 블록 · 심볼 행의 합) < 3 && 소스 파일 >= 30**이면 부트스트랩을 1회 제안한다. 옛 심볼 표만 있는 설치처는 등록 항목이 있으므로 대상이 아니다. 거절 시 그 세션에서 재제안 금지. 신규(빈) 프로젝트는 대상 아님 — 영역이 생길 때 leaf를 추가하면 충분.
 
 ### 절차
 1. **스캔 범위** — 소스 루트만. generated 제외(위 generated 제외 절 패턴을 스택에 맞게 치환).
-2. **등록 기준** — 포함: public 진입점(클래스/화면/route/서비스/repository/모델 진입점/상태 provider·store/주요 public 메서드). 제외: private 헬퍼, 1줄 getter, 뷰 내부 렌더 로직, 순수 표현용 서브컴포넌트.
+2. **등록 단위** — 영역(폴더·화면·서비스) 하나에 leaf 하나. src: 에는 그 영역을 고칠 때 여는 진입 파일과 기준 심볼(클래스/화면/route/서비스/repository/상태 store). 증상: 에는 그 화면의 문구와 그 영역에 대해 사용자가 할 법한 말. private 헬퍼·뷰 내부 로직은 적지 않는다.
 3. **규모 분기** —
    - 소스 < 40 파일: 인라인 진행.
-   - 소스 >= 40 파일: code-delegate로 배치 위임. 기능/폴더 기준 3~4배치(배치당 30~40파일). 각 서브는 .claude/codemap/_staging/{batch}.md에 **직접 Write**하고 **반환은 4줄 요약만**(staging 경로 / 심볼 수 / 파일 수 / 특이사항). 심볼 본문을 부모로 반환하면 위임 이득이 사라진다. 서브는 _index.md 직접 편집 금지(owner 권한).
-4. **병합** — owner가 staging을 합친다. 기존 MAP·HOT·수기 등록 섹션은 **보존**(덮어쓰기 금지), 중복 심볼만 제거. 병합 후 _staging/ 제거.
-5. **크기 판정** — 합계 30KB 초과면 flat 유지하지 말고 즉시 Phase B(trim-router) 전환. leaf가 4KB 근접하면 layer(data/state/ui)로 분할.
-6. **검증 게이트(완료 조건)** — (a) size cap 전수 검사 PASS (b) 무작위 심볼 5~6개의 path:line을 실파일과 대조해 **전건 일치**. 불일치 시 해당 배치 재작업.
+   - 소스 >= 40 파일: code-delegate로 배치 위임. 기능/폴더 기준 3~4배치(배치당 30~40파일). 각 서브는 .claude/codemap/_staging/{batch}.md에 **직접 Write**하고 **반환은 4줄 요약만**(staging 경로 / leaf 수 / 파일 수 / 특이사항). 본문을 부모로 반환하면 위임 이득이 사라진다. 서브는 _index.md 직접 편집 금지(owner 권한).
+4. **병합** — owner가 staging을 합친다. 기존 MAP·수기 등록 섹션은 **보존**(덮어쓰기 금지), 중복만 제거. 병합 후 _staging/ 제거.
+5. **크기 판정** — 합계 30KB 초과면 flat 유지하지 말고 즉시 Phase B(trim-router) 전환.
+6. **검증 게이트(완료 조건)** — (a) size cap 전수 검사 PASS (b) 무작위 leaf 5~6개의 src: 경로와 기준 심볼을 실파일과 대조해 **전건 일치**. 불일치 시 해당 배치 재작업.
 
 ### Phase B 전환 시 _index.md 처리
 _index.md는 삭제하지 않고 **라우팅 스텁**으로 남긴다(3~5줄: _root.md / keywords.md / features/ 포인터 + "심볼표 없음, 통째 read 금지" 명시). 기존 문서·설정이 _index.md 경로를 가리키는 경우가 있어 경로가 죽으면 ON START read가 실패한다.
@@ -5334,20 +5466,20 @@ description: Feature-first structure reference. Enforcement lives in CLAUDE.md/A
 
 ## 코어 규칙 (CLAUDE.md/AGENTS.md가 강제, 여기선 참조)
 1. **모듈 경계**: colocation + 단일 public boundary
-2. **횡단 import 금지** (단 public boundary 의존은 허용)
+2. **기능 간 내부 import 금지** (단 public boundary 의존은 허용)
 3. **Rule of Three**
-4. **신규 = 가산적 + 최소 integration edit 허용**
+4. **신규 = 추가 위주 + 최소 integration edit 허용**
 
 ## 상세 규칙
-### 5. 파일 1책임 + 비대화 시 분할
-한 파일 = 한 책임. 커지면 분할. codemap 심볼과 1:1 유지 → 색인 정확도.
+### 5. 파일 1책임 + 커지면 분할
+한 파일 = 한 책임. 커지면 분할.
 
-### 6. codemap 도메인 명명 정렬
-파일/심볼명이 `domain:symbol`로 깔끔히 매핑되게 명명. 예: `src/menu-c/c-export/export.logic` → `menu-c:exportLogic`. DoD#5(codemap 갱신)와 짝 → "codemap 이용 개발"의 명명 브릿지.
+### 6. 검색되는 이름
+파일/심볼명은 화면 문구·도메인 용어와 맞춰 검색 한 번에 걸리게 짓는다. 예: 화면이 "내보내기"면 `src/menu-c/c-export/export.logic`. 사용자 말과 코드 이름이 어긋나는 곳은 codemap leaf의 `증상:` 줄에 그 말을 적어 둔다(DoD#5).
 
 ### 7. anti-pattern 체크리스트
 - **god-module**: 한 파일/폴더가 여러 도메인 책임 → 분할
-- **순환참조**: A→B→A → public boundary 또는 hoist로 단방향화
+- **순환참조**: A→B→A → public boundary 또는 상위 폴더로 올려 단방향화
 - **premature 추상화**: 2곳 중복에 성급한 공통화 (Rule of Three 위반)
 - **layer-first 회귀**: controllers/·services/ 식 레이어 우선 분할로 복귀
 - **shared-dump 회귀**: cross-menu 2회 사용을 즉시 global shared로 올림
@@ -5366,7 +5498,7 @@ description: Feature-first structure reference. Enforcement lives in CLAUDE.md/A
 새 기능이...
 ├─ 기존 메뉴(도메인) 소속 → 그 메뉴 폴더 아래 하위 폴더 추가 (형제 로직 불변)
 ├─ 새 메뉴(도메인)        → 새 도메인 폴더 + 첫 기능 하위 폴더
-└─ 메뉴 횡단(공통)        → core/ 또는 shared/ (특정 메뉴 소속 아님)
+└─ 여러 메뉴 공통        → core/ 또는 shared/ (특정 메뉴 소속 아님)
 
 어느 경우든: route/menu registry, module manifest, DI registration,
             public export 같은 최소 integration edit은 허용 (규칙4).
@@ -5387,7 +5519,7 @@ description: Feature-first structure reference. Enforcement lives in CLAUDE.md/A
 **cross-menu 2회 사용을 즉시 global로 올리지 말 것** (Rule of Three 게이트).
 
 ## 프레임워크 관례 우선 (배포 안전)
-Next.js(app/ 라우팅), Rails(MVC 규칙) 등 **프레임워크가 구조를 강제하면 그것을 우선** 따르고, 그 관례 **안에서** feature-first 원칙(colocation/단일 경계/횡단 격리)을 적용한다. 프레임워크 관례를 거슬러 강제하지 않는다.
+Next.js(app/ 라우팅), Rails(MVC 규칙) 등 **프레임워크가 구조를 강제하면 그것을 우선** 따르고, 그 관례 **안에서** feature-first 원칙(colocation/단일 경계/기능 간 격리)을 적용한다. 프레임워크 관례를 거슬러 강제하지 않는다.
 '@
 
 # ── Skills: lean-code ─────────────────────────────────────────────────────────
@@ -5419,7 +5551,7 @@ description: LLM coding anti-pattern reference. Enforcement lives in CLAUDE.md/A
 ### 3. VERIFY BEFORE IMPLEMENTING
 구현 전 먼저 파악.
 - 기존 코드 패턴/의존성 먼저 읽기
-- .claude/codemap/_index.md로 관련 파일 위치 먼저 확인
+- 관련 파일 위치는 검색으로 먼저 찾는다. 검색이 헤매거나 그 영역을 처음 고칠 때는 codemap leaf를 본다 (.claude/skills/codemap/SKILL.md)
 - 가정으로 시작하지 않음
 
 ### 4. CONFIRM SCOPE WHEN UNCERTAIN
@@ -5542,7 +5674,7 @@ Q3 [{차원}]: {질문}
 중단하려면 "중단"을 입력하세요.
 
 ## 구현 계획 작성 원칙
-- .claude/codemap/_index.md 확인 후 실제 파일 경로 사용
+- 검색(헤매면 codemap leaf)으로 확인한 실제 파일 경로 사용
 - lean-code 원칙 적용: 요청된 것만, 최소 범위
 - 각 단계에 검증 방법 명시 (프로젝트 Commands의 Analyze / Test 등)
 - 전제 섹션에 불확실한 가정 명시
@@ -5608,10 +5740,11 @@ description: Cross-agent state transfer. Use when handing work to another agent 
    - handoff: .claude/pawpad/handoffs/{snapshot 경로}
    - owner: 현재 그대로 유지 (송신자 = 현재 owner)
    - updated: YYYY-MM-DD HH:MM
-6. codemap 갱신 (Phase B면 features leaf + _root.md HOT, Phase A면 _index.md — 규칙: .claude/skills/codemap/SKILL.md):
-   - 이번 작업에서 만들거나 옮긴 심볼 반영 + HOT 최신화 (해당 없으면 "codemap skip" 선언)
+6. codemap 갱신 (Phase B면 features leaf, Phase A면 _index.md — 규칙: .claude/skills/codemap/SKILL.md):
+   - 이번 작업에서 생긴 새 영역·옮기거나 지운 파일·새 주의사항 반영 (해당 없으면 "codemap skip" 선언)
+   - 건드린 leaf의 src: 경로 존재 확인
    - 건드린 codemap 파일 byte 수 점검 — cap(_root.md 2048 / _index.md 30720 / 그외 4096) 초과 시 분할 후 인계
-   - 인수 agent는 새 세션이라, codemap이 구본이면 심볼을 못 찾고 소스를 통째로 뒤진다.
+   - 인수 agent는 새 세션이다. 이번에 겪은 주의사항이 leaf에 없으면 같은 실수를 반복한다.
 7. context-saver 실행 (.ctxdb/L2 저장 + INDEX.md AGENT SYNC 갱신):
    - snapshot은 이 작업 한 건의 인계장이고, ctxdb는 인수 agent가 **키워드로 과거를 부르는 경로**다. 둘은 대체재가 아니다.
    - "snapshot에 다 썼으니 생략"은 안 된다 — 인수 agent의 ON START는 snapshot을 읽기 전에 ctxdb부터 탄다.
@@ -5702,9 +5835,9 @@ LLM 자체 측정 불가. agent가 다음 신호로 추정:
    - 완료/미완 정리 — 완료(✅) 작업항목은 최근 세션분만 lane 유지, 이전 것은 .claude/pawpad/verifications/{feature-id}-tasklog.md로 이월(HYBRID Completed Task Log). 검증근거도 동일(HYBRID Verification Evidence).
    - 다음 단계 명시
    - 수정 중 파일 목록
-2. codemap 갱신 (Phase B면 features leaf + _root.md HOT, Phase A면 _index.md — 규칙: .claude/skills/codemap/SKILL.md):
-   - 신규 심볼 추가
-   - HOT 섹션 최신화 (3~5개·각 1줄. 밀려난 항목 처리는 codemap 스킬 HOT 규율)
+2. codemap 갱신 (Phase B면 features leaf, Phase A면 _index.md — 규칙: .claude/skills/codemap/SKILL.md):
+   - 새 영역·파일 이동/개명/삭제·새 주의사항이 있을 때만 leaf를 고친다 (없으면 "codemap skip")
+   - 건드린 leaf의 src: 경로 존재 확인
    - 건드린 codemap 파일 byte 수 점검 — cap(_root.md 2048 / _index.md 30720 / 그외 4096) 초과 시 분할. 훅이 돌지 않는 환경에서는 이 점검이 유일한 집행이다.
 3. context-saver 실행 (.ctxdb/L2 저장 + INDEX.md AGENT SYNC 갱신):
    - lane/codemap만 갱신하고 ctxdb를 빼면 다음 세션이 **키워드로 이 작업을 찾지 못한다**(checkpoint 목적 자체가 무효).
@@ -5750,16 +5883,16 @@ While grilling, sharpen the conversation:
 - Cross-reference with code — 사용자가 동작을 설명하면 코드와 일치하는지 확인하고, 모순을 즉시 표면화한다. "코드는 Order 전체를 취소하는데 방금 부분 취소가 가능하다고 했다 — 어느 게 맞나?"
 "@
 
-# brainstorming: grill-me 단계 동거 설치 (v2.45 신규, 발산+누락 스윕+스코프 게이트 — stepTotal 불변, v2.43 task-done 선례)
+# brainstorming: grill-me 단계 동거 설치 (v2.45 신규, 발산+누락 점검+스코프 게이트 — stepTotal 불변, v2.43 task-done 선례)
 Write-FileContent ".claude\skills\brainstorming\SKILL.md" -NoBom @'
 ---
 name: brainstorming
 description: Idea expansion gate. Use before clarity to turn a vague idea or draft planning doc into a complete feature list - divergent direction exploration, omission sweep (adjacent features + non-happy-path checklist), and MoSCoW scope gate.
 ---
-# Brainstorming Skill - 발산 + 누락 스윕 + 스코프 게이트
+# Brainstorming Skill - 발산 + 누락 점검 + 스코프 게이트
 
 ## 목적
-막연한 아이디어 또는 초안 기획문서를 받아 ①방향 발산·확정(**사용자와 최대 3라운드 왕복**) ②기능 누락 스윕 ③후보 확정 + MoSCoW 스코프 확정까지 수행, clarity로 넘길 "완전한 기능 후보 목록"을 만든다. 구현 후반 기능 추가/삭제 churn(누락형)을 기획 단계에서 차단.
+막연한 아이디어 또는 초안 기획문서를 받아 ①방향 발산·확정(**사용자와 최대 3라운드 왕복**) ②기능 누락 점검 ③후보 확정 + MoSCoW 스코프 확정까지 수행, clarity로 넘길 "완전한 기능 후보 목록"을 만든다. 구현 후반 기능 추가/삭제 churn(누락형)을 기획 단계에서 차단.
 
 **이 스킬은 1패스 통과 게이트가 아니라 왕복 도구다.** 사용자가 아이디어를 더하고 빼는 라운드를 거쳐 최종안을 도출하는 것이 목적이며, 질문 없이 결과만 내고 종료하면 이 스킬을 쓴 의미가 없다.
 
@@ -5767,7 +5900,7 @@ description: Idea expansion gate. Use before clarity to turn a vague idea or dra
 /brainstorming {막연한 아이디어 | 기획문서.md 경로}
 - 인수 없으면 "아이디어 또는 기획문서 경로를 입력하세요:" 프롬프트
 - 파이프라인 위치: **brainstorming → clarity → grill-me → to-prd → mockup** (clarity 이전 단계)
-- **사용자 명시 호출은 그 자체가 발산 요청** — 입력이 구체적이어도 스윕 직행 금지 (진입 판정 참조)
+- **사용자 명시 호출은 그 자체가 발산 요청** — 입력이 구체적이어도 누락 점검 직행 금지 (진입 판정 참조)
 
 ## 진입 판정 (호출 경로 우선, 방향 확정도는 그다음)
 **호출 경로가 1순위 신호다.** 사용자가 `/brainstorming`을 직접 친 것 자체가 "발산하고 싶다"는 요청이다 — 입력이 아무리 구체적이어도 발산을 건너뛰지 않는다.
@@ -5782,13 +5915,13 @@ description: Idea expansion gate. Use before clarity to turn a vague idea or dra
 2. 누구에게 (대상 사용자)
 3. 왜 (해결하는 문제/가치)
 
-- 3요소 모두 명시 → **[스윕 단계] 직행**
+- 3요소 모두 명시 → **[누락 점검 단계] 직행**
 - 하나라도 누락 → **[발산 단계]부터**
 
-명시 호출인데 3요소가 이미 다 있으면 → 발산을 **축약 1라운드**로 (재진술 + "이 방향에서 더할/뺄 것" 확인 1회) 돌고 스윕으로.
+명시 호출인데 3요소가 이미 다 있으면 → 발산을 **축약 1라운드**로 (재진술 + "이 방향에서 더할/뺄 것" 확인 1회) 돌고 누락 점검으로.
 
-판정 결과 1줄 선언 후 진행: `진입 판정: {발산|축약발산|스윕} — {근거 1줄}`
-사용자 오버라이드 허용 ("발산부터" / "스윕부터" 입력 시 그 단계로).
+판정 결과 1줄 선언 후 진행: `진입 판정: {발산|축약발산|누락 점검} — {근거 1줄}`
+사용자 오버라이드 허용 ("발산부터" / "누락 점검부터" 입력 시 그 단계로).
 
 ## 1단계: 발산 (최대 3라운드)
 아이디어를 **주고받으며 다듬는 구간**이다. 1패스로 끝내지 않는다.
@@ -5796,22 +5929,22 @@ description: Idea expansion gate. Use before clarity to turn a vague idea or dra
 매 라운드:
 1. (r1만) 입력의 핵심을 1줄로 재진술 (오해 조기 노출)
 2. 방향/아이디어 후보 2-3개 제시 — 각 트레이드오프 1줄 이상 + **추천 정확히 1개** (clarity 접근법 게이트와 동일 원칙: 가짜 대안 금지, 자명 단일이면 후보 생략·확인만. 4개 이상 발산되면 추천 근거로 상위 3개 shortlist 후 질문 — Codex 질문 도구 최대 3옵션 계약)
-3. AskUserQuestion(체크박스)로 선택 수신 — 추천 첫 배치 + "(추천)" 라벨 + **마지막 옵션은 항상 "이대로 확정, 스윕으로"**
+3. AskUserQuestion(체크박스)로 선택 수신 — 추천 첫 배치 + "(추천)" 라벨 + **마지막 옵션은 항상 "이대로 확정, 누락 점검으로"**
 4. 사용자 입력(선택 또는 Other 자유입력)을 반영해 방향을 갱신 → 다음 라운드
 
 **종료 조건 (셋 중 하나)**:
-- 사용자가 "확정 / 더 없음 / 스윕으로"를 선택
+- 사용자가 "확정 / 더 없음 / 누락 점검으로"를 선택
 - 직전 라운드 대비 **변경 0** (수렴)
 - **r3 도달** — 발산은 확장이 아니라 수렴이 목적이라 clarity(5)보다 짧다
 
-종료 시 확정 방향의 3요소 요약 출력 → 스윕 단계 진행.
+종료 시 확정 방향의 3요소 요약 출력 → 누락 점검 단계 진행.
 
 원칙: 발산은 방향·아이디어 탐색까지만. 세부 사양·구현 방식 파고들기 금지 (clarity/grill-me 영역 침범).
 
-## 2단계: 스윕 (누락 감사)
+## 2단계: 누락 점검
 확정된 방향 기준. 두 축을 순서대로.
 
-### 2a. 인접기능 스윕
+### 2a. 인접기능 점검
 핵심 기능에서 한 홉 거리의 기능 나열:
 - 사용자 여정 전/후 단계 (진입 경로, 완료 후 행동)
 - 관리자/운영자 관점 기능
@@ -5832,9 +5965,9 @@ description: Idea expansion gate. Use before clarity to turn a vague idea or dra
 | 설정·개인화 | 사용자별로 달라져야 하는 것은? |
 | 운영·관측 | 운영자가 상태를 확인/개입할 수단은? |
 
-체크리스트 8축 초과 확장 금지 (비대해지면 안 쓰게 됨 — lean).
+체크리스트 8축 초과 확장 금지 (길어지면 안 쓰게 됨 — lean).
 
-### 2c. 후보 확정 게이트 (스윕 종료 시 필수 1회)
+### 2c. 후보 확정 게이트 (누락 점검 종료 시 필수 1회)
 수집된 후보 전량을 목록으로 제시하고 **AskUserQuestion `multiSelect: true`로 채택 여부를 받는다.** agent가 혼자 분류를 끝내고 다음 단계로 넘어가지 않는다.
 - 옵션 = 후보 (추천 채택분 먼저, 라벨 끝 "(추천)"). 도구 상한(옵션 4)을 넘으면 **판단이 갈리는 후보 우선**으로 질문을 나눠 던진다
 - 사용자가 Other로 **새 아이디어를 추가**할 수 있음을 1줄로 안내 — 실측상 아이디어 추가는 이 경로로 들어온다
@@ -5857,12 +5990,12 @@ description: Idea expansion gate. Use before clarity to turn a vague idea or dra
 
 ## 종료 & 체이닝
 - 종결 시 /clarity 1회 추천 (CLAUDE.md/AGENTS.md 자동제안 규칙, 설치된 스킬만)
-- Active Skills 첨자: `brainstorming r{n}/3` (발산 라운드) / `brainstorming sweep` (스윕·후보게이트·스코프)
+- Active Skills 단계 표시: `brainstorming r{n}/3` (발산 라운드) / `brainstorming sweep` (누락 점검·후보게이트·스코프)
 
 ## 원칙
 - 추천 1개 필수·가짜 대안 금지 (clarity 대안 제시 원칙 준수)
 - 선택지 질문은 AskUserQuestion(체크박스) — 추천 첫 배치 + "(추천)"
-- 스윕은 후보 나열이 목적 — 채택 여부는 2c 후보 게이트와 3단계 스코프 게이트에서 결정 (스윕 중 즉석 탈락 금지)
+- 누락 점검은 후보 나열이 목적 — 채택 여부는 2c 후보 게이트와 3단계 스코프 게이트에서 결정 (누락 점검 중 즉석 탈락 금지)
 - 발산 생략은 **자동 추천 경로**에서 구체화된 문서를 받았을 때만 (마찰 최소, clarity 외부 문서 모드와 동일 정신). **명시 호출에는 적용하지 않는다** — 스킬 이름을 부른 것이 이미 발산 요청이다
 '@
 
@@ -6179,7 +6312,7 @@ design 통과 후 spec 필요 시 **to-prd와 동일한 PawPad 등록 절차** �
 - clarity : 요청 모호도(기능 정의) 게이트 — design 앞 단계.
 - grill-me : 설계 의사결정 심문 — 큰 화면/플로우 설계 시 병행.
 - design : 원형·토큰·레이아웃·상태·일관성 게이트 — 화면 구현 직전.
-- mockup : PRD-tree 시각 투영(단일 HTML) — hi-fi는 design 토큰 재사용. 신규 토큰 임의 도입 금지(design 절차 경유).
+- mockup : PRD-tree 시각화(단일 HTML) — hi-fi는 design 토큰 재사용. 신규 토큰 임의 도입 금지(design 절차 경유).
 '@
 
 # -- Skills: design references (원형 카드·토큰 시작안·체크리스트, on-demand read) --
@@ -6802,13 +6935,13 @@ Step-Begin "skill: mockup"
 Write-FileContent ".claude\skills\mockup\SKILL.md" -NoBom @'
 ---
 name: mockup
-description: PRD-tree를 단일 HTML 목업으로 투영하는 기획 시각화 게이트. 기능이 어느 메뉴/화면에 위치하는지 코딩 전에 시각 확인하고, Feature ID로 PRD-tree와 동기 상태를 추적(drift 경고)한다. 와이어프레임(lo-fi)/디자인반영(hi-fi) 선택. PRD/PRD-tree 갱신 후 또는 사용자가 "목업"/"mockup"/"화면 시안"을 언급할 때 사용.
+description: PRD-tree를 단일 HTML 목업으로 옮겨 그리는 기획 시각화 게이트. 기능이 어느 메뉴/화면에 위치하는지 코딩 전에 시각 확인하고, Feature ID로 PRD-tree와 동기 상태를 추적(drift 경고)한다. 와이어프레임(lo-fi)/디자인반영(hi-fi) 선택. PRD/PRD-tree 갱신 후 또는 사용자가 "목업"/"mockup"/"화면 시안"을 언급할 때 사용.
 ---
 
 # Mockup Skill - 기획 목업 게이트 (단일 HTML)
 
 ## 목적
-기획 단계 산출물(PRD-tree)을 **단일 HTML 목업**으로 투영한다.
+기획 단계 산출물(PRD-tree)을 **단일 HTML 목업**으로 옮겨 그린다.
 - "지금 어떤 기능이 기획됐고, 어느 메뉴/화면에 위치하는지"를 코딩 전에 시각 확인 → 기획 단계에서 수정 → 코딩 재작업 방지.
 - 비개발자도 브라우저로 바로 확인(전달 가능).
 - 각 화면을 Feature ID로 태깅해 PRD-tree와 동기 상태 추적.
@@ -6816,7 +6949,7 @@ description: PRD-tree를 단일 HTML 목업으로 투영하는 기획 시각화 
 clarity/design과의 관계:
 - clarity : 요청 모호도(기능 정의) 게이트.
 - design  : 토큰/레이아웃/원칙 게이트 (hi-fi 목업은 design 토큰 재사용).
-- mockup  : PRD-tree → 화면 구조 시각 투영 + 트리 동기 게이트.
+- mockup  : PRD-tree → 화면 구조 시각화 + 트리 동기 게이트.
 
 ## 성격
 Instruction skill. PowerShell command 아님. agent가 절차를 따라 HTML을 생성한다.
@@ -6829,8 +6962,8 @@ Instruction skill. PowerShell command 아님. agent가 절차를 따라 HTML을 
 - fidelity 인자 생략 시 기본 lo-fi.
 
 ## 산출물
-- 위치: `src/mockups/{feature-id}-mockup.html` (PRD/PRD-tree와 같은 src/ 아래 응집)
-- 형식: 단일 HTML. 화면당 섹션 + 화면 간 앵커 클릭 이동.
+- 위치: `src/mockups/{feature-id}-mockup.html` (PRD/PRD-tree와 같은 src/ 아래에 둠)
+- 형식: 단일 HTML. 화면당 섹션 + 화면 간 링크 클릭 이동.
 - 단일 fidelity/파일 (lo·hi 동시 내장 토글 금지 — 동기 부담).
 
 ## fidelity 2단계
@@ -6849,7 +6982,7 @@ Instruction skill. PowerShell command 아님. agent가 절차를 따라 HTML을 
 - 화면이 속한 메뉴/내비 위치를 시각적으로 표현(탭바/사이드 등 PRD-tree 계층 반영).
 
 ## 동기화 = 단방향 (PRD-tree = source of truth)
-- PRD-tree가 단일 진실원. 목업은 트리의 시각 투영.
+- PRD-tree가 단일 진실원. 목업은 트리를 화면으로 옮겨 그린 것.
 - 기획 변경은 **PRD-tree(인덱스) + 해당 src/prd/{area}.md를 먼저 수정**하고 목업 재생성. 코드+문서 원자적 갱신 규율 준수.
 - 목업에서 직접 고친 내용을 트리로 역반영하지 않음(SoT 이원화 금지).
 
@@ -6878,14 +7011,14 @@ drift 검사: {일치 N개}
 - 뷰어 데이터 비종속(HTML에 데이터 안 박음·렌더 엔진 고정) → PRD/명세 변경 시 agent는 **JSON만 수정**(HTML 불변 → 토큰 절감). 렌더: 기능명세서=CSS 트리(그룹──트렁크┬─leaf), 메뉴구성도(구 유저플로우)=계층 트리+드래그앤드랍(순서·위치 재배치 저장), 와이어=디바이스 프레임+컴포넌트 lo-fi(mobile/web).
 - **존재=대상**: JSON에 남은 항목 = 설계/개발 대상. 삭제=제외(별도 승인 없음). 사용자 액션 = 수정/삭제/추가만.
 - **상태(예정/진행중/완료)**: 개발 진행 가시화 전용 — agent가 구현하며 status 갱신, 사용자 편집 X.
-- **context 규율(중요)**: `src/viewer/*.json`은 ON START/resume **자동 로드 금지** — 기획/구현 작업 시점에만 해당 파일 on-demand read(초기 기획 강화로 후속 수정 최소화, context 비대화 방지).
+- **context 규율(중요)**: `src/viewer/*.json`은 ON START/resume **자동 로드 금지** — 기획/구현 작업 시점에만 해당 파일 on-demand read(초기 기획 강화로 후속 수정 최소화, context 낭비 방지).
 - 반영: 사용자 저장 후 `/viewer-apply`가 JSON 읽어 spec 동기(남은 항목→spec 생성/갱신, 삭제 항목→spec 제거/아카이브).
 
 ## 선택지 질문 규칙
 대상 화면·fidelity 등 선택지가 있는 질문은 **AskUserQuestion(체크박스)** 로 받는다. 자유서술·수치 입력은 텍스트.
 
 ## 원칙
-- 정적 화면 투영만. 실제 클릭 로직/상태/인터랙션 비범위(화면 간 앵커 이동만).
+- 정적 화면 표시만. 실제 클릭 로직/상태/인터랙션 비범위(화면 간 링크 이동만).
 - lean-code 적용: 요청 화면만, 과한 연출 금지.
 - 신규 디자인 토큰 임의 정의 금지(design 절차 경유).
 - 산출물은 기획물 → 코드 아님. 구현은 별도 단계.
@@ -7770,7 +7903,7 @@ Instruction skill. agent가 JSON read 후 spec/lane 동기. 삭제 반영(spec �
 
 ## 입력 (고정명, on-demand)
 `src/viewer/prd.json` · `fts.json`(기능그룹→스팩) · `userflow.json`(메뉴 계층 트리 `{root,tree:[{id,label,feature?,tab?,children?}]}`) · `wire.json`(화면별 `{frame,components:[{type,...}]}`).
-**ON START/resume 자동 로드 금지** — 이 스킬 실행 시점에만 read(기획 강화·context 비대화 방지).
+**ON START/resume 자동 로드 금지** — 이 스킬 실행 시점에만 read(기획 강화·context 낭비 방지).
 
 ## 동기 절차
 1. 4 JSON read. `fts.json`의 스팩 노드 = 설계/개발 단위, `prd.json` = 요구 문단, `userflow`/`wire` = 흐름·화면.
@@ -8312,20 +8445,21 @@ TEMPLATE.md 참조.
 Step-Begin "codemap index"
 Write-FileContent ".claude\codemap\_index.md" @"
 <!-- .claude/codemap/_index.md -->
-<!-- Format: domain:symbol    file_path    핵심시그니처: 역할(1줄) -->
-<!-- 목적: 파일 안 열고 위치+시그니처+역할 파악 (토큰 절약). 핵심 심볼만 상세. -->
+<!-- Format: 영역마다 블록 — "## {영역}" 아래 src: / 증상: / 주의사항: 3줄 (skill leaf 규격). 심볼 표(domain:symbol  file_path  역할)는 선택 -->
+<!-- 목적: 검색이 막힐 때의 길잡이 + 소스에 없는 주의사항 기록. 검색 먼저, 조회는 조건부 (skill 참조). -->
 <!-- 성장: flat(~30KB/~80 이하) | trim-router(초과): _root.md+keywords.md+features/{id}.md, cap root2KB·그외4KB (skill 성장전략 참조) -->
 <!-- 추가: 누구나 / 수정·삭제: lane owner만 -->
 
 # MAP (data flow / 한눈 조망)
 (주요 모듈 흐름. 예: ui --입력--> core --결과--> render)
 
-# HOT (최근 접근 3~5개)
-(없음)
-
 # INDEX
 pawpad:codebaseMap  .claude/pawpad/codebase/  7축 고수준 코드베이스 맵(ARCH/STRUCT/CONV/TEST/CONCERNS + opt STACK/INTEG); digest .ctxdb/L2/codebase-map-current.md; skill .claude/skills/codebase-map
-(구현 시작 후: domain:symbol  file  시그니처: 역할)
+(구현 시작 후, 영역이 생길 때마다:)
+(## {영역})
+(src: {파일 경로} [{기준 심볼}])
+(증상: {사용자가 쓰는 말 5~8개})
+(주의사항: 겪으면 채운다)
 "@
 
 # ── HYBRID.md ─────────────────────────────────────────────────────────────────
@@ -8374,7 +8508,7 @@ hook 미신뢰/비활성 시 agent가 SKILL.md를 따라 수동으로 파일을 
 
 1. Context 50-60% 도달 추정 -> agent가 /checkpoint 절차 수행
 2. lane 파일 (.claude/pawpad/wip/{feature}.md) 갱신
-3. codemap/_index.md 갱신 (신규 심볼)
+3. codemap 갱신 (해당 시만 — 새 영역·파일 이동/개명/삭제·새 주의사항. 규칙: codemap 스킬)
 4. agent가 /handoff {to-agent} {feature} {reason} 절차 수행:
    - snapshot 작성: .claude/pawpad/handoffs/YYYY-MM-DD_HHMM_from_to_feature.md
    - _wip.md Active Lanes에 state=HANDOFF_TO_* + handoff 필드 추가
@@ -8505,7 +8639,7 @@ snapshot 파일 경로는 같은 lane의 handoff 필드에 기록 (HANDOFF_TO_* 
 
 ## Verification Evidence
 
-lane "## Verification Evidence" 섹션은 검증 근거(테스트/분석/리뷰 결과)를 기록한다. 무제한 누적 시 lane 파일이 비대해져 매 세션 ON START 로드 비용이 커지므로 경량 유지한다.
+lane "## Verification Evidence" 섹션은 검증 근거(테스트/분석/리뷰 결과)를 기록한다. 무제한 누적 시 lane 파일이 커져 매 세션 ON START 로드 비용이 커지므로 경량 유지한다.
 
 규칙:
 1. lane 본문에는 최근 2건만 유지.
@@ -8702,7 +8836,7 @@ $tmplSkillsManifest = @'
 |------|------|------|
 | **resume** | `.claude/skills/resume/` | WIP 상태 관리, 세션 재개(ON START) 프로토콜 + Lane 신뢰성 게이트(stale lane 감지) |
 | **task-done** | `.claude/skills/task-done/` | 작업 종결 게이트 (ON TASK DONE 체크리스트 강제: lane→done 이관+_wip 제거+_meta+tasklog+codemap+ctxdb 저장+commit) |
-| **codemap** | `.claude/skills/codemap/` | 심볼 위치 레지스트리, owner 분리 권한 |
+| **codemap** | `.claude/skills/codemap/` | 검색이 막힐 때의 길잡이 + 주의사항 기록 (검색 먼저, 조건부 조회), owner 분리 권한 |
 | **codebase-map** | `.claude/skills/codebase-map/` | 7축 고수준 코드베이스 맵(아키텍처/구조/관례/관심사), digest-only 주입 |
 | **caveman** | `.claude/skills/caveman/` | 압축 통신 모드 (참조). 실제 강제는 CLAUDE.md/AGENTS.md `Response Style` |
 | **lean-code** | `.claude/skills/lean-code/` | LLM 코딩 안티패턴 (참조, 구 karpathy). 실제 강제는 CLAUDE.md/AGENTS.md `Coding Principles` |
@@ -8719,7 +8853,7 @@ $tmplSkillsManifest = @'
 |------|------|------|
 | **handoff** | `.claude/skills/handoff/` | 세션/에이전트 인수인계 (PawPad snapshot + owner transfer) |
 | **checkpoint** | `.claude/skills/checkpoint/` | 컨텍스트 60% 롤오버 게이트 (상태 보존) |
-| **brainstorming** | `.claude/skills/brainstorming/` | 아이디어 발산 게이트 (방향 발산 + 누락 스윕[인접기능·비해피패스 8축] + MoSCoW 스코프 확정, clarity 이전 단계) |
+| **brainstorming** | `.claude/skills/brainstorming/` | 아이디어 발산 게이트 (방향 발산 + 누락 점검[인접기능·비해피패스 8축] + MoSCoW 스코프 확정, clarity 이전 단계) |
 | **grill-me** | `.claude/skills/grill-me/` | 계획/설계 스트레스 테스트 (재귀적 질문 + 용어 canonical 좁힘 + 코드 모순 표면화) |
 | **to-prd** | `.claude/skills/to-prd/` | 대화 → PRD (`.claude/pawpad/specs/` 저장 + SPEC_READY) |
 | **mockup** | `.claude/skills/mockup/` | PRD-tree→단일 HTML 목업 시각화 (lo/hi-fi, Feature ID 태깅 + drift 경고) |
@@ -8747,7 +8881,7 @@ $tmplSkillsManifest = @'
 
 ### 협업/기획
 ```
-/brainstorming   # 아이디어 발산 + 누락 스윕 + 스코프 확정 (clarity 이전 단계)
+/brainstorming   # 아이디어 발산 + 누락 점검 + 스코프 확정 (clarity 이전 단계)
 /grill-me        # 설계 스트레스 테스트 (용어 좁힘·코드 모순 표면화 포함)
 /to-prd          # 대화 → PRD + SPEC_READY 등록
 /checkpoint      # 60% 컨텍스트 정리
@@ -9031,7 +9165,7 @@ if (($script:bundleMode -eq 'custom') -or $bpAsym) {
     # 1) 미선택 스킬 디렉토리 제거 (표면별 집합)
     foreach ($s in $bpRemoveC) { $d = Join-Path $root2 (Join-Path '.claude\skills' $s); if (Test-Path $d) { Remove-Item $d -Recurse -Force -ErrorAction SilentlyContinue } }
     foreach ($s in $bpRemoveX) { $d = Join-Path $root2 (Join-Path '.agents\skills' $s); if (Test-Path $d) { Remove-Item $d -Recurse -Force -ErrorAction SilentlyContinue } }
-    # 2) config.json skills 배열 동기 (Codex 표면 기준)
+    # 2) config.json skills 배열 동기 (Codex용 파일 기준)
     $cfgP = Join-Path $root2 '.codex\config.json'
     if (Test-Path $cfgP) {
         $cfg = [System.IO.File]::ReadAllText($cfgP, $utf8nb)
@@ -9103,7 +9237,7 @@ if ($failed -eq 0) {
         Write-Host "  - Stack 프리셋: $Stack (flutter|node|python|wpf|tauri|electron|avalonia|generic 중 -Stack로 선택)" -ForegroundColor Cyan
         Write-Host "  - 크로스플랫폼 hook: Windows=.ps1 / Unix=.sh (설치 OS 자동 선택)" -ForegroundColor Cyan
         Write-Host "  - statusLine: Claude Code 매 턴 컨텍스트 윈도우 사용량(%) 표시" -ForegroundColor Cyan
-        Write-Host "  - codemap: 위치+시그니처+역할 1줄 + MAP 조망 (파일 안 열고 파악)" -ForegroundColor Cyan
+        Write-Host "  - codemap: 검색이 막힐 때의 길잡이 + 주의사항 기록 + MAP 조망 (검색 먼저, 조회는 조건부)" -ForegroundColor Cyan
         Write-Host "  - .ctxdb 키워드 depth DB + context-saver 키워드 자동 갱신" -ForegroundColor Cyan
         Write-Host "  - codebase-map: 7축 고수준 맵(.claude/pawpad/codebase/) + digest-only 주입" -ForegroundColor Cyan
         Write-Host "  - security-check: 보안 검증 게이트(secrets/취약점/설정/PawPad, 🔴=BLOCK, DoD#8)" -ForegroundColor Cyan
@@ -9117,11 +9251,11 @@ if ($failed -eq 0) {
         Write-Host "  - codemap trim-router: 대규모 codemap을 _root+keywords+features leaf로 분할(cap 2/4KB, 통째읽기 사고 봉쇄, grep 성능 불변)" -ForegroundColor Cyan
         Write-Host "  - analyze hook fix (v2.40 보강): -File 스크립트(analyze.ps1/analyze.sh) 실행 → Git Bash 디스패치 호환 + 진단 결과 stderr 재전송(exit 2/0 정규화)로 agent가 실제 분석 내용 수신" -ForegroundColor Cyan
         Write-Host "  - retrieval 표시 (v2.41): 응답 내 📡 Retrieval 선언(codemap/ctxdb hit·full-scan 사유) + statusline 📡 cmap/ctx/src 실측 카운터(read-track hook) — 전체 소스 스캔 토큰 사고 관측" -ForegroundColor Cyan
-        Write-Host "  - retrieval routing 가시화 (v2.42): statusline 📡 codemap N% (경유율=routed/full-scan, 선언 기반) + src 직접읽기 볼륨(백스톱) — codemap 경유 vs 풀스캔 한눈 관측, 모델 토큰 0" -ForegroundColor Cyan
-        Write-Host "  - task-done 종결 게이트 (v2.43): 신규 task-done 스킬(ON TASK DONE 체크리스트 강제) + Stop hook lane-close 백스톱(완료 선언+lane 잔존 시 1회 리마인더) + resume Lane 신뢰성 게이트(stale lane 감지·실코드 대조) — 완료 lane 미이관→재작업 사고 방지" -ForegroundColor Cyan
+        Write-Host "  - retrieval routing 가시화 (v2.42): statusline 📡 codemap N% (경유율=routed/full-scan, 선언 기반) + src 직접읽기 볼륨(보조 지표) — codemap 경유 vs 풀스캔 한눈 관측, 모델 토큰 0" -ForegroundColor Cyan
+        Write-Host "  - task-done 종결 게이트 (v2.43): 신규 task-done 스킬(ON TASK DONE 체크리스트 강제) + Stop hook의 lane 종료 최종 점검(완료 선언+lane 잔존 시 1회 리마인더) + resume Lane 신뢰성 게이트(stale lane 감지·실코드 대조) — 완료 lane 미이관→재작업 사고 방지" -ForegroundColor Cyan
         Write-Host "  - 외부 문서 구현 진입 게이트 (v2.44): md/spec 첨부 구현 요청 시 clarity 채점 의무(PASS=무질문 통과) + design/code-delegate 경계 추천 — 문서 첨부 시 게이트 우회 사고 방지. 선택지 질문 체크박스 전면화(추천 1개 + Other 자유 입력)" -ForegroundColor Cyan
         Write-Host "  - 데스크탑 스택 프리셋 (v2.44): -Stack wpf|tauri|electron|avalonia 추가 (MVVM/IPC 보안 컨벤션 + ADR 포함, 대화형 1~8)" -ForegroundColor Cyan
-        Write-Host "  - brainstorming 스킬 (v2.45): 아이디어 발산 + 누락 스윕(인접기능·비해피패스 8축) + MoSCoW 스코프 게이트 단일 통합 — clarity 이전 단계, 구현 후반 기능 추가/삭제 churn 차단 (prd 번들, 20→21)" -ForegroundColor Cyan
+        Write-Host "  - brainstorming 스킬 (v2.45): 아이디어 발산 + 누락 점검(인접기능·비해피패스 8축) + MoSCoW 스코프 게이트 단일 통합 — clarity 이전 단계, 구현 후반 기능 추가/삭제 churn 차단 (prd 번들, 20→21)" -ForegroundColor Cyan
         Write-Host "  - design 스킬 시각 품질 재설계 (v2.46): 최상위 3원칙(일관성 우선·의도된 방향·anti-slop) + 일관성 5축 스케일(토큰 파생 강제, 임의값 금지) + 정량 체크(radius<=4·컨트롤 높이<=3·spacing 임의값 0) + 2-pass 워크플로우 — 'AI 티=불일치' 차단 (스킬 21 불변)" -ForegroundColor Cyan
         Write-Host "  - codemap 초기 부트스트랩 (v2.47): 기존 코드베이스 도입 시 1회 백필 절차 규격화 — 발동 판정(등록 심볼<10 && 소스>=30이면 코드세션 ON START 1회 제안) + 규모 분기(소스>=40이면 code-delegate 배치 위임, 서브는 staging에 직접 쓰고 4줄 요약만 반환) + 30KB 초과 즉시 trim-router + 검증 게이트(size cap 전수 + 심볼 path:line 실측 대조). Phase B 전환 시 _index.md=라우팅 스텁 규약, step7 _root.md 우선 (스킬 21 불변)" -ForegroundColor Cyan
         Write-Host "  - 설치 배너 로고 교체 (v2.47 Addendum): 손으로 그린 블록문자 발바닥 -> 실제 브랜드 마크(docs/icon.png) 기반 ASCII 변환 — alpha coverage 샘플링(luma cut 0.35)으로 패드의 >_ 프롬프트를 구멍으로 보존, cos(theta) 가로 압축 16프레임 사전 렌더. 설치 시 ESC[24A 커서 되감기로 1회전(2.88s) 후 0도 정착, 비ANSI/-ShowLog/리다이렉트/저창높이는 정지 1장 (버전 불변, 기능 변화 없음)" -ForegroundColor Cyan
@@ -9132,9 +9266,12 @@ if ($failed -eq 0) {
         Write-Host "  - ctxdb 회수 정밀도 (v2.50): INDEX 키워드 셀의 공백을 구분자가 아니라 구(句)로 취급 — `점검 프롬프트`는 통으로 있어야 매칭. 실 프롬프트 122건 리플레이(tests/ctxdb-fpr)로 오탐률 7.4->3.3% / 정밀도 64->80%, 회귀셋 20/20 유지. 상세: docs/CHANGELOG_v2.50.md" -ForegroundColor Cyan
         Write-Host "  - design 스킬 원형 기반 재설계 (v2.51): 최상위 원칙에 위계 정합을 1순위로 추가 — 화면은 3초 안에 지금 상태/다음 행동/기대 결과에 답하고 그 순서가 시각 위계와 일치해야 한다(일관성은 2순위). 절차 4->6단계(제품 원형 분류 -> 의미 기반 토큰 -> 3영역 레이아웃 -> 일관성 5축 -> 상태 전수 12종 -> anti-slop/원칙8/정량6/최악조건10). references/ 3파일 신규(archetypes/tokens/checklists)로 원형 카드 1~2개만 on-demand read. 원형 16종 = 앱/도구 A1~A7 + 게임 G1~G9. 사후보강#1: 게임용 재질(material) 5층 축 + 스킨 분리 + 그래픽 컨셉 게이트(게임이면 컨셉을 사용자에게 물어 확정, 컨셉은 스킨 토큰만 교체). 상세: docs/CHANGELOG_v2.51.md" -ForegroundColor Cyan
         Write-Host "  - device-qa 스킬 신규 (v2.52): 기기 QA 실행 프로토콜 (21->22, qa 번들 = full 전용). 검증 채널 우선순위(자동화 테스트 -> logcat/dumpsys -> 앱 DB -> uiautomator dump -> 축소 스크린샷) + 스크린샷 예산제(세션 8장, 읽기 전 32% 축소) + 셸 규율(자기완결 스니펫/Git Bash 기기경로 // /덤프 원문 금지) + 안전 가드. 근거: 스크린샷 루프로 5시간 한도 소진 실측. 상세: docs/CHANGELOG_v2.52.md" -ForegroundColor Cyan
-        Write-Host "  - Codex 표면 opt-in (v2.53): 기본 설치는 Claude 전용 — AGENTS.md / .agents/skills / .codex/* 는 -WithCodex 지정 시에만 생성. 이미 Codex 산출물이 있는 기존 설치는 자동 감지되어 계속 갱신(사용자 자산 무손실). 스킬 22 불변, Claude 산출물 바이트 불변." -ForegroundColor Cyan
+        Write-Host "  - Codex용 파일 opt-in (v2.53): 기본 설치는 Claude 전용 — AGENTS.md / .agents/skills / .codex/* 는 -WithCodex 지정 시에만 생성. 이미 Codex 산출물이 있는 기존 설치는 자동 감지되어 계속 갱신(사용자 자산 무손실). 스킬 22 불변, Claude 산출물 바이트 불변." -ForegroundColor Cyan
         Write-Host "  - Codex 전용 번들 축 (v2.54): -CodexPreset / -CodexBundles 로 Claude와 Codex에 다른 스킬 세트 설치 (미지정 시 Claude 축 상속 = 종전과 동일). 예: -Preset full -CodexPreset lean -> Claude 22 / Codex 12. codexSel ⊆ claudeSel 강제(초과분 교집합+경고). 번들 선택은 pawpad-config.json에 기록되어 -Upgrade에서 재사용된다." -ForegroundColor Cyan
         Write-Host "  - 세션 시작 비용 / 훅 없는 환경 안전망 (v2.55): INDEX AGENT SYNC 에이전트당 1행 + 8KB 상한, _wip 종결 메모 금지, _meta 1줄 300자 + 8KB(줄 수와 byte 함께). task-done에 ctxdb 저장과 codemap 크기 점검 단계 추가(7 -> 8단계). codemap Phase B 문구 정리 + HOT 넘침 규칙. 스킬 22 불변, 훅 불변. 상세: docs/CHANGELOG_v2.55.md" -ForegroundColor Cyan
+        Write-Host "  - codemap 재설계 (v2.56): 검색 먼저, codemap은 조건부(검색어 없음 / 첫 검색 0건이거나 흩어짐 / 처음 고치기 직전 주의사항 확인). leaf 규격 = src 줄 + 증상 줄 + 주의사항 5줄, leaf를 직접 검색해 2 read 안에 도착. HOT 절 폐지, 갱신은 새 영역/파일 이동/새 주의사항일 때만. Stop 훅 retrieval 차단 해제. 실측상 토큰 절감 장치가 아니라 길잡이 + 주의사항 기록. 상세: docs/CHANGELOG_v2.56.md" -ForegroundColor Cyan
+        Write-Host "  - 쉬운 말 교체 (v2.57): 뜻이 안 잡히는 표현 12개를 바꿨다 (함정 -> 주의사항, 스윕 -> 누락 점검, Codex 표면 -> Codex용 파일 등). 동작 불변. 상세: docs/CHANGELOG_v2.57.md" -ForegroundColor Cyan
+        Write-Host "  - statusline 캐시 모드 (v2.58, opt-in): 환경변수 PAWPAD_CACHE_STATUS=1 이면 캐시 읽기/쓰기 토큰 + TTL 남은 시간 + reset 표시. 상세: docs/CHANGELOG_v2.58.md" -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 22 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review,qa" -ForegroundColor Cyan
@@ -9148,7 +9285,7 @@ if ($failed -eq 0) {
         Write-Host "  - brainstorming skill (v2.45): idea divergence + omission sweep (adjacent features, 8-axis non-happy-path checklist) + MoSCoW scope gate in one skill — pre-clarity stage, cuts late feature add/remove churn (prd bundle, 20->21)" -ForegroundColor Cyan
         Write-Host "  - design skill visual-quality redesign (v2.46): top-3 principles (consistency-first / intentional direction / anti-slop) + 5-axis consistency scales (token-derived values only, no arbitrary values) + quantitative checks (radius<=4, control heights<=3, zero arbitrary spacing) + 2-pass workflow (skills stay 21) | details: docs/CHANGELOG_v2.46.md" -ForegroundColor Cyan
     }
-    # Codex 표면 상태 (v2.53): 기본 Claude 전용 / -WithCodex 설치 / 기존 설치 감지 갱신
+    # Codex용 파일 상태 (v2.53): 기본 Claude 전용 / -WithCodex 설치 / 기존 설치 감지 갱신
     if (-not $script:installCodex) { Write-Host $L.codexOff -ForegroundColor Cyan }
     elseif ($script:codexDetected) { Write-Host $L.codexKept -ForegroundColor Cyan }
     else { Write-Host $L.codexOn -ForegroundColor Cyan }
@@ -9177,7 +9314,7 @@ if (-not $Force -and -not $Upgrade) {
     Write-Host ""
 }
 
-# ── 전역 Codex 스킬 섀도잉 감지 (비파괴 경고, Codex 표면 설치 시에만) ─────────────
+# ── 전역 Codex 스킬 섀도잉 감지 (비파괴 경고, Codex용 파일 설치 시에만) ─────────────
 $globalSkillRoot = Join-Path $env:USERPROFILE ".codex\skills"
 if ($script:installCodex -and (Test-Path $globalSkillRoot)) {
     $localSkillNames = @(Get-ChildItem ".claude\skills" -Directory -ErrorAction SilentlyContinue | ForEach-Object { $_.Name })

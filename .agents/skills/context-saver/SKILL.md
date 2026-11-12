@@ -41,7 +41,7 @@ STEP 4: 키워드 인덱스 갱신 (신규 도메인/심볼 등장 시만)
   이번 작업에서 기존 INDEX/L1에 없는 도메인·핵심 용어가 생겼으면 반영:
   - 신규 도메인: L1/domain-{new}.md 생성(키워드 + 파일/심볼 포인터) + INDEX 키워드->L1 매핑 1행 추가
   - 기존 도메인 새 용어: 해당 L1 키워드 열에 누락된 핵심어만 추가 (중복/유사어 금지)
-  - codemap 연계: 이번에 _index.md에 추가한 신규 심볼의 도메인이 INDEX 키워드로 잡히는지 확인, 누락 시 추가
+  - codemap 연계: 이번에 codemap leaf를 새로 만든 영역이 있으면 그 도메인이 INDEX 키워드로 잡히는지 확인, 누락 시 추가
   - 폭주 방지: INDEX는 도메인당 1행. L1 키워드는 검색용 핵심어만 (심볼 전수나열 금지 = codemap 역할). 변화 없으면 이 STEP 건너뜀.
   - 2음절 등록은 **도메인 고유어만**: 한글 2음절부터 매칭되므로 일반어(문서·작업·확인·내용·정리 등)를 넣으면 무관한 프롬프트가 그 도메인을 끌어온다.
     일반어를 꼭 쓰려면 도메인이 그 말로만 불리는지 확인하고, 아니면 3음절 이상 고유어(예: 배포본·적재큐)로 등록한다.
@@ -67,6 +67,6 @@ STEP 6: 보고
 
 ## 주의
 - 이월(L2->L3->L4)은 확인 없이 진행 가능(무손실·append-only). 도메인 분할만 사용자 확인.
-- codemap(_index.md)과 역할 분리: codemap=심볼 위치(전수, 정밀), ctxdb 키워드=도메인 라우팅(핵심어 소수). 키워드에 심볼 전부 넣지 말 것.
+- codemap과 역할 분리: codemap=영역별 소스 주소 + 주의사항, ctxdb=작업 경위·결정(키워드로 회수). codemap leaf에서 걷어낸 경위 서술은 여기(L2)로 온다. 키워드에 심볼을 넣지 말 것.
 - Decision Placement(.claude/HYBRID.md Decision Placement Matrix): L2는 세션 재개 digest 전용. 지속 결정(arch ADR / spec scope / 거절기록)은 L2에만 묻지 말고 canonical 위치(decisions/arch.md, specs/, decisions/rejected.md)에도 기록.
 

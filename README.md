@@ -8,15 +8,15 @@
   <sub>Agentic Engineering Toolkit</sub>
 </p>
 
-# PawPad — Agentic Engineering Toolkit (v2.55 FROZEN)
+# PawPad — Agentic Engineering Toolkit (v2.58 FROZEN)
 
 Claude Code를 위한 **상태관리 + 토큰절약 하니스** (Codex 하이브리드 협업은 선택).
 하나의 PowerShell 스크립트로 어떤 프로젝트에든 22개 스킬 · PawPad 상태머신 · 양 런타임 자동화 hook · 키워드 컨텍스트 DB · 7축 코드베이스 맵 · 보안 검증 게이트를 설치한다.
 
 > **단일 배포본**: `pawpad-setup.ps1` 하나로 설치한다 (per-agent 변형 없음).
-> **v2.53부터 기본 설치는 Claude 전용** — Codex 표면(`AGENTS.md`, `.agents/skills`, `.codex/*`)은 `-WithCodex`를 줄 때만 생성된다.
-> **v2.54부터는 표면별로 다른 스킬 세트**를 깔 수 있다 — `-CodexPreset` / `-CodexBundles`. 예: `-Preset full -CodexPreset lean` → Claude 22 / Codex 12(Core). 미지정 시 Claude 축을 그대로 상속한다.
-> 이미 Codex 표면이 깔린 기존 설치는 자동 감지되어 스위치 없이도 계속 갱신된다(기존 프로젝트 동작 불변).
+> **v2.53부터 기본 설치는 Claude 전용** — Codex용 파일(`AGENTS.md`, `.agents/skills`, `.codex/*`)은 `-WithCodex`를 줄 때만 생성된다.
+> **v2.54부터는 Claude용·Codex용으로 서로 다른 스킬 세트**를 깔 수 있다 — `-CodexPreset` / `-CodexBundles`. 예: `-Preset full -CodexPreset lean` → Claude 22 / Codex 12(Core). 미지정 시 Claude 축을 그대로 상속한다.
+> 이미 Codex용 파일이 깔린 기존 설치는 자동 감지되어 스위치 없이도 계속 갱신된다(기존 프로젝트 동작 불변).
 > 대상 스택은 프리셋(flutter/node/python/wpf/tauri/electron/avalonia/generic) 선택 — `CLAUDE.md`/`AGENTS.md`의 `<YOUR_*>`만 채우면 어떤 스택에든 적용.
 
 ---
@@ -27,7 +27,7 @@ Claude Code를 위한 **상태관리 + 토큰절약 하니스** (Codex 하이브
 |------|------|
 | 세션이 끊기면 맥락 유실 | **모든 상태를 파일에 저장** (`.claude/pawpad/`) → 새 세션이 읽고 이어감 |
 | 에이전트 전환(Claude↔Codex) 시 인수 누락 | lane owner/state 머신 + handoff snapshot |
-| 심볼 위치를 매번 검색 | `codemap/_index.md` 레지스트리 + 세션시작/키워드 자동 주입 |
+| 검색이 헤매거나, 고치고 나서야 주의사항을 안다 | `codemap` — 영역별 소스 주소 + 주의사항 기록 (검색 먼저, 조회는 조건부) |
 | 낯선 repo 구조 파악에 트리 전체를 읽음 | **codebase-map** 7축 고수준 맵(아키텍처/구조/관례/관심사) + digest-only 주입 |
 | 누적 컨텍스트로 토큰 폭증 | `.ctxdb` **키워드 depth DB** — 매 프롬프트 키워드로 L1≤1/L2≤2만 lazy-load |
 | codemap/저장을 깜빡함 | **Stop hook**이 8턴마다 강제 체크포인트 + **PreCompact hook**이 compaction 직전 저장 유도 |
@@ -41,13 +41,13 @@ Claude Code를 위한 **상태관리 + 토큰절약 하니스** (Codex 하이브
 | 기능 | 효과 | 근거 |
 |------|------|------|
 | **/code-delegate** (코딩 위임) | 동일 작업량 기준 부모 컨텍스트 **~30–40% 절감** + 슬라이스당 **71–93K 토큰을 하위 모델로 오프로드** | ⬤ 실측 4슬라이스 |
-| **codemap** (심볼 레지스트리) | 사고(대형파일 통째읽기·오판·grep 난사) 봉쇄 시 **~48–88% 절감** — 정상 lookup은 중립 | ⬤ 실측 2케이스 |
+| **codemap** (길잡이 + 주의사항 기록) | **토큰 절감 장치가 아니다** — 위치 찾기 사용량은 검색만 쓸 때와 같다(**−2.4% ~ −0.1%**, v2.56 실측: 요청 3 × 모델 2 × 2회). 값은 검색이 헤매는 요청에서 한두 번 만에 도착하는 것과, 고치기 전에 소스에 없는 주의사항을 아는 것. (이전 수치 ~48–88%는 대형 파일 통째읽기 사고 2건을 막았을 때의 값) | ⬤ 실측 |
 | **ctxdb** (키워드 선택 로드) | 세션 시작 컨텍스트 **~89–96% 절감** (실측 로드 8.9KB vs 오리엔테이션 코퍼스 82–208KB) | ⬤ 로드분 실측 |
 | **checkpoint/handoff + ON START** (세션 재개) | 콜드 재개 대비 재오리엔테이션 **~50–80% 절감** + 결정 손실 0 | ◐ 추정 |
 | **caveman** (출력 압축) | 응답 출력 토큰 **~20–40%/턴** | ◐ 추정 |
 | **종합** (중·대형 세션) | 부모 토큰 **~40–60% 절감** + 코딩 본체(71–93K/슬라이스) 격리 | 실측+추정 종합 |
 
-- **정직 고지**: 절감은 대부분 **부모(상위 모델) 컨텍스트** 기준 — 위임 시 총 compute는 더 클 수 있다(효과의 본질 = 고가 모델 컨텍스트 보존 + 사용 한도 연장). codemap 절감은 **조건부**(기대절감 = 사고 확률 × 절감액 — 코드베이스 클수록↑, 작고 라벨 명확한 작업은 ~0). 단일 프로젝트·소표본 실측이다.
+- **정직 고지**: 절감은 대부분 **부모(상위 모델) 컨텍스트** 기준 — 위임 시 총 compute는 더 클 수 있다(효과의 본질 = 고가 모델 컨텍스트 보존 + 사용 한도 연장). codemap은 위치 찾기 토큰을 줄이지 않는다(v2.56 실측 — 위 표). 단일 프로젝트·소표본 실측이다.
 - **정직한 결론**: 작은 프로젝트·단발 세션엔 프로토콜 오버헤드가 더 클 수 있다. 이 툴킷의 체급은 **누적되는 프로젝트 + 다세션 + (선택) 멀티에이전트**. 토큰보다 먼저 얻는 것은 "끊겨도 정확히 이어짐"이다.
 
 ---
@@ -94,12 +94,12 @@ Claude Code를 위한 **상태관리 + 토큰절약 하니스** (Codex 하이브
 # 설치 중 파일 단위 상세 로그 보기 (기본: live 진행 바 1줄 갱신, 파일 로그 숨김)
 .\pawpad-setup.ps1 -ShowLog
 
-# Codex 표면까지 설치 (AGENTS.md + .agents/skills 미러 + .codex/*). 기본은 Claude 전용
+# Codex용 파일까지 설치 (AGENTS.md + .agents/skills 미러 + .codex/*). 기본은 Claude 전용
 .\pawpad-setup.ps1 -Stack generic -WithCodex
 ```
 
 출력에 `Created / Updated / Merged / Skipped / Failed` 요약이 뜬다. `0 failed`면 성공.
-`~/.codex/skills/`에 동일 이름 스킬(전역 섀도잉)이 있으면 경고가 출력된다 (Codex 표면 설치 시에만, 삭제는 안 함).
+`~/.codex/skills/`에 동일 이름 스킬(전역 섀도잉)이 있으면 경고가 출력된다 (Codex용 파일 설치 시에만, 삭제는 안 함).
 
 ### 설치 후 필수 설정
 1. `CLAUDE.md` (Codex 설치 시 `AGENTS.md`도) 의 **Stack · Commands · Boundaries** 를 실제 프로젝트에 맞게 수정
@@ -118,8 +118,8 @@ Claude Code를 위한 **상태관리 + 토큰절약 하니스** (Codex 하이브
 ```
 CLAUDE.md                        # 에이전트 컨텍스트 (Claude). 완료 기준(DoD) 8번 = security-check 보안 게이트 포함
 AGENTS.md                        # 〃 Codex용 미러 — -WithCodex 시에만
-pawpad-setup.ps1     # 단일 설치 스크립트 (FROZEN v2.55, 번들 선택 -Preset/-Bundles + Codex 축 -CodexPreset/-CodexBundles + 안내 언어 -Lang + Codex opt-in -WithCodex, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
-.codex/                          # 아래 Codex 표면 전체는 -WithCodex 시에만 생성
+pawpad-setup.ps1     # 단일 설치 스크립트 (FROZEN v2.58, 번들 선택 -Preset/-Bundles + Codex 축 -CodexPreset/-CodexBundles + 안내 언어 -Lang + Codex opt-in -WithCodex, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
+.codex/                          # 아래 Codex용 파일 전체는 -WithCodex 시에만 생성
 ├── config.json                  # Codex 보조 설정 (skills 22 + context/backup keys)
 ├── config.toml                  # project config layer note
 ├── hooks.json                   # Codex lifecycle hook router (SessionStart/UserPromptSubmit/PreCompact/Stop)
@@ -141,7 +141,7 @@ docs/HOOK_TESTING.md             # hook 회귀 방지 체크리스트 (event/run
 ├── HYBRID.md                    # 협업 프로토콜 (Decision Placement Matrix · Verification Evidence)
 ├── SKILLS_MANIFEST.md           # 스킬 카탈로그 (22)
 ├── skills/{22}/SKILL.md         # 스킬 정의 (no-BOM, --- frontmatter)
-├── codemap/_index.md            # 심볼 위치 레지스트리
+├── codemap/_index.md            # 길잡이 + 주의사항 기록 (검색 먼저, 조건부 조회)
 └── pawpad/
     ├── _wip.md                  # active lane router
     ├── _meta.md                 # 이력 + STACK/SPRINT
@@ -169,8 +169,8 @@ docs/HOOK_TESTING.md             # hook 회귀 방지 체크리스트 (event/run
 | 스킬 | 용도 |
 |------|------|
 | `/resume` | 세션 시작 재개 프로토콜 (HYBRID/_wip/lane/meta/codemap 읽기) + Lane 신뢰성 게이트(stale lane 감지·실코드 대조) |
-| `/task-done` | **작업 종결 게이트** — ON TASK DONE 체크리스트 강제(lane→done 이관+_wip 제거+_meta+tasklog+codemap+ctxdb 저장+commit). "작업/이슈 종료" 자연어 발동, Stop hook lane-close 백스톱과 짝 |
-| `/codemap` | 심볼(클래스/함수/위젯) **위치** 레지스트리, owner 분리 권한 |
+| `/task-done` | **작업 종결 게이트** — ON TASK DONE 체크리스트 강제(lane→done 이관+_wip 제거+_meta+tasklog+codemap+ctxdb 저장+commit). "작업/이슈 종료" 자연어 발동, Stop hook의 lane 종료 최종 점검과 짝 |
+| `/codemap` | 검색이 막힐 때의 **길잡이** + 고치기 전에 볼 **주의사항** 기록 (검색 먼저, 조건부 조회), owner 분리 권한 |
 | `/codebase-map` | **7축 고수준 맵** (아키텍처/구조/관례/테스트/관심사). codemap=위치, codebase-map=구조·관례. digest-only 주입 |
 | `/ctxdb-navigator` | **키워드 depth 컨텍스트 최소 로드** (토큰 절약) |
 | `/context-saver` | 세션 작업을 `.ctxdb/L2`에 저장 + AGENT SYNC 갱신 |
@@ -185,7 +185,7 @@ docs/HOOK_TESTING.md             # hook 회귀 방지 체크리스트 (event/run
 ### Workflow — 협업/기획
 | 스킬 | 용도 |
 |------|------|
-| `/brainstorming` | 아이디어 발산 게이트 — 방향 발산 **최대 3라운드 왕복**(2-3 대안+추천 1개) + 누락 스윕(인접기능·비해피패스 8축) + 후보 확정 게이트 + MoSCoW 스코프 확정(Won't 명시). clarity 이전 단계. **직접 호출하면 입력이 구체적이어도 발산부터**, 자동 추천 경로에서 구체화된 문서를 받았을 때만 스윕 직행 |
+| `/brainstorming` | 아이디어 발산 게이트 — 방향 발산 **최대 3라운드 왕복**(2-3 대안+추천 1개) + 누락 점검(인접기능·비해피패스 8축) + 후보 확정 게이트 + MoSCoW 스코프 확정(Won't 명시). clarity 이전 단계. **직접 호출하면 입력이 구체적이어도 발산부터**, 자동 추천 경로에서 구체화된 문서를 받았을 때만 누락 점검 직행 |
 | `/grill-me` | 계획/설계를 재귀 심문으로 스트레스 테스트 (모호 용어 canonical 좁힘·엣지케이스 시나리오·진술 vs 코드 모순 표면화 포함) |
 | `/to-prd` | 대화 → PRD 변환 → `specs/` 저장 + lane `SPEC_READY` |
 | `/viewer-apply` | 통합 뷰어(spec-viewer)가 저장한 `src/viewer/*.json`을 읽어 스팩 동기 — 남은 항목→spec 생성/갱신, 삭제→제거/아카이브 |
@@ -205,8 +205,8 @@ docs/HOOK_TESTING.md             # hook 회귀 방지 체크리스트 (event/run
 
 ```
 아이디어
-  └ /brainstorming  발산 왕복(r1~r3, 방향 2-3 대안) + 누락 스윕(인접기능·비해피패스 8축) + 후보 확정 + MoSCoW 스코프 확정
-                    막연한 아이디어는 발산부터, 구체화된 기획문서(.md)는 스윕 직행
+  └ /brainstorming  발산 왕복(r1~r3, 방향 2-3 대안) + 누락 점검(인접기능·비해피패스 8축) + 후보 확정 + MoSCoW 스코프 확정
+                    막연한 아이디어는 발산부터, 구체화된 기획문서(.md)는 누락 점검 직행
   └ /clarity        모호도 5차원 스코어 → 임계값까지 재질문 → (접근법 2-3 대안+추천 선택) → 구현계획
   └ /grill-me       설계 결정 재귀 심문 (상호의존·트레이드오프·비가역 결정 정리)
   └ /to-prd         대화 → PRD(specs/) 저장 + lane SPEC_READY 등록
@@ -217,7 +217,7 @@ docs/HOOK_TESTING.md             # hook 회귀 방지 체크리스트 (event/run
 구현
   └ /resume         SPEC_READY lane 인수 (state=WIP)
   └ /code-delegate  (선택) 코딩 단계 위임 — 모델 선택 → 서브에이전트 코딩 → 요약 반환 (부모 컨텍스트·토큰 절감)
-  └ 코딩            /codemap(심볼 위치) · /lean-code(과설계 방지) · /design(화면)
+  └ 코딩            /codemap(길잡이·주의사항) · /lean-code(과설계 방지) · /design(화면)
   └ /security-check 🔴 0건 (DoD 게이트, 코드 변경 시 필수)
   └ /review        (선택) 고위험·배포본 변경이면 다른 세션/에이전트에 문서형 리뷰 요청 → 반영
   └ /task-done      DoD 충족 → 종결 게이트 일괄 (lane wip/done/ 이동 + _meta 기록 + commit)
@@ -260,7 +260,7 @@ agent 교체     → /handoff codex {feature} → (Codex) /resume 인수 (owner 
 - **UserPromptSubmit** (`ctxdb-inject.ps1`): 프롬프트 키워드로 **L1≤1/L2≤2 최소 주입** (같은 세션 재주입 방지 dedupe)
 - **PreCompact** (`pre-compact.ps1`): native compaction 직전 `context-saver` 유도 (Stop 8턴과 중복 가드)
 - **Stop** (`stop-check.ps1`): 8턴마다 `decision:block` 체크포인트 + L2 분할 품질강제
-- **statusLine** (`statusline.ps1`): 매 턴 컨텍스트 사용%(예: `ctx 31% (62k/200k)`)
+- **statusLine** (`statusline.ps1`): 매 턴 컨텍스트 사용%(예: `ctx 31% (62k/200k)`). 환경변수 `PAWPAD_CACHE_STATUS=1`이면 캐시 칸 추가(예: `cache R 96k · W 6k(1h) · ⏳ 59:53`, 캐시가 깨지면 `💥reset`) — 상세 `docs/CHANGELOG_v2.58.md`
 
 **Codex** (`.codex/hooks.json`, `/hooks` trust 후): SessionStart/UserPromptSubmit/PreCompact/Stop 동일 구조를 cwd 상위탐색 self-locating launcher로 실행. 미신뢰/비활성 시 SKILL.md 수동 절차로 graceful degrade.
 
@@ -269,7 +269,7 @@ agent 교체     → /handoff codex {feature} → (Codex) /resume 인수 (owner 
 ## .ctxdb 토큰 절약 (키워드 depth DB) + 3계층 컨텍스트
 
 - `INDEX.md`(키워드→L1) → `L1/domain-*.md`(L2 포인터) → `L2/*.md`(상세)의 3계층. 키워드 매칭으로 **L1≤1/L2≤2만** 로드.
-- **3자 분리**: `codemap`=심볼 위치(저고도) · `codebase-map`=구조/관례(고고도) · `.ctxdb L2`=작업 내러티브/결정
+- **3자 분리**: `codemap`=영역별 소스 주소 + 주의사항(저고도) · `codebase-map`=구조/관례(고고도) · `.ctxdb L2`=작업 내러티브/결정
 - 효과는 조건부: 누적 큰 프로젝트 + 다세션일 때 유효. 작은/단일세션은 오버헤드 — 무지성 적용 금지.
 
 ---
@@ -287,7 +287,7 @@ $j=(Get-Content .claude\settings.json -Raw | ConvertFrom-Json); $j.hooks.PSObjec
 (Get-Content .codex\config.json -Raw | ConvertFrom-Json).skills.Count   # 22
 
 # 스크립트 STATUS
-Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.55 Claude-first ... FROZEN
+Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.58 Claude-first ... FROZEN
 ```
 
 설치 후 첫 작업은 보통 `/clarity` 또는 `/resume`로 시작한다.
@@ -298,11 +298,11 @@ Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.55 Claude-first ... FROZEN
 
 - **처음이면 / 바이브 코딩** → **[`USAGE.md`](USAGE.md)** : 상황별 "이럴 땐 이 스킬" 표 + 흐름 예시 + FAQ
 - **기능 1개 기획→완성→배포** 단계별 워크스루 → **[`GUIDE.md`](GUIDE.md)**
-- 변경 이력: `docs/CHANGELOG_v2.55.md` (이전: v2.18~v2.54)
+- 변경 이력: `docs/CHANGELOG_v2.58.md` (이전: v2.18~v2.57)
 - hook 회귀 체크리스트: `docs/HOOK_TESTING.md`
 - 협업 프로토콜 상세: `.claude/HYBRID.md`
 
 ## 버전 / 변경 정책
 
-`v2.55 FROZEN` (Claude-first Distribution, per-surface skill bundles). 변경 시 **새 버전 번호 + 변경 보고서 + Codex 리뷰** 절차를 따른다. 동결본을 직접 고치지 않는다.
+`v2.58 FROZEN` (Claude-first Distribution, per-surface skill bundles). 변경 시 **새 버전 번호 + 변경 보고서 + Codex 리뷰** 절차를 따른다. 동결본을 직접 고치지 않는다.
 기존 설치 환경의 버전 업그레이드는 `-Upgrade` 모드 사용 (툴킷 파일만 갱신, 사용자 데이터 보존).

@@ -221,4 +221,4 @@ design 통과 후 spec 필요 시 **to-prd와 동일한 PawPad 등록 절차** �
 - clarity : 요청 모호도(기능 정의) 게이트 — design 앞 단계.
 - grill-me : 설계 의사결정 심문 — 큰 화면/플로우 설계 시 병행.
 - design : 원형·토큰·레이아웃·상태·일관성 게이트 — 화면 구현 직전.
-- mockup : PRD-tree 시각 투영(단일 HTML) — hi-fi는 design 토큰 재사용. 신규 토큰 임의 도입 금지(design 절차 경유).
+- mockup : PRD-tree 시각화(단일 HTML) — hi-fi는 design 토큰 재사용. 신규 토큰 임의 도입 금지(design 절차 경유).
