@@ -8,7 +8,7 @@
   <sub>Agentic Engineering Toolkit</sub>
 </p>
 
-# PawPad — Agentic Engineering Toolkit (v2.58 FROZEN)
+# PawPad — Agentic Engineering Toolkit (v2.59 FROZEN)
 
 Claude Code를 위한 **상태관리 + 토큰절약 하니스** (Codex 하이브리드 협업은 선택).
 하나의 PowerShell 스크립트로 어떤 프로젝트에든 22개 스킬 · PawPad 상태머신 · 양 런타임 자동화 hook · 키워드 컨텍스트 DB · 7축 코드베이스 맵 · 보안 검증 게이트를 설치한다.
@@ -118,7 +118,7 @@ Claude Code를 위한 **상태관리 + 토큰절약 하니스** (Codex 하이브
 ```
 CLAUDE.md                        # 에이전트 컨텍스트 (Claude). 완료 기준(DoD) 8번 = security-check 보안 게이트 포함
 AGENTS.md                        # 〃 Codex용 미러 — -WithCodex 시에만
-pawpad-setup.ps1     # 단일 설치 스크립트 (FROZEN v2.58, 번들 선택 -Preset/-Bundles + Codex 축 -CodexPreset/-CodexBundles + 안내 언어 -Lang + Codex opt-in -WithCodex, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
+pawpad-setup.ps1     # 단일 설치 스크립트 (FROZEN v2.59, 번들 선택 -Preset/-Bundles + Codex 축 -CodexPreset/-CodexBundles + 안내 언어 -Lang + Codex opt-in -WithCodex, 설치 UI: 회전 paw 배너+live 진행 바+체크리스트, -ShowLog로 상세 로그)
 .codex/                          # 아래 Codex용 파일 전체는 -WithCodex 시에만 생성
 ├── config.json                  # Codex 보조 설정 (skills 22 + context/backup keys)
 ├── config.toml                  # project config layer note
@@ -261,6 +261,7 @@ agent 교체     → /handoff codex {feature} → (Codex) /resume 인수 (owner 
 - **PreCompact** (`pre-compact.ps1`): native compaction 직전 `context-saver` 유도 (Stop 8턴과 중복 가드)
 - **Stop** (`stop-check.ps1`): 8턴마다 `decision:block` 체크포인트 + L2 분할 품질강제
 - **statusLine** (`statusline.ps1`): 매 턴 컨텍스트 사용%(예: `ctx 31% (62k/200k)`). 환경변수 `PAWPAD_CACHE_STATUS=1`이면 캐시 칸 추가(예: `cache R 96k · W 6k(1h) · ⏳ 59:53`, 캐시가 깨지면 `💥reset`) — 상세 `docs/CHANGELOG_v2.58.md`
+- **cache-watch** (`cache-watch.ps1`, v2.59): 같은 스위치로 켜지면 응답 뒤 쉬는 동안 캐시 만료 10분 전(1h)·1분 전(5m)에 OS 데스크톱 알림. 새 입력·새 세션이면 취소. 이 머신에서 켜기 = 설치 시 `-EnableCacheStatus` — 상세 `docs/CHANGELOG_v2.59.md`
 
 **Codex** (`.codex/hooks.json`, `/hooks` trust 후): SessionStart/UserPromptSubmit/PreCompact/Stop 동일 구조를 cwd 상위탐색 self-locating launcher로 실행. 미신뢰/비활성 시 SKILL.md 수동 절차로 graceful degrade.
 
@@ -287,7 +288,7 @@ $j=(Get-Content .claude\settings.json -Raw | ConvertFrom-Json); $j.hooks.PSObjec
 (Get-Content .codex\config.json -Raw | ConvertFrom-Json).skills.Count   # 22
 
 # 스크립트 STATUS
-Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.58 Claude-first ... FROZEN
+Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.59 Claude-first ... FROZEN
 ```
 
 설치 후 첫 작업은 보통 `/clarity` 또는 `/resume`로 시작한다.
@@ -298,11 +299,11 @@ Get-Content .\pawpad-setup.ps1 -TotalCount 2   # v2.58 Claude-first ... FROZEN
 
 - **처음이면 / 바이브 코딩** → **[`USAGE.md`](USAGE.md)** : 상황별 "이럴 땐 이 스킬" 표 + 흐름 예시 + FAQ
 - **기능 1개 기획→완성→배포** 단계별 워크스루 → **[`GUIDE.md`](GUIDE.md)**
-- 변경 이력: `docs/CHANGELOG_v2.58.md` (이전: v2.18~v2.57)
+- 변경 이력: `docs/CHANGELOG_v2.59.md` (이전: v2.18~v2.58)
 - hook 회귀 체크리스트: `docs/HOOK_TESTING.md`
 - 협업 프로토콜 상세: `.claude/HYBRID.md`
 
 ## 버전 / 변경 정책
 
-`v2.58 FROZEN` (Claude-first Distribution, per-surface skill bundles). 변경 시 **새 버전 번호 + 변경 보고서 + Codex 리뷰** 절차를 따른다. 동결본을 직접 고치지 않는다.
+`v2.59 FROZEN` (Claude-first Distribution, per-surface skill bundles). 변경 시 **새 버전 번호 + 변경 보고서 + Codex 리뷰** 절차를 따른다. 동결본을 직접 고치지 않는다.
 기존 설치 환경의 버전 업그레이드는 `-Upgrade` 모드 사용 (툴킷 파일만 갱신, 사용자 데이터 보존).

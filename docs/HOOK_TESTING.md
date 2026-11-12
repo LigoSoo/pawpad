@@ -41,6 +41,7 @@ PawPad (Agentic Engineering Toolkit) hook 회귀 방지 체크리스트. v2.19 C
 | 14 | Codex ctxdb-inject/pre-compact 정상 출력 | top-level `suppressOutput:true` + `systemMessage` 1줄 포함 (additionalContext 병행). no-op `{}`에는 미포함 | Codex TUI 노이즈 저감 선반영 (openai/codex#16933) |
 | 15 | Codex ctxdb-inject injectMode (pawpad-config `ctxdb.injectMode`) | pointer(기본/키 부재/오타값): additionalContext에 본문 대신 `read: .ctxdb/...` 지시 수 줄만, status=`pointer` / full: 기존 본문 주입. 양 모드 dedupe 동일 | Codex TUI 노이즈 (pointer 모드) |
 | 16 | explicit fallback needle (양 런타임 ctxdb-inject) | 재개 의도어(ctxdb/context-saver/resume/handoff/이어서/재개/세션저장 등)만 발화. 프로젝트·에이전트명(pawpad/claude/codex) 포함 일반 프롬프트는 `{}` | 과발화 -> stale L2 오주입 버그 (2026-06-11) |
+| 17 | cache-watch (Claude, v2.59): 스위치 꺼짐 / Stop 무장 / 새 기록 취소 / SessionStart 취소 | 꺼짐 = 즉시 종료·무출력. 무장 = `.ctxdb/.state/cache-watch.json`(token·fire_at·expire_at) + 숨은 감시 1개, 훅 자체 무출력 + exit 0. 감시 = 30s마다 토큰·transcript(user/assistant timestamp > 마지막 응답) 확인 → 변하면 조용히 종료, 그대로면 fire_at에 알림 1회. 검증: `PAWPAD_CACHE_ALERT_DRYRUN=<파일>` + 가짜 transcript(timestamp = now − TTL + lead + 15s) → 15s 뒤 파일 기록 / 새 user 줄 추가 시 기록 없음 / 감시 프로세스 잔존 0 | 캐시 만료 전 알림 |
 
 ## 실행 패턴 (참고)
 PowerShell hook을 stdin 주입으로 단독 검증:

@@ -1,5 +1,6 @@
-﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.58 (Claude-first Distribution, per-surface skill bundles, PowerShell)
-# STATUS: FROZEN (v2.58. v2.57 기반 + **statusline 캐시 모드(opt-in)** — 스킬 22 불변, 기본 출력 불변. 환경변수 PAWPAD_CACHE_STATUS=1|on|true 이면 statusline 끝에 캐시 칸 추가: 이번 응답 읽기(R)·쓰기(W) 토큰, TTL(1h/5m — transcript의 ephemeral_1h/5m로 판별), 남은 시간(마지막 응답 시각 + TTL, 추정값), 직전 응답 대비 read 급감 + write 급증이면 reset 표시. .ps1/.sh 같은 규칙. 상세: docs/CHANGELOG_v2.58.md)
+﻿# PawPad — Agentic Engineering Toolkit | Setup Script v2.59 (Claude-first Distribution, per-surface skill bundles, PowerShell)
+# STATUS: FROZEN (v2.59. v2.58 기반 + **캐시 만료 전 데스크톱 알림(opt-in, 같은 스위치)** — 스킬 22 불변, 기본 동작 불변. 신규 훅 cache-watch.{ps1,sh}(Stop = 무장: 마지막 응답 시각 + TTL(1h/5m) − 선행(1h 600s/5m 60s, env PAWPAD_CACHE_ALERT_LEAD) 시각에 숨은 감시 1개가 OS 알림, 새 user/assistant 기록·새 무장이면 취소 / SessionStart = 취소). 설치 옵션 -EnableCacheStatus = ~/.claude/settings.json env 병합. 상세: docs/CHANGELOG_v2.59.md)
+#         이전: v2.58. v2.57 기반 + **statusline 캐시 모드(opt-in)** — 스킬 22 불변, 기본 출력 불변. 환경변수 PAWPAD_CACHE_STATUS=1|on|true 이면 statusline 끝에 캐시 칸 추가: 이번 응답 읽기(R)·쓰기(W) 토큰, TTL(1h/5m — transcript의 ephemeral_1h/5m로 판별), 남은 시간(마지막 응답 시각 + TTL, 추정값), 직전 응답 대비 read 급감 + write 급증이면 reset 표시. .ps1/.sh 같은 규칙. 상세: docs/CHANGELOG_v2.58.md)
 #         이전: v2.57. v2.56 기반 + **뜻이 안 잡히는 표현 12개를 쉬운 말로 교체** — 스킬 22 불변, 동작 불변(문구만). 함정→주의사항(codemap leaf 항목 이름 포함) · 스윕→누락 점검 · Codex 표면→Codex용 파일 · 투영→옮겨 그리기/시각화 · 비대→커짐/길어짐 · 횡단 import→기능 간 내부 import · hoist→상위 폴더로 올리기 · 가산적→추가 위주 · 응집→한 폴더에 모으기 · 첨자→단계 표시 · 앵커→줄 맨 앞/링크 · 백스톱→최종 차단/최종 점검. 이전 버전 leaf의 "함정:" 줄은 같은 뜻으로 읽는다. 유지: 디자인 용어 "표면" · "표면화" · 훅 코드 주석. 상세: docs/CHANGELOG_v2.57.md)
 #         이전: v2.56. v2.55 기반 + **codemap 재설계 — 검색 먼저, 길잡이 + 주의사항 기록** — 스킬 22 불변. 실측(요청 3 x 모델 2 x 2회): codemap 경유의 위치 찾기 사용량은 검색만 쓸 때와 같았고(-2.4% ~ -0.1%), 검색이 바로 맞는 요청에서는 안내 파일 4~5장을 읽는 통행료만 냈다. (1) 조회를 의무에서 조건부로(검색어 없음 / 첫 검색 0건·흩어짐 / 처음 고치기 직전) (2) leaf를 직접 검색해 2 read 안에 도착 (3) leaf 규격 = src 줄 + 증상 줄 + 주의사항 5줄 (4) HOT 절 폐지 (5) 갱신은 새 영역·파일 이동·새 주의사항일 때만 (6) Stop 훅의 retrieval 차단 해제. "토큰 절감" 표현을 내리고 역할을 길잡이 + 주의사항 기록으로 적는다. 기존 설치처 leaf는 점진 이행. 상세: docs/CHANGELOG_v2.56.md)
 #         이전: v2.55. v2.54 기반 +**세션 시작 비용 · 훅 없는 환경 안전망** — 스킬 22 불변, 본문만 6개 수정(context-saver · task-done · resume · codemap · checkpoint · handoff). 설치처 실측(2026-11-11): 훅이 조직 정책으로 차단된 머신에서 세션 시작 3파일이 43KB(INDEX 12.7KB · _wip 21.7KB · _meta 8.5KB)까지 자랐고 codemap 93파일 중 8개가 상한을 넘었다. (1) INDEX AGENT SYNC 에이전트당 1행 + 8KB 상한 (2) _wip 종결 메모 금지 (3) _meta 1줄 300자 · 8KB — 줄 수와 byte를 함께 잰다 (4) task-done에 ctxdb 저장 · codemap 크기 점검 단계(7 -> 8단계) (5) codemap Phase B 문구 정리 + HOT 넘침 규칙. 훅 · CLAUDE.md/AGENTS.md 템플릿 불변. 상세: docs/CHANGELOG_v2.55.md)
@@ -68,14 +69,14 @@
 # 실행 정책 오류 시:
 #   Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
-param([switch]$Force, [switch]$Upgrade, [string]$Stack = "", [switch]$ShowLog, [string]$Preset = "", [string]$Bundles = "", [string]$Lang = "", [switch]$WithCodex, [string]$CodexPreset = "", [string]$CodexBundles = "")
+param([switch]$Force, [switch]$Upgrade, [string]$Stack = "", [switch]$ShowLog, [string]$Preset = "", [string]$Bundles = "", [string]$Lang = "", [switch]$WithCodex, [string]$CodexPreset = "", [string]$CodexBundles = "", [switch]$EnableCacheStatus)
 
 if ($Force -and $Upgrade) {
     Write-Host "ERROR: -Force와 -Upgrade는 동시 지정 불가. 하나만 선택하세요." -ForegroundColor Red
     exit 1
 }
 
-$ver = "2.58"
+$ver = "2.59"
 $created = 0
 $skipped = 0
 $failed = 0
@@ -2083,6 +2084,7 @@ $compactCmd = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File
 $stopCmd    = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook stop-check.ps1" } else { "bash $claudeHookRoot/stop-check.sh" }
 $analyzeCmd = if ($isWin) { if ($p.AnalyzePS) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook analyze.ps1" } else { '' } } else { if ($p.AnalyzeBash) { "bash $claudeHookRoot/analyze.sh" } else { '' } }
 $readTrackCmd = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook read-track.ps1" } else { "bash $claudeHookRoot/read-track.sh" }
+$cacheWatchCmd = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook cache-watch.ps1" } else { "bash $claudeHookRoot/cache-watch.sh" }  # v2.59 (opt-in env, 꺼져 있으면 즉시 종료)
 $statusCmd  = if ($isWin) { "powershell -NoProfile -ExecutionPolicy Bypass -File $claudeRunHook statusline.ps1" } else { "bash $claudeHookRoot/statusline.sh" }
 
 # JSON 하드빌드 (5.1 ConvertTo-Json 단일요소 배열 unwrap 회피). PostToolUse: read-track(항상) + analyze(스택 조건부).
@@ -2096,6 +2098,10 @@ $sl += '        "hooks": ['
 $sl += '          {'
 $sl += '            "type": "command",'
 $sl += "            ""command"": ""$sessionCmd"""
+$sl += '          },'
+$sl += '          {'
+$sl += '            "type": "command",'
+$sl += "            ""command"": ""$cacheWatchCmd"""
 $sl += '          }'
 $sl += '        ]'
 $sl += '      }'
@@ -2150,6 +2156,10 @@ $sl += '        "hooks": ['
 $sl += '          {'
 $sl += '            "type": "command",'
 $sl += "            ""command"": ""$stopCmd"""
+$sl += '          },'
+$sl += '          {'
+$sl += '            "type": "command",'
+$sl += "            ""command"": ""$cacheWatchCmd"""
 $sl += '          }'
 $sl += '        ]'
 $sl += '      }'
@@ -2215,6 +2225,32 @@ function Update-BundleRecord {
     }
 }
 Update-BundleRecord $script:bundleSelected $script:codexSelected
+
+# v2.59 -EnableCacheStatus: 이 머신 사용자 설정(~/.claude/settings.json) env에 PAWPAD_CACHE_STATUS=1 병합 — statusline 캐시 칸 +
+# 만료 전 알림(cache-watch) 스위치. 프로젝트 settings.json은 -Upgrade가 다시 쓰므로 사용자 설정에 둔다(CHANGELOG v2.58 권장).
+# 비파괴: 원본을 .pawpad-bak으로 복사 후 env 키만 추가. JSON이 아니면 건드리지 않고 경고.
+function Enable-UserCacheStatus {
+    $home2 = if ($env:USERPROFILE) { $env:USERPROFILE } else { $HOME }
+    $path = Join-Path $home2 '.claude/settings.json'
+    try {
+        $obj = if (Test-Path -LiteralPath $path) { [System.IO.File]::ReadAllText($path) | ConvertFrom-Json -ErrorAction Stop } else { [pscustomobject]@{} }
+        if ($obj -isnot [System.Management.Automation.PSCustomObject]) { throw 'settings.json must contain a JSON object.' }
+        if ($obj.env -and [string]$obj.env.PAWPAD_CACHE_STATUS -match '^(1|on|true)$') {
+            Write-InstallLog "  SKIP    ~/.claude/settings.json env PAWPAD_CACHE_STATUS (이미 켜짐)" DarkGray
+            return
+        }
+        if (Test-Path -LiteralPath $path) { Copy-Item -LiteralPath $path -Destination ($path + '.pawpad-bak') -Force }
+        if (-not $obj.env) { $obj | Add-Member -MemberType NoteProperty -Name env -Value ([pscustomobject]@{}) -Force }
+        $obj.env | Add-Member -MemberType NoteProperty -Name PAWPAD_CACHE_STATUS -Value '1' -Force
+        $dir = Split-Path -Parent $path
+        if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+        [System.IO.File]::WriteAllText($path, ($obj | ConvertTo-Json -Depth 50), (New-Object System.Text.UTF8Encoding $false))
+        Write-InstallLog "  UPDATED ~/.claude/settings.json env PAWPAD_CACHE_STATUS=1 (백업 .pawpad-bak, 새 세션부터 적용)" Cyan -Always
+    } catch {
+        Write-InstallLog "  FAILED  ~/.claude/settings.json ($($_.Exception.Message)) — 직접 env PAWPAD_CACHE_STATUS=1 추가" Red -Always
+    }
+}
+if ($EnableCacheStatus) { Enable-UserCacheStatus }
 
 # ── hooks: run-hook.ps1 (settings.json root-aware wrapper) ───────────────────
 Step-Begin "Claude hooks + statusline"
@@ -3821,6 +3857,227 @@ case "${PAWPAD_CACHE_STATUS:-}" in
 esac
 printf '%s' "$out"
 '@
+
+# ── hooks: cache-watch.ps1 / cache-watch.sh (프롬프트 캐시 만료 전 데스크톱 알림, v2.59) ──
+# opt-in(PAWPAD_CACHE_STATUS = statusline 캐시 칸과 같은 스위치). Stop = 무장(숨은 감시 1개), SessionStart = 취소.
+# 응답이 끝난 순간엔 캐시가 막 재충전돼 남은 시간이 항상 TTL 전체 — 위험은 응답 뒤 쉬는 시간이므로 백그라운드 타이머로 만료 N분 전에 알린다.
+Write-FileContent ".claude\hooks\cache-watch.ps1" @'
+# cache-watch - 프롬프트 캐시 만료 전 데스크톱 알림 (v2.59, opt-in: env PAWPAD_CACHE_STATUS=1|on|true — statusline 캐시 칸과 같은 스위치).
+# Stop 훅: transcript 마지막 응답 usage로 TTL(ephemeral_1h → 3600s, 그 외 300s)과 마지막 캐시 사용 시각을 읽어
+#   만료 시각 = 마지막 응답 시각 + TTL (읽기도 TTL 재충전 = 실제 규칙). 알림 시각 = 만료 - 선행(1h 600s / 5m 60s, env PAWPAD_CACHE_ALERT_LEAD 초).
+#   상태 파일(.ctxdb/.state/cache-watch.json)에 토큰을 쓰고 숨은 감시 프로세스 1개를 띄운 뒤 바로 끝난다(무출력 = Stop no-op 계약).
+# 감시(-Watch): 30s마다 토큰·transcript 수정 시각을 확인 — 새 응답/새 입력(transcript 변경)·새 무장(토큰 교체)·취소면 조용히 종료.
+#   알림 시각까지 그대로면 OS 알림 1회 후 종료. 같은 프로젝트에 감시는 사실상 1개만 산다(이전 것은 토큰 교체를 보고 30s 안에 빠짐).
+# SessionStart 훅(새 세션·/clear·재개): 토큰을 cancel로 — 이전 세션 캐시 알림 중단(이전 prefix는 새 세션에서 재사용 안 됨).
+# 한계: 서버 조기 축출·prefix 변경(시스템 프롬프트·도구·모델 전환·압축)은 미리 알 수 없다 → 그 경우 실제 만료가 더 이르다.
+param([switch]$Watch, [string]$StatePath = '', [string]$Token = '', [string]$Transcript = '')
+$ErrorActionPreference = 'SilentlyContinue'
+
+function Test-CacheAlertOn { return ([string]$env:PAWPAD_CACHE_STATUS -match '^(1|on|true)$') }
+
+function Get-TailLines {
+    param([string]$Path, [int]$Count)
+    $ring = New-Object string[] $Count
+    $n = 0
+    $fs = $null; $sr = $null
+    try {
+        $fs = New-Object System.IO.FileStream($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $sr = New-Object System.IO.StreamReader($fs, (New-Object System.Text.UTF8Encoding $false), $true)
+        while ($null -ne ($ln = $sr.ReadLine())) { $ring[$n % $Count] = $ln; $n++ }
+    } catch { return @() } finally { if ($sr) { $sr.Dispose() } elseif ($fs) { $fs.Dispose() } }
+    $c = [Math]::Min($n, $Count)
+    $out = New-Object string[] $c
+    for ($i = 0; $i -lt $c; $i++) { $out[$i] = $ring[(($n - $c + $i) % $Count)] }
+    return $out
+}
+
+## 무장 이후 사용자 입력·응답(type user/assistant, timestamp > since)이 transcript에 생겼나. 훅 요약 등 다른 기록은 무시.
+function Test-NewActivity {
+    param([string]$Path, [datetime]$Since)
+    foreach ($ln in @(Get-TailLines $Path 40)) {
+        if ($ln -notlike '*"timestamp"*') { continue }
+        try { $o = $ln | ConvertFrom-Json } catch { continue }
+        if ($o.type -ne 'user' -and $o.type -ne 'assistant') { continue }
+        try { if ([datetime]::Parse([string]$o.timestamp).ToUniversalTime() -gt $Since.AddSeconds(1)) { return $true } } catch { }
+    }
+    return $false
+}
+
+function Read-State { param([string]$Path) try { return ([System.IO.File]::ReadAllText($Path) | ConvertFrom-Json) } catch { return $null } }
+
+function Write-State {
+    param([string]$Path, [hashtable]$Data)
+    $dir = Split-Path -Parent $Path
+    if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    [System.IO.File]::WriteAllText($Path, ($Data | ConvertTo-Json -Compress), (New-Object System.Text.UTF8Encoding $false))
+}
+
+function Show-CacheAlert {
+    param([string]$Title, [string]$Body)
+    if ($env:PAWPAD_CACHE_ALERT_DRYRUN) {  # 테스트: 알림 대신 파일 기록
+        [System.IO.File]::AppendAllText($env:PAWPAD_CACHE_ALERT_DRYRUN, "$Title | $Body`n", (New-Object System.Text.UTF8Encoding $false))
+        return
+    }
+    try {  # Windows 10/11 토스트 (PS 5.1 WinRT)
+        $null = [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime]
+        $xml = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02)
+        $texts = $xml.GetElementsByTagName('text')
+        $null = $texts.Item(0).AppendChild($xml.CreateTextNode($Title))
+        $null = $texts.Item(1).AppendChild($xml.CreateTextNode($Body))
+        $appId = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe'
+        [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show([Windows.UI.Notifications.ToastNotification]::new($xml))
+        return
+    } catch { }
+    try {  # 폴백: 트레이 풍선
+        Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+        $icon = New-Object System.Windows.Forms.NotifyIcon
+        $icon.Icon = [System.Drawing.SystemIcons]::Information
+        $icon.Visible = $true
+        $icon.ShowBalloonTip(15000, $Title, $Body, [System.Windows.Forms.ToolTipIcon]::Info)
+        Start-Sleep -Seconds 16
+        $icon.Dispose()
+    } catch { }
+}
+
+# ── 감시 프로세스 ────────────────────────────────────────────────────────────
+if ($Watch) {
+    $st = Read-State $StatePath
+    if (-not $st -or [string]$st.token -ne $Token) { exit 0 }
+    $fireAt = [datetime]::Parse([string]$st.fire_at).ToUniversalTime()
+    $expireAt = [datetime]::Parse([string]$st.expire_at).ToUniversalTime()
+    $lastAt = [datetime]::Parse([string]$st.last_at).ToUniversalTime()
+    while ([datetime]::UtcNow -lt $fireAt) {
+        Start-Sleep -Seconds ([Math]::Max(1, [Math]::Min(30, [int][Math]::Ceiling(($fireAt - [datetime]::UtcNow).TotalSeconds))))
+        $now = Read-State $StatePath
+        if (-not $now -or [string]$now.token -ne $Token) { exit 0 }  # 새 무장·취소
+        if (Test-NewActivity $Transcript $lastAt) { exit 0 }  # 새 입력·응답 = 캐시 재충전(다음 Stop이 다시 무장)
+    }
+    $left = [Math]::Max(1, [int][Math]::Round(($expireAt - [datetime]::UtcNow).TotalMinutes))
+    Show-CacheAlert ("PawPad · " + [string]$st.project + " · 캐시 " + $left + "분 남음") ([string]$st.body)
+    exit 0
+}
+
+# ── 훅 모드(Stop / SessionStart) ──────────────────────────────────────────────
+if (-not (Test-CacheAlertOn)) { exit 0 }
+$raw = (New-Object System.IO.StreamReader([Console]::OpenStandardInput(), (New-Object System.Text.UTF8Encoding $false))).ReadToEnd()
+try { $j = $raw | ConvertFrom-Json } catch { exit 0 }
+$state = Join-Path (Get-Location) '.ctxdb\.state\cache-watch.json'
+if ([string]$j.hook_event_name -eq 'SessionStart') {
+    if (Test-Path -LiteralPath $state) { Write-State $state @{ token = 'cancel' } }
+    exit 0
+}
+$tp = [string]$j.transcript_path
+if (-not $tp -or -not (Test-Path -LiteralPath $tp)) { exit 0 }
+$last = $null; $ttl = 300; $found1h = $false
+foreach ($ln in @(Get-TailLines $tp 200)) {
+    if ($ln -notlike '*"usage"*') { continue }
+    try { $o = $ln | ConvertFrom-Json } catch { continue }
+    if ($o.type -ne 'assistant' -or -not $o.message.usage) { continue }
+    $u = $o.message.usage
+    if (([long]$u.cache_read_input_tokens + [long]$u.cache_creation_input_tokens) -le 0) { continue }
+    $last = $o
+    if ([long]$u.cache_creation.ephemeral_1h_input_tokens -gt 0) { $found1h = $true }
+    elseif ([long]$u.cache_creation.ephemeral_5m_input_tokens -gt 0) { $found1h = $false }
+}
+if (-not $last) { exit 0 }
+if ($found1h) { $ttl = 3600 }
+$lead = if ($ttl -ge 3600) { 600 } else { 60 }
+if ([string]$env:PAWPAD_CACHE_ALERT_LEAD -match '^\d+$') { $lead = [int]$env:PAWPAD_CACHE_ALERT_LEAD }
+$lead = [Math]::Min($lead, $ttl - 5)
+$t = [datetime]::Parse([string]$last.timestamp).ToUniversalTime()
+$expire = $t.AddSeconds($ttl)
+$fire = $expire.AddSeconds(-$lead)
+if ($fire -le [datetime]::UtcNow) { exit 0 }
+$token = [guid]::NewGuid().ToString('N')
+$project = Split-Path -Leaf (Get-Location)
+$body = "지금 이어서 입력하면 캐시가 유지됩니다 (만료 $($expire.ToLocalTime().ToString('HH:mm')), TTL $([int]($ttl / 60))분)"
+Write-State $state @{
+    token = $token; project = $project; body = $body
+    fire_at = $fire.ToString('o'); expire_at = $expire.ToString('o'); last_at = $t.ToString('o')
+}
+$self = $MyInvocation.MyCommand.Path
+$exe = if ($PSVersionTable.PSEdition -eq 'Core') { 'pwsh' } else { 'powershell' }
+$args2 = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', "`"$self`"", '-Watch',
+    '-StatePath', "`"$state`"", '-Token', $token, '-Transcript', "`"$tp`"")
+Start-Process -FilePath $exe -ArgumentList $args2 -WindowStyle Hidden | Out-Null
+exit 0
+'@
+
+Write-FileContent ".claude\hooks\cache-watch.sh" -Unix @'
+#!/usr/bin/env bash
+# cache-watch - 프롬프트 캐시 만료 전 데스크톱 알림 (cache-watch.ps1 bash 포트, 규칙 동일. jq 필요, 없으면 조용히 끝).
+# opt-in: env PAWPAD_CACHE_STATUS=1|on|true. Stop = 무장(상태 파일 + 숨은 감시 1개), SessionStart = 취소. 무출력 + exit 0.
+# 알림: macOS osascript / Linux notify-send. 테스트: PAWPAD_CACHE_ALERT_DRYRUN=<파일> 이면 알림 대신 기록.
+case "${PAWPAD_CACHE_STATUS:-}" in 1|on|true) ;; *) exit 0 ;; esac
+command -v jq >/dev/null 2>&1 || exit 0
+
+state_get() { jq -r --arg k "$1" '.[$k] // empty' "$2" 2>/dev/null; }
+
+notify() {
+  if [ -n "${PAWPAD_CACHE_ALERT_DRYRUN:-}" ]; then printf '%s | %s\n' "$1" "$2" >> "$PAWPAD_CACHE_ALERT_DRYRUN"; return; fi
+  if command -v osascript >/dev/null 2>&1; then
+    osascript -e "display notification \"$2\" with title \"$1\"" >/dev/null 2>&1
+  elif command -v notify-send >/dev/null 2>&1; then
+    notify-send "$1" "$2" >/dev/null 2>&1
+  fi
+}
+
+# 무장 이후 user/assistant 기록(timestamp > since + 1s)이 생겼나.
+new_activity() {
+  tail -n 40 "$1" 2>/dev/null | jq -rs --argjson s "$2" '
+    [ .[] | select(.type == "user" or .type == "assistant") | .timestamp // empty
+      | sub("\\.[0-9]+"; "") | fromdateiso8601 | select(. > $s + 1) ] | length' 2>/dev/null
+}
+
+if [ "${1:-}" = "--watch" ]; then
+  st="$2"; tok="$3"; tp="$4"
+  [ "$(state_get token "$st")" = "$tok" ] || exit 0
+  fire=$(state_get fire "$st"); expire=$(state_get expire "$st"); last=$(state_get last "$st")
+  while [ "$(date +%s)" -lt "$fire" ]; do
+    rem=$(( fire - $(date +%s) )); [ "$rem" -gt 30 ] && rem=30; [ "$rem" -lt 1 ] && rem=1
+    sleep "$rem"
+    [ "$(state_get token "$st")" = "$tok" ] || exit 0
+    n=$(new_activity "$tp" "$last"); [ "${n:-0}" -gt 0 ] && exit 0
+  done
+  left=$(( (expire - $(date +%s) + 30) / 60 )); [ "$left" -lt 1 ] && left=1
+  notify "PawPad · $(state_get project "$st") · 캐시 ${left}분 남음" "$(state_get body "$st")"
+  exit 0
+fi
+
+raw="$(cat)"
+st="$PWD/.ctxdb/.state/cache-watch.json"
+ev="$(printf '%s' "$raw" | jq -r '.hook_event_name // empty' 2>/dev/null)"
+if [ "$ev" = "SessionStart" ]; then
+  [ -f "$st" ] && printf '{"token":"cancel"}' > "$st"
+  exit 0
+fi
+tp="$(printf '%s' "$raw" | jq -r '.transcript_path // empty' 2>/dev/null)"
+[ -n "$tp" ] && [ -f "$tp" ] || exit 0
+read -r last ttl < <(tail -n 200 "$tp" 2>/dev/null | jq -rs '
+  [ .[] | select(.type == "assistant" and .message.usage != null)
+    | .message.usage as $u
+    | select((($u.cache_read_input_tokens // 0) + ($u.cache_creation_input_tokens // 0)) > 0)
+    | { t: (.timestamp | sub("\\.[0-9]+"; "") | fromdateiso8601),
+        h: ($u.cache_creation.ephemeral_1h_input_tokens // 0), m: ($u.cache_creation.ephemeral_5m_input_tokens // 0) } ] as $a
+  | if ($a | length) == 0 then empty else
+      ([ $a[] | select(.h > 0 or .m > 0) ] | last) as $k
+      | "\($a[-1].t) \(if $k != null and $k.h > 0 then 3600 else 300 end)" end' 2>/dev/null)
+[ -n "${last:-}" ] || exit 0
+lead=60; [ "$ttl" -ge 3600 ] && lead=600
+case "${PAWPAD_CACHE_ALERT_LEAD:-}" in ''|*[!0-9]*) ;; *) lead="$PAWPAD_CACHE_ALERT_LEAD" ;; esac
+[ "$lead" -gt $(( ttl - 5 )) ] && lead=$(( ttl - 5 ))
+expire=$(( last + ttl )); fire=$(( expire - lead ))
+[ "$fire" -gt "$(date +%s)" ] || exit 0
+tok="$(date +%s)$$$RANDOM"
+hm="$(date -r "$expire" +%H:%M 2>/dev/null || date -d "@$expire" +%H:%M 2>/dev/null)"
+mkdir -p "$(dirname "$st")"
+jq -n --arg tok "$tok" --arg project "$(basename "$PWD")" --argjson fire "$fire" --argjson expire "$expire" --argjson last "$last" \
+  --arg body "지금 이어서 입력하면 캐시가 유지됩니다 (만료 $hm, TTL $(( ttl / 60 ))분)" \
+  '{token: $tok, project: $project, fire: $fire, expire: $expire, last: $last, body: $body}' > "$st"
+nohup bash "$0" --watch "$st" "$tok" "$tp" >/dev/null 2>&1 &
+exit 0
+'@
+
 
 # ── Codex native adapter: config + hooks ─────────────────────────────────────
 if ($script:installCodex) {
@@ -9272,6 +9529,7 @@ if ($failed -eq 0) {
         Write-Host "  - codemap 재설계 (v2.56): 검색 먼저, codemap은 조건부(검색어 없음 / 첫 검색 0건이거나 흩어짐 / 처음 고치기 직전 주의사항 확인). leaf 규격 = src 줄 + 증상 줄 + 주의사항 5줄, leaf를 직접 검색해 2 read 안에 도착. HOT 절 폐지, 갱신은 새 영역/파일 이동/새 주의사항일 때만. Stop 훅 retrieval 차단 해제. 실측상 토큰 절감 장치가 아니라 길잡이 + 주의사항 기록. 상세: docs/CHANGELOG_v2.56.md" -ForegroundColor Cyan
         Write-Host "  - 쉬운 말 교체 (v2.57): 뜻이 안 잡히는 표현 12개를 바꿨다 (함정 -> 주의사항, 스윕 -> 누락 점검, Codex 표면 -> Codex용 파일 등). 동작 불변. 상세: docs/CHANGELOG_v2.57.md" -ForegroundColor Cyan
         Write-Host "  - statusline 캐시 모드 (v2.58, opt-in): 환경변수 PAWPAD_CACHE_STATUS=1 이면 캐시 읽기/쓰기 토큰 + TTL 남은 시간 + reset 표시. 상세: docs/CHANGELOG_v2.58.md" -ForegroundColor Cyan
+        Write-Host "  - 캐시 만료 전 알림 (v2.59, opt-in 같은 스위치): 응답 뒤 쉬는 동안 캐시 만료 10분 전(1h)·1분 전(5m)에 OS 데스크톱 알림. 새 입력·새 세션이면 취소. 켜기: -EnableCacheStatus (이 머신 사용자 설정). 상세: docs/CHANGELOG_v2.59.md" -ForegroundColor Cyan
     } else {
         Write-Host "v${ver}: 22 skills + hooks + .ctxdb + codemap + codebase-map + security-check." -ForegroundColor Cyan
         Write-Host "  - Stack: $Stack  |  bundles: -Preset lean|standard|full  or  -Bundles prd,ui,delegate,review,qa" -ForegroundColor Cyan

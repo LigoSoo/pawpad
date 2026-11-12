@@ -1,4 +1,4 @@
-﻿# PawPad 버전별 업데이트 (v2.18 → v2.58)
+﻿# PawPad 버전별 업데이트 (v2.18 → v2.59)
 
 | 버전 | 날짜 | 핵심 변경 | 주요 영향 요소 |
 |------|------|----------|--------------|
@@ -43,8 +43,9 @@
 | v2.56 | 2026-11-11 | codemap 재설계 — 검색 먼저, 길잡이 + 함정 기록 (스킬 22 불변) | 같은 요청 3건을 "codemap 경유"와 "스킬 없음"으로 두 모델에 맡겨 실측했다. **위치 찾기 사용량은 같았다**(새 방식 기준 −2.4% ~ −0.1%, 같은 조건 안의 편차보다 작다). 이전 방식은 소스 전에 안내 파일 4~5장(9~10KB)을 읽었고, leaf에 소스 경로가 없어 6번 모두 다시 검색했다. 수정: 조회를 **의무에서 조건부로**(검색어 없음 / 첫 검색 0건·흩어짐 / 처음 고치기 직전 함정 확인) · **leaf 직접 검색**으로 2 read 안에 도착 · **leaf 규격** = `src:` 줄 + `증상:` 줄 + 함정 5줄(권장 1.5KB) · **HOT 절 폐지** · 갱신은 새 영역·파일 이동·새 함정일 때만 · Stop 훅의 retrieval 차단 해제 · CLAUDE.md/AGENTS.md `Retrieval 표시` 절과 DoD#5 문구 교체. codemap을 "토큰 절감 장치"로 적던 설명을 내리고 README의 효과 표를 실측값으로 바꿨다. 기존 설치처 leaf는 점진 이행(건드릴 때만). statusline 활용률 지표는 그대로 — 직행이 분모에 들어가 낮게 보인다. 상세: docs/CHANGELOG_v2.56.md |
 | v2.57 | 2026-11-12 | 뜻이 안 잡히는 표현 12개를 쉬운 말로 교체 (스킬 22 불변, 동작 불변) | 사용자 지적: "함정"은 한글이지만 문맥으로도 뜻을 유추할 수 없다. 같은 종류를 전수 조사해 자주 쓰이는 말은 두고 12개만 바꿨다. 함정→주의사항(codemap leaf 항목 이름 포함) · 스윕→누락 점검 · Codex 표면→Codex용 파일 · 투영→옮겨 그리기/시각화 · 비대→커짐/길어짐 · 횡단 import→기능 간 내부 import · hoist→상위 폴더로 올리기 · 가산적→추가 위주 · 응집→한 폴더에 모으기 · 첨자→단계 표시 · 앵커→줄 맨 앞/링크 · 백스톱→최종 차단/최종 점검. 유지: 디자인 용어 "표면" · "표면화" · 훅 코드 주석 · 지난 CHANGELOG. 영향: `pawpad-setup.ps1`(임베드·템플릿·안내 문구) · live 스킬 10 · `.agents` 미러 10 · CLAUDE.md / AGENTS.md · README / GUIDE / USAGE · HYBRID · SKILLS_MANIFEST. codemap leaf 항목 이름이 `주의사항:`으로 바뀜(이전 `함정:` 줄은 같은 뜻으로 읽는다). |
 | v2.58 | 2026-11-12 | statusline 캐시 모드 opt-in (스킬 22 불변, 기본 출력 불변) | 사용자 요청: 캐시 읽기·쓰기와 남은 시간을 화면에서 보고 싶다. 환경변수 `PAWPAD_CACHE_STATUS=1`이면 statusline 끝에 `cache R · W(1h/5m) · ⏳ mm:ss` + 캐시가 깨지면 `💥reset`. TTL은 transcript의 `ephemeral_1h/5m`로 판별, 남은 시간은 마지막 응답 시각 + TTL(추정값 — 서버 조기 삭제 감지 불가, 이벤트 때만 갱신). `.ps1`/`.sh` 같은 규칙(`.sh`는 jq 부재로 실행 미검증). 상세: docs/CHANGELOG_v2.58.md |
+| v2.59 | 2026-11-12 | 캐시 만료 전 데스크톱 알림 opt-in (스킬 22 불변, 기본 동작 불변) | 신규 훅 `cache-watch.{ps1,sh}`(Stop = 무장, SessionStart = 취소) — 응답 뒤 쉬는 동안 마지막 응답 시각 + TTL(1h/5m) − 선행(1h 10분/5m 1분, env `PAWPAD_CACHE_ALERT_LEAD`)에 숨은 감시 1개가 OS 알림(Windows 토스트·mac osascript·Linux notify-send), 새 user/assistant 기록·새 무장이면 취소. 스위치 = `PAWPAD_CACHE_STATUS`(v2.58과 공유). 설치 옵션 `-EnableCacheStatus` = 사용자 설정 env 병합(.pawpad-bak 백업). 상세 docs/CHANGELOG_v2.59.md |
 
-# 누적 현황 (현재 v2.58)
+# 누적 현황 (현재 v2.59)
 
 | 항목 | 수치 |
 |------|------|
